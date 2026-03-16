@@ -55,76 +55,27 @@ async function main() {
     },
   });
 
-  const defaultPasswordHash = await bcrypt.hash("Bilal12345", 10);
-
-  await prisma.user.upsert({
-    where: { email: "admin@bilalhocayds.com" },
-    update: {
-      name: "Platform Admin",
-      role: "ADMIN",
-      password: defaultPasswordHash,
-    },
-    create: {
-      name: "Platform Admin",
-      email: "admin@bilalhocayds.com",
-      role: "ADMIN",
-      password: defaultPasswordHash,
-    },
-  });
-
-  await prisma.user.upsert({
-    where: { email: "ogrenci@bilalhocayds.com" },
-    update: {
-      name: "Demo Ogrenci",
-      role: "STUDENT",
-      password: defaultPasswordHash,
-      studentProfile: {
-        upsert: {
-          create: {},
-          update: {},
-        },
+  const adminPassword = process.env.ADMIN_INITIAL_PASSWORD;
+  if (!adminPassword) {
+    console.warn("ADMIN_INITIAL_PASSWORD not set, skipping admin upsert.");
+  } else {
+    const adminHash = await bcrypt.hash(adminPassword, 10);
+    await prisma.user.upsert({
+      where: { email: "admin@bilalhocayds.com" },
+      update: {
+        name: "Platform Admin",
+        role: "ADMIN",
+        password: adminHash,
       },
-    },
-    create: {
-      name: "Demo Ogrenci",
-      email: "ogrenci@bilalhocayds.com",
-      role: "STUDENT",
-      password: defaultPasswordHash,
-      studentProfile: {
-        create: {},
+      create: {
+        name: "Platform Admin",
+        email: "admin@bilalhocayds.com",
+        role: "ADMIN",
+        password: adminHash,
       },
-    },
-  });
-
-  await prisma.user.upsert({
-    where: { email: "egitmen@bilalhocayds.com" },
-    update: {
-      name: "Demo Egitmen",
-      role: "TEACHER",
-      password: defaultPasswordHash,
-      teacherProfile: {
-        upsert: {
-          create: {
-            isActive: true,
-          },
-          update: {
-            isActive: true,
-          },
-        },
-      },
-    },
-    create: {
-      name: "Demo Egitmen",
-      email: "egitmen@bilalhocayds.com",
-      role: "TEACHER",
-      password: defaultPasswordHash,
-      teacherProfile: {
-        create: {
-          isActive: true,
-        },
-      },
-    },
-  });
+    });
+    console.log("Admin user upserted.");
+  }
 
   console.log("Seed tamamlandi.");
 }
