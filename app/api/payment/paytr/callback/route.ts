@@ -4,18 +4,29 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/src/lib/prisma";
 
-function createCallbackHash(merchantOid: string, status: string, totalAmount: string) {
+function createCallbackHash(merchantOid: string, status: string, totalAmount: string): string {
   const merchantKey = process.env.PAYTR_MERCHANT_KEY;
   const merchantSalt = process.env.PAYTR_MERCHANT_SALT;
 
   if (!merchantKey || !merchantSalt) {
-    return null;
+    throw new Error("PAYTR credentials not configured");
   }
 
   return crypto
     .createHmac("sha256", merchantKey)
     .update(`${merchantOid}${merchantSalt}${status}${totalAmount}`)
     .digest("base64");
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+  try {
+    const aBuf = Buffer.from(a, "base64");
+    const bBuf = Buffer.from(b, "base64");
+    if (aBuf.length !== bBuf.length) return false;
+    return crypto.timingSafeEqual(aBuf, bBuf);
+  } catch {
+    return false;
+  }
 }
 
 function textResponse(body: string, status = 200) {
@@ -38,8 +49,15 @@ export async function POST(request: Request) {
     return textResponse("PAYTR notification failed", 400);
   }
 
-  const expectedHash = createCallbackHash(merchantOid, status, totalAmount);
-  if (expectedHash && hash && expectedHash !== hash) {
+  // Always verify hash — reject if credentials missing or hash mismatch
+  let expectedHash: string;
+  try {
+    expectedHash = createCallbackHash(merchantOid, status, totalAmount);
+  } catch {
+    return textResponse("PAYTR notification failed", 500);
+  }
+
+  if (!hash || !timingSafeEqual(expectedHash, hash)) {
     return textResponse("PAYTR notification failed", 400);
   }
 

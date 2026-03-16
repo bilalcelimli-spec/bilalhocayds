@@ -1,28 +1,42 @@
+import { z } from "zod";
+
 import { prisma } from "@/src/lib/prisma";
+import { isRateLimited, getClientIp } from "@/src/lib/rate-limit";
 import { NextResponse } from "next/server";
 
-type LeadPayload = {
-  name: string;
-  surname: string;
-  phone: string;
-  email: string;
-  plan: string;
-};
+const leadSchema = z.object({
+  name: z.string().min(2).max(100),
+  surname: z.string().min(1).max(100),
+  phone: z.string().min(10).max(20),
+  email: z.email(),
+  plan: z.string().min(1).max(200),
+});
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as Partial<LeadPayload>;
-  const data: LeadPayload = {
-    name: String(body.name ?? "").trim(),
-    surname: String(body.surname ?? "").trim(),
-    phone: String(body.phone ?? "").trim(),
-    email: String(body.email ?? "").trim().toLowerCase(),
-    plan: String(body.plan ?? "").trim(),
-  };
-
-  if (!data.name || !data.surname || !data.phone || !data.email || !data.plan) {
-    return NextResponse.json({ error: "Eksik lead verisi." }, { status: 400 });
+  const ip = getClientIp(request);
+  if (isRateLimited(`lead:${ip}`, 5, 60_000)) {
+    return NextResponse.json({ error: "Cok fazla istek. Lutfen bir dakika sonra tekrar deneyin." }, { status: 429 });
   }
 
-  const lead = await prisma.lead.create({ data });
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "Gecersiz istek." }, { status: 400 });
+  }
+
+  const parsed = leadSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Gecersiz veri." }, { status: 400 });
+  }
+
+  const { name, surname, email, phone, plan } = parsed.data;
+  const lead = await prisma.lead.create({
+    data: {
+      name: name.trim(),
+      surname: surname.trim(),
+      email: email.toLowerCase().trim(),
+      phone: phone.replace(/\D/g, ""),
+      plan: plan.trim(),
+    },
+  });
   return NextResponse.json(lead);
 }

@@ -75,6 +75,26 @@ export const authOptions: NextAuthOptions = {
       if (dbUser) {
         token.sub = dbUser.id;
         token.role = dbUser.role;
+
+        if (dbUser.role === "STUDENT") {
+          const now = new Date();
+          const activeSubscription = await prisma.subscription.findFirst({
+            where: {
+              userId: dbUser.id,
+              status: { in: ["ACTIVE", "TRIALING"] },
+              startDate: { lte: now },
+              OR: [{ endDate: null }, { endDate: { gte: now } }],
+            },
+            orderBy: { createdAt: "desc" },
+            select: { id: true, endDate: true },
+          });
+
+          token.hasActiveSubscription = Boolean(activeSubscription);
+          token.subscriptionEndsAt = activeSubscription?.endDate?.toISOString() ?? null;
+        } else {
+          token.hasActiveSubscription = true;
+          token.subscriptionEndsAt = null;
+        }
       }
 
       return token;
@@ -83,6 +103,9 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.sub ?? "";
         session.user.role = typeof token.role === "string" ? token.role : "STUDENT";
+        session.user.hasActiveSubscription = Boolean(token.hasActiveSubscription);
+        session.user.subscriptionEndsAt =
+          typeof token.subscriptionEndsAt === "string" ? token.subscriptionEndsAt : null;
       }
 
       return session;

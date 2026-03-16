@@ -10,13 +10,13 @@ export default function RegisterPage() {
         </p>
         <h1 className="mt-4 text-3xl font-black text-white">Kayıt Ol</h1>
         <p className="mt-3 text-sm leading-7 text-zinc-300">
-          Yeni hesap oluştur, rolünü belirle ve AI destekli çalışma akışını başlat.
+          Kaydı tamamlamak icin once bir paket satin almis olmalisin.
         </p>
 
         <div className="mt-6 rounded-2xl border border-white/15 bg-black/30 p-4">
           <p className="text-sm text-zinc-200">
-            Kayıt sonrası sistem seni öğrenci (kullanıcı) olarak başlatır. Eğitmen ve
-            admin rolleri panel üzerinden atanabilir.
+            Odeme sonrasi bu ekranda email ve sifre belirleyerek hesabi aktif hale
+            getirebilirsin. Paketin biterse erisim otomatik olarak kisitlanir.
           </p>
         </div>
 

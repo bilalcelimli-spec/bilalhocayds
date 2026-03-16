@@ -157,6 +157,82 @@ export async function POST(request: Request) {
       });
       referenceId = `sub:${created.id}`;
     }
+  } else {
+    const now = new Date();
+    const endDate = new Date(now);
+    endDate.setDate(now.getDate() + (billingCycle === "YEARLY" ? 365 : 30));
+
+    const normalizedEmail = email.toLowerCase();
+    const existingUser = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      select: { id: true, name: true },
+    });
+
+    const guestUser = existingUser
+      ? await prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            ...(existingUser.name ? {} : { name: fullName.trim() }),
+            role: "STUDENT",
+            studentProfile: {
+              upsert: {
+                update: {},
+                create: {},
+              },
+            },
+          },
+          select: { id: true },
+        })
+      : await prisma.user.create({
+          data: {
+            name: fullName.trim(),
+            email: normalizedEmail,
+            role: "STUDENT",
+            studentProfile: {
+              create: {},
+            },
+          },
+          select: { id: true },
+        });
+
+    const existing = await prisma.subscription.findFirst({
+      where: {
+        userId: guestUser.id,
+        status: { in: ["ACTIVE", "TRIALING", "PAST_DUE", "CANCELLED", "EXPIRED"] },
+      },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    });
+
+    if (existing) {
+      const updated = await prisma.subscription.update({
+        where: { id: existing.id },
+        data: {
+          planId: plan.id,
+          billingCycle,
+          status: "TRIALING",
+          startDate: now,
+          endDate,
+          autoRenew: true,
+        },
+        select: { id: true },
+      });
+      referenceId = `sub:${updated.id}`;
+    } else {
+      const created = await prisma.subscription.create({
+        data: {
+          userId: guestUser.id,
+          planId: plan.id,
+          billingCycle,
+          status: "TRIALING",
+          startDate: now,
+          endDate,
+          autoRenew: true,
+        },
+        select: { id: true },
+      });
+      referenceId = `sub:${created.id}`;
+    }
   }
 
   const payment: PaytrCheckoutResult = await paytrCheckout({

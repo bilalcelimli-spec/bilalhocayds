@@ -13,18 +13,6 @@ export default function LoginPage() {
           Bilalhocayds hesabına giriş yap ve çalışma planına kaldığın yerden devam et.
         </p>
 
-        <div className="mt-6 rounded-2xl border border-white/15 bg-black/30 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-300">
-            Demo Hesaplar
-          </p>
-          <ul className="mt-3 space-y-2 text-sm text-zinc-200">
-            <li>Admin: admin@bilalhocayds.com</li>
-            <li>Ogrenci: ogrenci@bilalhocayds.com</li>
-            <li>Egitmen: egitmen@bilalhocayds.com</li>
-          </ul>
-          <p className="mt-3 text-sm font-semibold text-white">Sifre: Bilal12345</p>
-        </div>
-
         <p className="mt-6 text-sm text-zinc-300">
           Hesabın yok mu?{" "}
           <Link href="/register" className="font-semibold text-white">

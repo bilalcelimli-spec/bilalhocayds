@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 const protectedRoutes = ["/dashboard", "/teacher", "/vocabulary", "/reading", "/grammar", "/live-classes"];
 const adminRoutes = ["/admin"];
 const authRoutes = ["/login", "/register"];
+const studentAllowedWithoutSubscription = ["/pricing", "/payment/success", "/payment/failure", "/login"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -24,7 +25,20 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
+  const isStudent = token?.role === "STUDENT";
+  const hasActiveSubscription = token?.hasActiveSubscription === true;
+  const isAllowedWithoutSubscription = studentAllowedWithoutSubscription.some((route) =>
+    pathname.startsWith(route),
+  );
+
+  if (isStudent && !hasActiveSubscription && (isProtected || isAuth) && !isAllowedWithoutSubscription) {
+    return NextResponse.redirect(new URL("/pricing", req.url));
+  }
+
   if (isAuth && token) {
+    if (isStudent && !hasActiveSubscription) {
+      return NextResponse.redirect(new URL("/pricing", req.url));
+    }
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
@@ -40,6 +54,9 @@ export const config = {
     "/grammar/:path*",
     "/live-classes/:path*",
     "/admin/:path*",
+    "/pricing/:path*",
+    "/payment/success",
+    "/payment/failure",
     "/login",
     "/register",
   ],

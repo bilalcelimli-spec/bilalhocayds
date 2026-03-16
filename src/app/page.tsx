@@ -69,7 +69,10 @@ export default async function HomePage() {
             </div>
 
             <h1 className="mt-10 max-w-5xl text-6xl font-extrabold leading-tight text-white md:text-8xl">
-              Bilal Hoca ile <span className="bg-gradient-to-r from-amber-300 via-amber-200 to-yellow-300 bg-clip-text text-transparent">Yeni Nesil YDS / YDT Hazırlığı</span>
+              <span className="block">Bilal Hoca</span>
+              <span className="block bg-gradient-to-r from-amber-300 via-amber-200 to-yellow-300 bg-clip-text text-transparent">
+                Yeni Nesil YDS/YDT Hazırlığı
+              </span>
             </h1>
 
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-400">
