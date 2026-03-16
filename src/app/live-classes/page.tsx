@@ -122,6 +122,41 @@ export default async function LiveClassesPage() {
 			</div>
 
 			<div className="mt-10 grid gap-6 lg:grid-cols-3">
+				{/* Yaklaşan ders spotlight */}
+				{nextClass && !purchasedClassIds.has(nextClass.id) && (nextClass.singlePrice ?? 0) > 0 ? (
+					<div className="rounded-3xl border-2 border-amber-400/50 bg-gradient-to-br from-amber-400/10 via-zinc-900/80 to-zinc-900/60 p-6 shadow-[0_20px_60px_rgba(212,168,67,0.20)] backdrop-blur-xl lg:col-span-3">
+						<div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+							<div className="flex-1">
+								<div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-amber-300">
+									<span className="inline-block h-2 w-2 animate-pulse rounded-full bg-amber-400" />
+									Yaklaşan Ders
+								</div>
+								<h2 className="text-2xl font-black text-white md:text-3xl">{nextClass.title}</h2>
+								<p className="mt-2 text-amber-200 font-medium">
+									{format(nextClass.scheduledAt, "d MMMM EEEE · HH:mm", { locale: tr })} · {nextClass.durationMinutes} dk
+								</p>
+								{nextClass.description ? (
+									<p className="mt-3 text-sm leading-6 text-slate-300">{nextClass.description}</p>
+								) : null}
+								{nextClass.topicOutline ? (
+									<p className="mt-2 text-sm text-zinc-400"><span className="text-zinc-300 font-medium">Konular:</span> {nextClass.topicOutline}</p>
+								) : null}
+							</div>
+							<div className="w-full lg:w-80 shrink-0">
+								<LiveClassSinglePurchase
+									liveClassId={nextClass.id}
+									title={nextClass.title}
+									description={nextClass.description}
+									topicOutline={nextClass.topicOutline}
+									scheduledAt={nextClass.scheduledAt}
+									durationMinutes={nextClass.durationMinutes}
+									singlePrice={nextClass.singlePrice}
+								/>
+							</div>
+						</div>
+					</div>
+				) : null}
+
 				<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_14px_40px_rgba(0,0,0,0.22)] backdrop-blur-xl lg:col-span-2">
 					<div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 						<div>
@@ -184,6 +219,10 @@ export default async function LiveClassesPage() {
 										<LiveClassSinglePurchase
 											liveClassId={item.id}
 											title={item.title}
+											description={item.description}
+											topicOutline={item.topicOutline}
+											scheduledAt={item.scheduledAt}
+											durationMinutes={item.durationMinutes}
 											singlePrice={item.singlePrice}
 										/>
 									)}

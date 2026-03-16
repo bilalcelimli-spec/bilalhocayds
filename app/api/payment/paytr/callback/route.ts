@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/src/lib/prisma";
+import { sendLiveClassPurchaseEmail } from "@/src/lib/mail";
 
 function createCallbackHash(merchantOid: string, status: string, totalAmount: string): string {
   const merchantKey = process.env.PAYTR_MERCHANT_KEY;
@@ -88,6 +89,38 @@ export async function POST(request: Request) {
         },
       })
       .catch(() => null);
+
+    // Send confirmation email on successful purchase
+    if (status === "success") {
+      const purchase = await prisma.liveClassPurchase
+        .findFirst({
+          where: { referenceId: merchantOid },
+          include: {
+            liveClass: {
+              select: {
+                title: true,
+                scheduledAt: true,
+                durationMinutes: true,
+                meetingLink: true,
+                topicOutline: true,
+              },
+            },
+          },
+        })
+        .catch(() => null);
+
+      if (purchase?.liveClass) {
+        await sendLiveClassPurchaseEmail({
+          to: purchase.email,
+          fullName: purchase.fullName,
+          classTitle: purchase.liveClass.title,
+          scheduledAt: purchase.liveClass.scheduledAt,
+          durationMinutes: purchase.liveClass.durationMinutes,
+          meetingLink: purchase.liveClass.meetingLink,
+          topicOutline: purchase.liveClass.topicOutline,
+        }).catch((err) => console.error("[mail] Failed to send live class email:", err));
+      }
+    }
   }
 
   if (merchantOid.startsWith("lead:") && status !== "success") {
