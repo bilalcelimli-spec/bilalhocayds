@@ -63,7 +63,7 @@ export default async function HomePage() {
       <section className="relative overflow-hidden">
         <div className="mx-auto max-w-7xl px-6 pt-28 md:pt-32">
           <div className="flex flex-col items-center text-center">
-            <div className="mt-12 inline-flex items-center gap-2.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.18em] text-amber-300 shadow-[0_0_24px_rgba(212,168,67,0.12)]">
+            <div className="mt-4 inline-flex items-center gap-2.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.18em] text-amber-300 shadow-[0_0_24px_rgba(212,168,67,0.12)]">
               <span className="h-2 w-2 rounded-full bg-amber-400 opacity-80" />
               AI DESTEKLİ ÖĞRENME PLATFORMU
             </div>
