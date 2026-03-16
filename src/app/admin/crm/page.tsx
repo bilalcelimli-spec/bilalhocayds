@@ -27,6 +27,7 @@ const adminNavItems = [
   { label: "Grammar Yönetimi", href: "/admin/grammar" },
   { label: "Vocabulary Yönetimi", href: "/admin/vocabulary" },
   { label: "Canlı Ders Yönetimi", href: "/admin/live-classes" },
+  { label: "Canlı Ders Kayıtları", href: "/admin/live-recordings" },
   { label: "Plan Yönetimi", href: "/admin/plans" },
   { label: "CRM & Lead", href: "/admin/crm" },
   { label: "Muhasebe", href: "/admin/accounting" },

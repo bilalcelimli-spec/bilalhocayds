@@ -25,6 +25,12 @@ enum BillingCycle {
   YEARLY
 }
 
+enum LiveClassPurchaseStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
 model User {
   id             String          @id @default(cuid())
   name           String?
@@ -39,6 +45,7 @@ model User {
   accounts       Account[]
   sessions       Session[]
   subscriptions  Subscription[]
+  liveClassPurchases LiveClassPurchase[]
 }
 
 model StudentProfile {
@@ -179,6 +186,28 @@ model LiveClass {
   recordingUrl    String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  purchases LiveClassPurchase[]
+}
+
+model LiveClassPurchase {
+  id              String                  @id @default(cuid())
+  liveClassId     String
+  userId          String?
+  status          LiveClassPurchaseStatus @default(PENDING)
+  amount          Float
+  fullName        String
+  email           String
+  phone           String
+  referenceId     String                  @unique
+  provider        String                  @default("paytr")
+  providerMessage String?
+  paidAt          DateTime?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  liveClass LiveClass @relation(fields: [liveClassId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model Account {

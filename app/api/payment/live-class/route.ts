@@ -90,8 +90,20 @@ export async function POST(request: Request) {
     .catch(() => null);
 
   const session = await getServerSession(authOptions);
+  const purchase = await prisma.liveClassPurchase.create({
+    data: {
+      liveClassId: liveClass.id,
+      userId: session?.user?.id ?? null,
+      amount: liveClass.singlePrice,
+      fullName: fullName.trim(),
+      email: email.toLowerCase(),
+      phone: normalizedPhone,
+      referenceId: `livep:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
+    },
+    select: { id: true, referenceId: true },
+  });
 
-  const referenceId = `live:${liveClass.id}:${Date.now()}`;
+  const referenceId = purchase.referenceId;
 
   const payment = await paytrCheckout({
     planName: `Tek Ders - ${liveClass.title}`,
@@ -102,6 +114,15 @@ export async function POST(request: Request) {
     referenceId,
   });
 
+  await prisma.liveClassPurchase
+    .update({
+      where: { id: purchase.id },
+      data: {
+        providerMessage: payment.message ?? null,
+      },
+    })
+    .catch(() => null);
+
   return NextResponse.json({
     success: true,
     payment,
@@ -111,5 +132,6 @@ export async function POST(request: Request) {
       scheduledAt: liveClass.scheduledAt,
       singlePrice: liveClass.singlePrice,
     },
+    purchaseId: purchase.id,
   });
 }

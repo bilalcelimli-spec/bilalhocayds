@@ -58,6 +58,20 @@ export async function POST(request: Request) {
       .catch(() => null);
   }
 
+  if (merchantOid.startsWith("livep:")) {
+    const nextStatus = status === "success" ? "PAID" : "FAILED";
+    await prisma.liveClassPurchase
+      .updateMany({
+        where: { referenceId: merchantOid },
+        data: {
+          status: nextStatus,
+          providerMessage: status === "success" ? "PayTR callback success" : failedReasonMsg || failedReasonCode || "PayTR callback failed",
+          ...(status === "success" ? { paidAt: new Date() } : {}),
+        },
+      })
+      .catch(() => null);
+  }
+
   if (merchantOid.startsWith("lead:") && status !== "success") {
     console.error("PayTR lead payment failed", {
       merchantOid,

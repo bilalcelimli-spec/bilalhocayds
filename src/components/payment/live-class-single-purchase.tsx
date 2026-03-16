@@ -34,6 +34,7 @@ export function LiveClassSinglePurchase({
   const [phone, setPhone] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -45,6 +46,7 @@ export function LiveClassSinglePurchase({
 
     setPending(true);
     setError("");
+    setSuccess("");
 
     const response = await fetch("/api/payment/live-class", {
       method: "POST",
@@ -61,6 +63,8 @@ export function LiveClassSinglePurchase({
       error?: string;
       payment?: {
         redirectUrl?: string;
+        token?: string;
+        status?: string;
         message?: string;
       };
     };
@@ -74,6 +78,11 @@ export function LiveClassSinglePurchase({
 
     if (data.payment?.redirectUrl) {
       router.push(data.payment.redirectUrl);
+      return;
+    }
+
+    if (data.payment?.token || data.payment?.status === "pending") {
+      setSuccess(data.payment?.message ?? "Odeme oturumu olusturuldu. Lutfen yonlendirme adimini tamamlayin.");
       return;
     }
 
@@ -115,6 +124,7 @@ export function LiveClassSinglePurchase({
         />
 
         {error ? <p className="text-xs text-red-300">{error}</p> : null}
+        {success ? <p className="text-xs text-emerald-300">{success}</p> : null}
 
         <Button type="submit" className="w-full" disabled={pending || !singlePrice || singlePrice <= 0}>
           {pending ? "Yonlendiriliyor..." : "Tek Ders Satin Al"}

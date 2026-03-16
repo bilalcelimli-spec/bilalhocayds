@@ -17,6 +17,7 @@ const adminNavItems = [
   { label: "Grammar Yönetimi", href: "/admin/grammar" },
   { label: "Vocabulary Yönetimi", href: "/admin/vocabulary" },
   { label: "Canlı Ders Yönetimi", href: "/admin/live-classes" },
+  { label: "Canlı Ders Kayıtları", href: "/admin/live-recordings" },
   { label: "Plan Yönetimi", href: "/admin/plans" },
   { label: "CRM & Lead", href: "/admin/crm" },
   { label: "Muhasebe", href: "/admin/accounting" },
@@ -118,6 +119,11 @@ async function deleteClassAction(formData: FormData) {
   revalidatePath("/admin");
 }
 
+function toLocalDatetimeValue(date: Date) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
 export default async function AdminLiveClassesPage() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") redirect("/dashboard");
@@ -208,7 +214,7 @@ export default async function AdminLiveClassesPage() {
                         <input
                           type="datetime-local"
                           name="scheduledAt"
-                          defaultValue={new Date(c.scheduledAt).toISOString().slice(0, 16)}
+                          defaultValue={toLocalDatetimeValue(c.scheduledAt)}
                           className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300"
                         />
                         <input

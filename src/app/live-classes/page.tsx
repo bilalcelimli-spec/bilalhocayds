@@ -3,6 +3,8 @@ import { prisma } from "@/src/lib/prisma";
 import { LiveClassSinglePurchase } from "@/src/components/payment/live-class-single-purchase";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/src/auth";
 
 const classBenefits = [
 	"Canli soru-cevap imkani",
@@ -25,6 +27,7 @@ function formatPrice(price: number | null) {
 
 export default async function LiveClassesPage() {
 	const now = new Date();
+	const session = await getServerSession(authOptions);
 	const classes = await prisma.liveClass.findMany({
 		orderBy: { scheduledAt: "asc" },
 	});
@@ -33,6 +36,25 @@ export default async function LiveClassesPage() {
 	const pastClasses = classes.filter((item) => item.scheduledAt < now);
 	const nextClass = upcomingClasses[0];
 	const purchasableCount = upcomingClasses.filter((item) => (item.singlePrice ?? 0) > 0).length;
+	const startOfWeek = new Date(now);
+	startOfWeek.setHours(0, 0, 0, 0);
+	startOfWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+	const endOfWeek = new Date(startOfWeek);
+	endOfWeek.setDate(startOfWeek.getDate() + 7);
+	const weeklyCount = upcomingClasses.filter(
+		(item) => item.scheduledAt >= startOfWeek && item.scheduledAt < endOfWeek,
+	).length;
+
+	const purchasedClassIds = session?.user?.id
+		? new Set(
+				(
+					await prisma.liveClassPurchase.findMany({
+						where: { userId: session.user.id, status: "PAID" },
+						select: { liveClassId: true },
+					})
+				).map((item) => item.liveClassId),
+		  )
+		: new Set<string>();
 
 	return (
 		<div className="mx-auto max-w-7xl px-6 py-10">
@@ -64,7 +86,7 @@ export default async function LiveClassesPage() {
 			<div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
 				<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_14px_40px_rgba(0,0,0,0.22)] backdrop-blur-xl">
 					<p className="text-sm text-slate-400">Bu Hafta Ders</p>
-					<h2 className="mt-2 text-3xl font-black text-white">{upcomingClasses.length} oturum</h2>
+					<h2 className="mt-2 text-3xl font-black text-white">{weeklyCount} oturum</h2>
 					<p className="mt-2 text-sm text-slate-300">
 						YDS odakli haftalik canli program aktif.
 					</p>
@@ -120,7 +142,9 @@ export default async function LiveClassesPage() {
 							</div>
 						) : null}
 
-						{upcomingClasses.map((item, index) => (
+						{upcomingClasses.map((item, index) => {
+							const alreadyPurchased = purchasedClassIds.has(item.id);
+							return (
 							<div
 								key={item.id}
 								className="rounded-2xl border border-white/10 bg-zinc-900/40 px-5 py-4"
@@ -144,18 +168,29 @@ export default async function LiveClassesPage() {
 										</div>
 									</div>
 									<span className="inline-flex rounded-full border border-amber-400/35 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-300">
-										{(item.singlePrice ?? 0) > 0 ? `TEK DERS ${formatPrice(item.singlePrice)}` : "SADECE UYELIK"}
+										{alreadyPurchased
+											? "SATIN ALINDI"
+											: (item.singlePrice ?? 0) > 0
+												? `TEK DERS ${formatPrice(item.singlePrice)}`
+												: "SADECE UYELIK"}
 									</span>
 								</div>
 								<div className="mt-4">
-									<LiveClassSinglePurchase
-										liveClassId={item.id}
-										title={item.title}
-										singlePrice={item.singlePrice}
-									/>
+									{alreadyPurchased ? (
+										<div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4 text-sm font-semibold text-emerald-200">
+											Bu derse tek ders satin alim ile erisim hakkin var.
+										</div>
+									) : (
+										<LiveClassSinglePurchase
+											liveClassId={item.id}
+											title={item.title}
+											singlePrice={item.singlePrice}
+										/>
+									)}
 								</div>
 							</div>
-						))}
+							);
+						})}
 					</div>
 
 					<div className="mt-6 rounded-3xl border border-white/10 bg-zinc-900/50 p-6">
