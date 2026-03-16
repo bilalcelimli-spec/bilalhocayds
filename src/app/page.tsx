@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { Button } from "@/src/components/common/button";
 import { prisma } from "@/src/lib/prisma";
+import { LiveClassSinglePurchase } from "@/src/components/payment/live-class-single-purchase";
+import { format } from "date-fns";
+import { tr } from "date-fns/locale";
 
 const featureCards = [
   {
@@ -70,6 +73,23 @@ export default async function HomePage() {
 
   const plans = reorderPopularToMiddle(rawPlans);
 
+  const nextLiveClass = await prisma.liveClass.findFirst({
+    where: {
+      scheduledAt: { gt: new Date() },
+      singlePrice: { gt: 0 },
+    },
+    orderBy: { scheduledAt: "asc" },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      topicOutline: true,
+      scheduledAt: true,
+      durationMinutes: true,
+      singlePrice: true,
+    },
+  });
+
   return (
     <div>
       <section className="relative overflow-hidden">
@@ -102,6 +122,58 @@ export default async function HomePage() {
         </div>
 
       </section>
+
+      {/* Yaklaşan Canlı Ders — Tek Ders Satın Alım */}
+      {nextLiveClass ? (
+        <section className="mx-auto max-w-7xl px-6 pb-4 pt-10">
+          <div className="rounded-[32px] border-2 border-amber-400/40 bg-gradient-to-br from-amber-400/8 via-zinc-900/70 to-zinc-900/50 p-8 shadow-[0_24px_80px_rgba(212,168,67,0.14)] backdrop-blur-xl md:p-10">
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+              <div className="flex-1">
+                <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-amber-300">
+                  <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-amber-400" />
+                  Yaklaşan Canlı Ders
+                </div>
+                <h2 className="mt-4 text-3xl font-black text-white md:text-4xl">
+                  {nextLiveClass.title}
+                </h2>
+                <p className="mt-2 text-lg font-medium text-amber-300">
+                  {format(nextLiveClass.scheduledAt, "d MMMM EEEE · HH:mm", { locale: tr })} · {nextLiveClass.durationMinutes} dk
+                </p>
+                {nextLiveClass.description ? (
+                  <p className="mt-3 max-w-xl text-sm leading-7 text-slate-300">{nextLiveClass.description}</p>
+                ) : null}
+                {nextLiveClass.topicOutline ? (
+                  <p className="mt-2 text-sm text-zinc-400">
+                    <span className="font-medium text-zinc-300">Konular:</span> {nextLiveClass.topicOutline}
+                  </p>
+                ) : null}
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300">
+                    <span className="text-amber-400">✓</span> Canlı soru-cevap
+                  </div>
+                  <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300">
+                    <span className="text-amber-400">✓</span> Ders kaydı erişimi
+                  </div>
+                  <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300">
+                    <span className="text-amber-400">✓</span> E-posta ile ders linki
+                  </div>
+                </div>
+              </div>
+              <div className="w-full shrink-0 lg:w-96">
+                <LiveClassSinglePurchase
+                  liveClassId={nextLiveClass.id}
+                  title={nextLiveClass.title}
+                  description={nextLiveClass.description}
+                  topicOutline={nextLiveClass.topicOutline}
+                  scheduledAt={nextLiveClass.scheduledAt}
+                  durationMinutes={nextLiveClass.durationMinutes}
+                  singlePrice={nextLiveClass.singlePrice}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section id="pricing" className="mx-auto max-w-7xl px-6 pb-12 pt-2 md:pt-4">
         <div className="mx-auto max-w-3xl text-center">

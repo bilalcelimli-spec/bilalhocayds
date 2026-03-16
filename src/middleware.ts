@@ -1,7 +1,7 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
-const protectedRoutes = ["/dashboard", "/teacher", "/vocabulary", "/reading", "/grammar", "/live-classes"];
+const protectedRoutes = ["/dashboard", "/teacher", "/vocabulary", "/reading", "/grammar"];
 const adminRoutes = ["/admin"];
 const authRoutes = ["/login", "/register"];
 const studentAllowedWithoutSubscription = ["/pricing", "/payment/success", "/payment/failure", "/login"];
@@ -52,7 +52,6 @@ export const config = {
     "/vocabulary/:path*",
     "/reading/:path*",
     "/grammar/:path*",
-    "/live-classes/:path*",
     "/admin/:path*",
     "/pricing/:path*",
     "/payment/success",
