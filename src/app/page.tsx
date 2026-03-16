@@ -40,8 +40,18 @@ function formatPrice(price: number | null) {
   }).format(price);
 }
 
+function reorderPopularToMiddle<T extends { slug: string }>(items: T[]): T[] {
+  if (items.length !== 3) return items;
+  const idx = items.findIndex((p) => p.slug === "premium");
+  if (idx === 1 || idx === -1) return items;
+  const reordered = [...items];
+  const [popular] = reordered.splice(idx, 1);
+  reordered.splice(1, 0, popular);
+  return reordered;
+}
+
 export default async function HomePage() {
-  const plans = await prisma.plan.findMany({
+  const rawPlans = await prisma.plan.findMany({
     where: { isActive: true },
     orderBy: { monthlyPrice: "asc" },
     take: 3,
@@ -57,6 +67,8 @@ export default async function HomePage() {
       includesVocab: true,
     },
   });
+
+  const plans = reorderPopularToMiddle(rawPlans);
 
   return (
     <div>
@@ -110,7 +122,7 @@ export default async function HomePage() {
               plan.includesLiveClass && "Canlı ders erişimi",
             ].filter((item): item is string => Boolean(item));
 
-            const isHighlighted = plan.slug === "pro";
+            const isHighlighted = plan.slug === "premium";
 
             return (
               <div
@@ -131,7 +143,7 @@ export default async function HomePage() {
                   {formatPrice(plan.monthlyPrice)}
                 </p>
                 <ul className="mt-6 space-y-3 text-sm text-slate-300">
-                  {features.slice(0, 4).map((feature) => (
+                  {features.map((feature) => (
                     <li key={feature} className="flex items-center gap-2">
                       <span className={isHighlighted ? "text-amber-400" : "text-zinc-500"}>✓</span>
                       {feature}

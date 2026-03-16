@@ -1,8 +1,18 @@
 import { prisma } from "@/src/lib/prisma";
 import PricingCheckout from "@/src/components/payment/pricing-checkout";
 
+function reorderPopularToMiddle<T extends { slug: string }>(items: T[]): T[] {
+	if (items.length !== 3) return items;
+	const idx = items.findIndex((p) => p.slug === "premium");
+	if (idx === 1 || idx === -1) return items;
+	const reordered = [...items];
+	const [popular] = reordered.splice(idx, 1);
+	reordered.splice(1, 0, popular);
+	return reordered;
+}
+
 export default async function PricingPage() {
-	const plans = await prisma.plan.findMany({
+	const rawPlans = await prisma.plan.findMany({
 		where: { isActive: true },
 		orderBy: { monthlyPrice: "asc" },
 		select: {
@@ -19,6 +29,8 @@ export default async function PricingPage() {
 			includesVocab: true,
 		},
 	});
+
+	const plans = reorderPopularToMiddle(rawPlans);
 
 	return (
 		<div className="mx-auto max-w-7xl px-6 py-10">

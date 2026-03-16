@@ -78,7 +78,7 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
 
           const displayPrice =
             billingCycle === "YEARLY" ? plan.yearlyPrice : plan.monthlyPrice;
-          const isHighlighted = plan.slug === "pro";
+          const isHighlighted = plan.slug === "premium";
 
           return (
             <div
