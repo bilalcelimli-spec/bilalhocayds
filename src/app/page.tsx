@@ -214,7 +214,7 @@ export default async function HomePage() {
                 <span className="mt-0.5 text-amber-400">◆</span>
                 <div>
                   <p className="font-semibold text-white">Canlı ders entegrasyonu</p>
-                  <p className="mt-1 text-sm text-slate-400">Bilal Hoca'nın haftalık canlı dersleri AI planıyla koordineli ilerler.</p>
+                  <p className="mt-1 text-sm text-slate-400">Bilal Hoca&apos;nın haftalık canlı dersleri AI planıyla koordineli ilerler.</p>
                 </div>
               </div>
             </div>

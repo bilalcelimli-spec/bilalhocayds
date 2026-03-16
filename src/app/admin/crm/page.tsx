@@ -57,10 +57,8 @@ async function createLeadAction(formData: FormData) {
     return;
   }
 
-  const prismaAny = prisma as any;
-
   try {
-    await prismaAny.lead.create({
+    await prisma.lead.create({
       data: { name, surname, phone, email, plan },
     });
   } catch (error) {
@@ -86,10 +84,8 @@ async function updateLeadAction(formData: FormData) {
     return;
   }
 
-  const prismaAny = prisma as any;
-
   try {
-    await prismaAny.lead.update({
+    await prisma.lead.update({
       where: { id },
       data: { name, surname, phone, email, plan },
     });
@@ -110,10 +106,8 @@ async function deleteLeadAction(formData: FormData) {
     return;
   }
 
-  const prismaAny = prisma as any;
-
   try {
-    await prismaAny.lead.delete({ where: { id } });
+    await prisma.lead.delete({ where: { id } });
   } catch (error) {
     console.error("Failed to delete lead:", error);
   }
@@ -126,10 +120,8 @@ export default async function AdminCrmPage() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") redirect("/dashboard");
 
-  const prismaAny = prisma as any;
-
   const [leads, totalPlans] = await Promise.all([
-    prismaAny.lead
+    prisma.lead
       .findMany({
         orderBy: { createdAt: "desc" },
       })

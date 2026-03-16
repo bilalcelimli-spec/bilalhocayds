@@ -32,12 +32,6 @@ const roleBadge: Record<string, string> = {
   ADMIN: "bg-violet-500/15 text-violet-300 border border-violet-500/20",
 };
 
-const roleLabel: Record<string, string> = {
-  STUDENT: "Öğrenci",
-  TEACHER: "Öğretmen",
-  ADMIN: "Admin",
-};
-
 async function assertAdmin() {
   "use server";
   const session = await getServerSession(authOptions);

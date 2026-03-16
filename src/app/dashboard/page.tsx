@@ -9,7 +9,6 @@ import {
   Flame,
   GraduationCap,
   Languages,
-  Target,
   Video,
   Zap,
 } from "lucide-react";
