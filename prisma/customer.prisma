@@ -1,0 +1,35 @@
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  subscriptions Subscription[]
+  sales      Sale[]
+}
+
+model Sale {
+  id           String   @id @default(cuid())
+  customerId   String
+  planId       String
+  amount       Float
+  status       String
+  paymentType  String
+  paymentId    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  plan     Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+}
+
+model Finance {
+  id        String   @id @default(cuid())
+  saleId    String
+  type      String
+  amount    Float
+  createdAt DateTime @default(now())
+
+  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+}

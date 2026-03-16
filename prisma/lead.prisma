@@ -1,0 +1,9 @@
+model Lead {
+  id        String   @id @default(cuid())
+  name      String
+  surname   String
+  phone     String
+  email     String
+  plan      String
+  createdAt DateTime @default(now())
+}

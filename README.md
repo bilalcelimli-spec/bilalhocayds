@@ -1,37 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# bilalhocayds
 
-## Getting Started
+YDS / YOKDIL / YDT odakli, AI destekli ogrenme ve uyelik yonetimi platformu.
 
-First, run the development server:
+## Gelistirme
+
+Gelistirme sunucusunu baslat:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Tarayicida `http://localhost:3000` adresini ac.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Ortam Degiskenleri
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Ornek degiskenler `.env.example` dosyasinda bulunur.
 
-## Learn More
+Gerekli temel alanlar:
 
-To learn more about Next.js, take a look at the following resources:
+```env
+APP_URL=http://localhost:3000
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=change-me
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DB_NAME
+PAYTR_MERCHANT_ID=your-merchant-id
+PAYTR_MERCHANT_KEY=your-merchant-key
+PAYTR_MERCHANT_SALT=your-merchant-salt
+PAYTR_IFRAME_BASE_URL=https://www.paytr.com/odeme/guvenli/
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## PayTR Canliya Alma Checklist
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. `APP_URL` ve `NEXTAUTH_URL` degerlerini canli domain ile guncelle.
+2. `PAYTR_MERCHANT_ID`, `PAYTR_MERCHANT_KEY` ve `PAYTR_MERCHANT_SALT` alanlarini PayTR panelindeki gercek bilgilerle doldur.
+3. Iframe veya token akisi kullaniyorsan `PAYTR_IFRAME_BASE_URL` degerini PayTR dokumanindaki dogru URL ile eslestir.
+4. PayTR panelinde basarili odeme donus adresini `/payment/success` olarak, basarisiz odeme donus adresini `/payment/failure` olarak tanimla.
+5. PayTR callback adresini `/api/payment/paytr/callback` olarak tanimla.
+6. Sunucunun `APP_URL` adresinden PayTR callback endpointine erisebildigini dogrula.
+7. Test odemesinde `merchant_oid` degeriyle baslayan siparis referansinin callback sonrasi abonelik durumunu `ACTIVE` yaptigini kontrol et.
+8. Basarisiz odemede callback sonrasi abonelik durumunun `PAST_DUE` oldugunu kontrol et.
 
-## Deploy on Vercel
+## Plan ve Satis Akisi
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Admin panelinden paketler olusturulur veya guncellenir.
+2. Pricing ekraninda kullanici ilgili planin detay sayfasina gider.
+3. Satis formu `/api/payment/paytr` uzerinden server-side fiyat dogrulamasi ile odeme baslatir.
+4. Lead, abonelik ve muhasebe baglantilari ayni akista olusur.
+5. Callback sonrasi abonelik durumu guncellenir.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# bilalhocayds
+## Tip Kontrolu
+
+```bash
+npx tsc --noEmit
+```

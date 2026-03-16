@@ -1,0 +1,218 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  CANCELLED
+  EXPIRED
+  PAST_DUE
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
+model User {
+  id             String          @id @default(cuid())
+  name           String?
+  email          String          @unique
+  password       String?
+  role           UserRole        @default(STUDENT)
+  image          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  studentProfile StudentProfile?
+  teacherProfile TeacherProfile?
+  accounts       Account[]
+  sessions       Session[]
+  subscriptions  Subscription[]
+}
+
+model StudentProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  targetExam         String?
+  targetScore        Int?
+  currentLevel       String?
+  interestTags       String[] @default([])
+  dailyGoalMinutes   Int?
+  onboardingComplete Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TeacherProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  bio       String?
+  expertise String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Plan {
+  id                String   @id @default(cuid())
+  name              String
+  slug              String   @unique
+  description       String?
+  monthlyPrice      Float?
+  yearlyPrice       Float?
+  includesLiveClass Boolean  @default(false)
+  includesAIPlanner Boolean  @default(false)
+  includesReading   Boolean  @default(true)
+  includesGrammar   Boolean  @default(true)
+  includesVocab     Boolean  @default(true)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  subscriptions Subscription[]
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  name      String
+  surname   String
+  phone     String
+  email     String
+  plan      String
+  createdAt DateTime @default(now())
+}
+
+model Subscription {
+  id           String             @id @default(cuid())
+  userId       String
+  planId       String
+  status       SubscriptionStatus @default(TRIALING)
+  billingCycle BillingCycle
+  startDate    DateTime
+  endDate      DateTime?
+  autoRenew    Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+}
+
+model VocabularyWord {
+  id              String   @id @default(cuid())
+  word            String   @unique
+  partOfSpeech    String?
+  cefrLevel       String?
+  meaningTr       String?
+  meaningEn       String?
+  exampleSentence String?
+  pronunciation   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Reading {
+  id              String   @id @default(cuid())
+  title           String
+  sourceName      String?
+  sourceUrl       String?
+  content         String   @db.Text
+  summary         String?  @db.Text
+  difficultyLevel String?
+  category        String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model GrammarTopic {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  description     String?  @db.Text
+  difficultyLevel String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  questions GrammarQuestion[]
+}
+
+model GrammarQuestion {
+  id            String   @id @default(cuid())
+  topicId       String
+  questionText  String   @db.Text
+  optionsJson   String   @db.Text
+  correctAnswer String
+  explanation   String?  @db.Text
+  difficulty    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  topic GrammarTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+}
+
+model LiveClass {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?  @db.Text
+  topicOutline    String?  @db.Text
+  singlePrice     Float?
+  scheduledAt     DateTime
+  durationMinutes Int
+  meetingLink     String?
+  recordingUrl    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([sessionToken])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@id([identifier, token])
+}
