@@ -7,9 +7,13 @@ import { authOptions } from "@/src/auth";
 const bodySchema = z.object({
   pageKey: z.string().min(1),
   pageLabel: z.string().min(1),
+  pagePath: z.string().optional(),
   currentTitle: z.string().optional(),
   currentDescription: z.string().optional(),
   currentKeywords: z.string().optional(),
+  currentPrimaryKeyword: z.string().optional(),
+  currentSecondaryKeywords: z.string().optional(),
+  currentSearchIntent: z.string().optional(),
   context: z.string().optional(), // extra page context the admin provides
 });
 
@@ -77,8 +81,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Geçersiz veri." }, { status: 400 });
   }
 
-  const { pageKey, pageLabel, currentTitle, currentDescription, currentKeywords, context } =
-    parsed.data;
+  const {
+    pageKey,
+    pageLabel,
+    pagePath,
+    currentTitle,
+    currentDescription,
+    currentKeywords,
+    currentPrimaryKeyword,
+    currentSecondaryKeywords,
+    currentSearchIntent,
+    context,
+  } = parsed.data;
 
   const pageContext = PAGE_CONTEXTS[pageKey] ?? `"${pageLabel}" sayfası`;
   const extraContext = context ? `\nEk bağlam: ${context}` : "";
@@ -87,20 +101,36 @@ export async function POST(request: Request) {
 Aşağıdaki sayfa için Google arama motoru optimizasyonu (SEO) önerileri üret.
 
 Sayfa: ${pageLabel} (key: ${pageKey})
+Path: ${pagePath ?? `/${pageKey}`}
 Platform: Bilal Hoca YDS/YÖKDİL/YDT Hazırlık Platformu (bilalhocayds.com)
 Sayfa içeriği: ${pageContext}${extraContext}
 
 ${currentTitle ? `Mevcut title: ${currentTitle}` : ""}
 ${currentDescription ? `Mevcut description: ${currentDescription}` : ""}
 ${currentKeywords ? `Mevcut keywords: ${currentKeywords}` : ""}
+${currentPrimaryKeyword ? `Mevcut primary keyword: ${currentPrimaryKeyword}` : ""}
+${currentSecondaryKeywords ? `Mevcut secondary keywords: ${currentSecondaryKeywords}` : ""}
+${currentSearchIntent ? `Mevcut search intent: ${currentSearchIntent}` : ""}
 
 Lütfen aşağıdaki JSON formatında tam ve optimize edilmiş öneriler sun:
 {
+  "primaryKeyword": "Ana hedef anahtar kelime",
+  "secondaryKeywords": "virgülle ayrılmış destekleyici anahtar kelimeler",
+  "searchIntent": "informational | commercial | navigational | transactional",
   "title": "60 karakterden kısa, anahtar kelime içeren başlık",
   "description": "150-160 karakter arası, CTA içeren meta description",
   "keywords": "virgülle ayrılmış 8-12 anahtar kelime",
   "ogTitle": "Open Graph için sosyal medyada paylaşım başlığı",
   "ogDescription": "Open Graph açıklaması (120-150 karakter)",
+  "twitterTitle": "Twitter/X paylaşım başlığı",
+  "twitterDescription": "Twitter/X açıklaması",
+  "ogType": "website | article | course | product",
+  "twitterCard": "summary_large_image",
+  "schemaType": "WebSite | Course | Article | FAQPage | Product",
+  "robotsDirectives": "max-image-preview:large, max-snippet:-1",
+  "breadcrumbTitle": "Breadcrumb'da görünecek kısa isim",
+  "changeFrequency": "daily | weekly | monthly",
+  "sitemapPriority": 0.8,
   "analysis": {
     "titleScore": 85,
     "descriptionScore": 78,
@@ -127,6 +157,11 @@ Lütfen aşağıdaki JSON formatında tam ve optimize edilmiş öneriler sun:
     return NextResponse.json({
       aiAvailable: false,
       suggestions: {
+        primaryKeyword: currentPrimaryKeyword ?? pageLabel,
+        secondaryKeywords:
+          currentSecondaryKeywords ??
+          "yds hazırlık, yökdil hazırlık, ydt hazırlık, online İngilizce, sınav İngilizcesi",
+        searchIntent: currentSearchIntent ?? "commercial",
         title: currentTitle ?? `${pageLabel} | Bilal Hoca YDS`,
         description:
           currentDescription ??
@@ -138,6 +173,17 @@ Lütfen aşağıdaki JSON formatında tam ve optimize edilmiş öneriler sun:
         ogDescription:
           currentDescription ??
           `Bilal Hoca ile YDS'ye hazırlan. AI destekli kişisel plan, günlük görevler ve canlı dersler.`,
+        twitterTitle: currentTitle ?? `${pageLabel} | Bilal Hoca YDS`,
+        twitterDescription:
+          currentDescription ??
+          `Bilal Hoca YDS platformunda ${pageLabel} sayfasını keşfet ve sınava daha planlı hazırlan.`,
+        ogType: "website",
+        twitterCard: "summary_large_image",
+        schemaType: "WebPage",
+        robotsDirectives: "max-image-preview:large, max-snippet:-1",
+        breadcrumbTitle: pageLabel,
+        changeFrequency: "weekly",
+        sitemapPriority: pageKey === "home" ? 1 : 0.8,
         analysis: {
           titleScore: null,
           improvements: [

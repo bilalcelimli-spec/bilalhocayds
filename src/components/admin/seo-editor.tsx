@@ -1,49 +1,99 @@
 "use client";
 
-import { useState, useTransition, useCallback } from "react";
+import { type ComponentType, useMemo, useState, useTransition } from "react";
 import {
   AlertCircle,
-  BarChart2,
-  Brain,
+  BarChart3,
+  Bot,
   Check,
   ChevronDown,
   ChevronUp,
-  Edit2,
+  Copy,
   Eye,
   Globe,
+  Image as ImageIcon,
   Loader2,
+  Plus,
+  RefreshCcw,
   Save,
   Search,
+  Settings2,
+  Share2,
   Sparkles,
+  Target,
+  Wand2,
   X,
 } from "lucide-react";
+
+import {
+  buildSeoPageUrl,
+  SEO_GROUP_LABELS,
+  SEO_PAGE_PRESETS,
+  type SeoPagePreset,
+} from "@/src/lib/seo-presets";
 
 type SeoConfig = {
   id: string;
   pageKey: string;
   pageLabel: string;
+  pagePath?: string | null;
   title?: string | null;
   description?: string | null;
+  primaryKeyword?: string | null;
+  secondaryKeywords?: string | null;
+  searchIntent?: string | null;
   keywords?: string | null;
   ogTitle?: string | null;
   ogDescription?: string | null;
   ogImage?: string | null;
+  ogType?: string | null;
+  twitterTitle?: string | null;
+  twitterDescription?: string | null;
+  twitterImage?: string | null;
+  twitterCard?: string | null;
   canonicalUrl?: string | null;
   noIndex: boolean;
+  noFollow?: boolean;
+  noArchive?: boolean;
+  noSnippet?: boolean;
+  maxSnippet?: number | null;
+  maxVideoPreview?: number | null;
+  maxImagePreview?: string | null;
+  robotsDirectives?: string | null;
+  breadcrumbTitle?: string | null;
+  schemaType?: string | null;
   schemaMarkup?: string | null;
+  sitemapPriority?: number | null;
+  changeFrequency?: string | null;
+  customHeadTags?: string | null;
+  contentNotes?: string | null;
   updatedAt: string;
+  createdAt?: string;
 };
 
 type AiSuggestions = {
+  primaryKeyword?: string;
+  secondaryKeywords?: string;
+  searchIntent?: string;
   title?: string;
   description?: string;
   keywords?: string;
   ogTitle?: string;
   ogDescription?: string;
+  twitterTitle?: string;
+  twitterDescription?: string;
+  ogType?: string;
+  twitterCard?: string;
+  schemaType?: string;
+  robotsDirectives?: string;
+  breadcrumbTitle?: string;
+  changeFrequency?: string;
+  sitemapPriority?: number;
   schemaMarkup?: object;
   analysis?: {
     titleScore?: number | null;
     descriptionScore?: number | null;
+    keywordDensityNotes?: string;
     competitorInsight?: string;
     improvements?: string[];
     targetKeywords?: string[];
@@ -52,60 +102,120 @@ type AiSuggestions = {
   };
 };
 
-const PAGES = [
-  { key: "home", label: "Ana Sayfa" },
-  { key: "pricing", label: "Fiyatlandırma" },
-  { key: "live-classes", label: "Canlı Dersler" },
-  { key: "grammar", label: "Grammar Modülü" },
-  { key: "vocabulary", label: "Vocabulary Modülü" },
-  { key: "reading", label: "Reading Modülü" },
-  { key: "dashboard", label: "Dashboard" },
-  { key: "login", label: "Giriş Yap" },
-  { key: "register", label: "Kayıt Ol" },
+type FormValue = string | boolean | number;
+type FormState = Record<string, FormValue>;
+
+type PageItem = SeoPagePreset & {
+  isCustom?: boolean;
+};
+
+const SEARCH_INTENT_OPTIONS = ["informational", "commercial", "navigational", "transactional"];
+const OG_TYPE_OPTIONS = ["website", "article", "course", "product"];
+const TWITTER_CARD_OPTIONS = ["summary", "summary_large_image"];
+const CHANGE_FREQUENCY_OPTIONS = ["always", "hourly", "daily", "weekly", "monthly", "yearly", "never"];
+const MAX_IMAGE_PREVIEW_OPTIONS = ["large", "standard", "none"];
+const SCHEMA_TYPE_OPTIONS = [
+  "WebSite",
+  "WebPage",
+  "Course",
+  "Article",
+  "Product",
+  "FAQPage",
+  "ProfilePage",
+  "VideoGallery",
+  "DefinedTermSet",
 ];
 
-type FormState = Record<string, string | boolean>;
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
 
-function ScoreBadge({ score }: { score?: number | null }) {
-  if (!score) return null;
-  const color =
-    score >= 80
-      ? "text-emerald-300 border-emerald-400/30 bg-emerald-400/10"
-      : score >= 60
-      ? "text-amber-300 border-amber-400/30 bg-amber-400/10"
-      : "text-red-300 border-red-400/30 bg-red-400/10";
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function Counter({ value, ideal, max }: { value: string; ideal: [number, number]; max: number }) {
+  const len = value.trim().length;
+  const inIdeal = len >= ideal[0] && len <= ideal[1];
+  const over = len > max;
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold ${color}`}>
-      <BarChart2 className="h-3 w-3" /> {score}/100
+    <span
+      className={cn(
+        "text-xs font-medium",
+        over ? "text-red-400" : inIdeal ? "text-emerald-300" : "text-amber-300",
+      )}
+    >
+      {len}/{max}
     </span>
   );
 }
 
-function CharCounter({ value, max, warn }: { value: string; max: number; warn: number }) {
-  const len = value.length;
-  const color = len > max ? "text-red-400" : len > warn ? "text-amber-400" : "text-zinc-500";
-  return <span className={`text-xs ${color}`}>{len}/{max}</span>;
-}
-
-function SerpPreview({ title, description, url }: { title: string; description: string; url: string }) {
+function SectionTitle({ icon: Icon, title, subtitle }: { icon: ComponentType<{ className?: string }>; title: string; subtitle: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4">
-      <p className="mb-2 flex items-center gap-2 text-xs font-semibold text-zinc-400">
-        <Eye className="h-3.5 w-3.5" /> SERP Önizleme (Google)
-      </p>
-      <div className="flex items-start gap-2">
-        <Globe className="mt-0.5 h-4 w-4 shrink-0 text-zinc-500" />
-        <div>
-          <p className="text-xs text-zinc-500 break-all">{url}</p>
-          <p className="mt-0.5 text-base font-medium text-blue-400 cursor-pointer line-clamp-1 hover:underline">
-            {title || "Sayfa başlığı buraya gelecek"}
-          </p>
-          <p className="mt-0.5 text-sm leading-5 text-zinc-400 line-clamp-2">
-            {description || "Meta açıklama buraya gelecek..."}
-          </p>
-        </div>
+    <div className="mb-4 flex items-start gap-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+        <Icon className="h-5 w-5 text-amber-300" />
+      </div>
+      <div>
+        <h3 className="text-base font-bold text-white">{title}</h3>
+        <p className="text-xs leading-5 text-zinc-400">{subtitle}</p>
       </div>
     </div>
+  );
+}
+
+function SearchPreview({ url, title, description }: { url: string; title: string; description: string }) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-zinc-950/70 p-4">
+      <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+        <Eye className="h-3.5 w-3.5" /> Google Önizleme
+      </p>
+      <div className="space-y-1.5">
+        <p className="truncate text-xs text-emerald-400">{url}</p>
+        <p className="line-clamp-1 text-lg font-medium text-blue-400">
+          {title || "Sayfa başlığı burada görünür"}
+        </p>
+        <p className="line-clamp-2 text-sm leading-6 text-zinc-400">
+          {description || "Meta açıklama burada görünür."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function SocialPreview({ title, description, image, network }: { title: string; description: string; image: string; network: string }) {
+  return (
+    <div className="overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/70">
+      <div className="flex h-36 items-center justify-center border-b border-white/10 bg-gradient-to-br from-zinc-800 via-zinc-900 to-black text-xs text-zinc-500">
+        {image ? <span className="truncate px-4">{image}</span> : `${network} görsel önizleme alanı`}
+      </div>
+      <div className="p-4">
+        <p className="mb-2 text-[11px] uppercase tracking-[0.18em] text-zinc-500">{network}</p>
+        <p className="line-clamp-2 text-sm font-semibold text-white">{title || `${network} başlığı`}</p>
+        <p className="mt-1 line-clamp-3 text-xs leading-5 text-zinc-400">
+          {description || `${network} açıklaması burada görünür.`}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function AuditChip({ label, state }: { label: string; state: "ok" | "warn" | "error" }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold",
+        state === "ok" && "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
+        state === "warn" && "border-amber-400/30 bg-amber-400/10 text-amber-300",
+        state === "error" && "border-red-400/30 bg-red-400/10 text-red-300",
+      )}
+    >
+      {label}
+    </span>
   );
 }
 
@@ -117,205 +227,454 @@ export default function SeoEditor({
   siteUrl: string;
 }) {
   const [configs, setConfigs] = useState<Map<string, SeoConfig>>(
-    () => new Map(initialConfigs.map((c) => [c.pageKey, c]))
+    () => new Map(initialConfigs.map((config) => [config.pageKey, config])),
   );
-  const [activeKey, setActiveKey] = useState("home");
+  const [activeKey, setActiveKey] = useState(initialConfigs[0]?.pageKey ?? SEO_PAGE_PRESETS[0].key);
   const [form, setForm] = useState<FormState>({});
-  const [isPending, startTransition] = useTransition();
-  const [aiLoading, setAiLoading] = useState(false);
+  const [extraContext, setExtraContext] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [aiAvailable, setAiAvailable] = useState<boolean | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<AiSuggestions | null>(null);
   const [aiRaw, setAiRaw] = useState<string | null>(null);
-  const [aiAvailable, setAiAvailable] = useState<boolean | null>(null);
-  const [saved, setSaved] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [extraContext, setExtraContext] = useState("");
-  const [showSchema, setShowSchema] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(true);
+  const [showSchema, setShowSchema] = useState(true);
+  const [showCustomPage, setShowCustomPage] = useState(false);
+  const [customPageLabel, setCustomPageLabel] = useState("");
+  const [customPagePath, setCustomPagePath] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const [isAiPending, startAiTransition] = useTransition();
 
-  const activePage = PAGES.find((p) => p.key === activeKey)!;
-  const config = configs.get(activeKey);
+  const pages = useMemo<PageItem[]>(() => {
+    const presetMap = new Map(SEO_PAGE_PRESETS.map((item) => [item.key, item]));
+    const customItems: PageItem[] = [];
 
-  const getField = useCallback(
-    (field: string): string | boolean => {
-      if (field in form) return form[field];
-      if (config) {
-        const val = (config as unknown as Record<string, unknown>)[field];
-        if (val !== undefined && val !== null) return val as string | boolean;
+    for (const config of configs.values()) {
+      if (!presetMap.has(config.pageKey)) {
+        customItems.push({
+          key: config.pageKey,
+          label: config.pageLabel,
+          path: config.pagePath || `/${config.pageKey}`,
+          group: "public",
+          description: config.contentNotes || "Özel SEO sayfası",
+          defaultSchemaType: config.schemaType || "WebPage",
+          isCustom: true,
+        });
       }
-      if (field === "noIndex") return false;
-      return "";
-    },
-    [form, config]
-  );
+    }
 
-  const setField = useCallback((field: string, value: string | boolean) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  }, []);
+    return [...SEO_PAGE_PRESETS, ...customItems];
+  }, [configs]);
 
-  const switchPage = (key: string) => {
-    setActiveKey(key);
+  const activePage = pages.find((page) => page.key === activeKey) ?? pages[0];
+  const activeConfig = activePage ? configs.get(activePage.key) : undefined;
+
+  function readField<T extends FormValue>(field: keyof SeoConfig, fallback: T): T {
+    const formValue = form[field as string];
+    if (formValue !== undefined) return formValue as T;
+    const configValue = activeConfig?.[field];
+    if (configValue !== undefined && configValue !== null) return configValue as T;
+    return fallback;
+  }
+
+  function setField(field: keyof SeoConfig | string, value: FormValue) {
+    setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function switchPage(pageKey: string) {
+    setActiveKey(pageKey);
+    setForm({});
+    setError(null);
+    setSaved(false);
+    setAiSuggestions(null);
+    setAiRaw(null);
+    setAiAvailable(null);
+    setExtraContext("");
+  }
+
+  function buildPayload() {
+    const pagePath = String(readField("pagePath", activePage?.path ?? "/"));
+    return {
+      pageKey: activePage.key,
+      pageLabel: String(readField("pageLabel", activePage.label)),
+      pagePath: pagePath || null,
+      title: String(readField("title", "")) || null,
+      description: String(readField("description", "")) || null,
+      primaryKeyword: String(readField("primaryKeyword", "")) || null,
+      secondaryKeywords: String(readField("secondaryKeywords", "")) || null,
+      searchIntent: String(readField("searchIntent", "")) || null,
+      keywords: String(readField("keywords", "")) || null,
+      ogTitle: String(readField("ogTitle", "")) || null,
+      ogDescription: String(readField("ogDescription", "")) || null,
+      ogImage: String(readField("ogImage", "")) || null,
+      ogType: String(readField("ogType", "")) || null,
+      twitterTitle: String(readField("twitterTitle", "")) || null,
+      twitterDescription: String(readField("twitterDescription", "")) || null,
+      twitterImage: String(readField("twitterImage", "")) || null,
+      twitterCard: String(readField("twitterCard", "")) || null,
+      canonicalUrl: String(readField("canonicalUrl", "")) || null,
+      noIndex: Boolean(readField("noIndex", false)),
+      noFollow: Boolean(readField("noFollow", false)),
+      noArchive: Boolean(readField("noArchive", false)),
+      noSnippet: Boolean(readField("noSnippet", false)),
+      maxSnippet: String(readField("maxSnippet", "")) ? Number(readField("maxSnippet", 0)) : null,
+      maxVideoPreview: String(readField("maxVideoPreview", ""))
+        ? Number(readField("maxVideoPreview", 0))
+        : null,
+      maxImagePreview: String(readField("maxImagePreview", "")) || null,
+      robotsDirectives: String(readField("robotsDirectives", "")) || null,
+      breadcrumbTitle: String(readField("breadcrumbTitle", "")) || null,
+      schemaType: String(readField("schemaType", activePage.defaultSchemaType)) || null,
+      schemaMarkup: String(readField("schemaMarkup", "")) || null,
+      sitemapPriority: String(readField("sitemapPriority", ""))
+        ? Number(readField("sitemapPriority", 0))
+        : null,
+      changeFrequency: String(readField("changeFrequency", "")) || null,
+      customHeadTags: String(readField("customHeadTags", "")) || null,
+      contentNotes: String(readField("contentNotes", "")) || null,
+    };
+  }
+
+  const pagePath = String(readField("pagePath", activePage?.path ?? "/"));
+  const pageUrl = buildSeoPageUrl(siteUrl, pagePath || activePage.path);
+  const title = String(readField("title", ""));
+  const description = String(readField("description", ""));
+  const primaryKeyword = String(readField("primaryKeyword", ""));
+  const secondaryKeywords = String(readField("secondaryKeywords", ""));
+  const keywords = String(readField("keywords", ""));
+  const ogTitle = String(readField("ogTitle", ""));
+  const ogDescription = String(readField("ogDescription", ""));
+  const ogImage = String(readField("ogImage", ""));
+  const twitterTitle = String(readField("twitterTitle", ogTitle || title));
+  const twitterDescription = String(readField("twitterDescription", ogDescription || description));
+  const twitterImage = String(readField("twitterImage", ogImage));
+  const schemaMarkup = String(readField("schemaMarkup", ""));
+  const contentNotes = String(readField("contentNotes", ""));
+  const robotsDirectives = String(readField("robotsDirectives", ""));
+
+  const auditItems = useMemo(() => {
+    const titleLength = title.trim().length;
+    const descLength = description.trim().length;
+    const states = [
+      {
+        label: title ? "Title hazır" : "Title eksik",
+        state: !title ? "error" : titleLength >= 45 && titleLength <= 60 ? "ok" : "warn",
+      },
+      {
+        label: description ? "Description hazır" : "Description eksik",
+        state: !description ? "error" : descLength >= 135 && descLength <= 160 ? "ok" : "warn",
+      },
+      {
+        label: primaryKeyword ? "Ana kelime tanımlı" : "Ana kelime eksik",
+        state: primaryKeyword ? "ok" : "warn",
+      },
+      {
+        label: ogImage ? "OG görsel hazır" : "OG görsel eksik",
+        state: ogImage ? "ok" : "warn",
+      },
+      {
+        label: schemaMarkup ? "Schema hazır" : "Schema eksik",
+        state: schemaMarkup ? "ok" : "warn",
+      },
+      {
+        label: readField("canonicalUrl", "") ? "Canonical hazır" : "Canonical eksik",
+        state: readField("canonicalUrl", "") ? "ok" : "warn",
+      },
+      {
+        label: readField("noIndex", false) ? "Noindex aktif" : "Index açık",
+        state: readField("noIndex", false) ? "warn" : "ok",
+      },
+    ] as Array<{ label: string; state: "ok" | "warn" | "error" }>;
+    return states;
+  }, [description, ogImage, primaryKeyword, readField, schemaMarkup, title]);
+
+  const coverage = useMemo(() => {
+    const total = pages.length;
+    const configured = pages.filter((page) => {
+      const cfg = configs.get(page.key);
+      return Boolean(cfg?.title || cfg?.description || cfg?.schemaMarkup);
+    }).length;
+    return { total, configured, missing: total - configured };
+  }, [configs, pages]);
+
+  function createCustomPage() {
+    const label = customPageLabel.trim();
+    const rawPath = customPagePath.trim();
+    if (!label) {
+      setError("Özel sayfa için başlık gerekli.");
+      return;
+    }
+    const path = rawPath.startsWith("/") ? rawPath : `/${rawPath || slugify(label)}`;
+    const key = slugify(path.replace(/^\//, "").replace(/\//g, "-")) || slugify(label);
+    const existing = configs.get(key);
+    if (!existing) {
+      const now = new Date().toISOString();
+      setConfigs((current) => {
+        const next = new Map(current);
+        next.set(key, {
+          id: `draft_${key}`,
+          pageKey: key,
+          pageLabel: label,
+          pagePath: path,
+          schemaType: "WebPage",
+          noIndex: false,
+          noFollow: false,
+          noArchive: false,
+          noSnippet: false,
+          updatedAt: now,
+          createdAt: now,
+        });
+        return next;
+      });
+    }
+    setCustomPageLabel("");
+    setCustomPagePath("");
+    setShowCustomPage(false);
+    switchPage(key);
+  }
+
+  function resetDraft() {
     setForm({});
     setAiSuggestions(null);
     setAiRaw(null);
     setError(null);
-    setSaved(null);
-    setExtraContext("");
-    setShowSchema(false);
-    setShowAdvanced(false);
-  };
+  }
 
-  const applyAiField = (field: string, value: string | undefined) => {
-    if (!value) return;
-    setField(field, value);
-  };
-
-  const applyAllAi = () => {
+  function applyAi() {
     if (!aiSuggestions) return;
-    if (aiSuggestions.title) setField("title", aiSuggestions.title);
-    if (aiSuggestions.description) setField("description", aiSuggestions.description);
-    if (aiSuggestions.keywords) setField("keywords", aiSuggestions.keywords);
-    if (aiSuggestions.ogTitle) setField("ogTitle", aiSuggestions.ogTitle);
-    if (aiSuggestions.ogDescription) setField("ogDescription", aiSuggestions.ogDescription);
+    const fields: Array<[keyof AiSuggestions, string]> = [
+      ["primaryKeyword", "primaryKeyword"],
+      ["secondaryKeywords", "secondaryKeywords"],
+      ["searchIntent", "searchIntent"],
+      ["title", "title"],
+      ["description", "description"],
+      ["keywords", "keywords"],
+      ["ogTitle", "ogTitle"],
+      ["ogDescription", "ogDescription"],
+      ["twitterTitle", "twitterTitle"],
+      ["twitterDescription", "twitterDescription"],
+      ["ogType", "ogType"],
+      ["twitterCard", "twitterCard"],
+      ["schemaType", "schemaType"],
+      ["robotsDirectives", "robotsDirectives"],
+      ["breadcrumbTitle", "breadcrumbTitle"],
+      ["changeFrequency", "changeFrequency"],
+    ];
+
+    for (const [source, target] of fields) {
+      const value = aiSuggestions[source];
+      if (typeof value === "string" && value) {
+        setField(target, value);
+      }
+    }
+    if (typeof aiSuggestions.sitemapPriority === "number") {
+      setField("sitemapPriority", aiSuggestions.sitemapPriority);
+    }
     if (aiSuggestions.schemaMarkup) {
       setField("schemaMarkup", JSON.stringify(aiSuggestions.schemaMarkup, null, 2));
     }
-  };
+  }
 
-  const handleAiGenerate = async () => {
-    setAiLoading(true);
+  function fillRobotsPreset() {
+    setField("robotsDirectives", "max-image-preview:large, max-snippet:-1, max-video-preview:-1");
+    setField("maxSnippet", -1);
+    setField("maxVideoPreview", -1);
+    setField("maxImagePreview", "large");
+  }
+
+  function duplicateTitleToSocial() {
+    setField("ogTitle", title);
+    setField("twitterTitle", title);
+    setField("ogDescription", description);
+    setField("twitterDescription", description);
+  }
+
+  function handleSave() {
+    setError(null);
+    setSaved(false);
+    startTransition(async () => {
+      try {
+        const payload = buildPayload();
+        const response = await fetch("/api/admin/seo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.error ?? "SEO ayarları kaydedilemedi.");
+        }
+        setConfigs((current) => new Map(current).set(payload.pageKey, data as SeoConfig));
+        setForm({});
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+      } catch (saveError) {
+        setError(saveError instanceof Error ? saveError.message : "Kayıt hatası.");
+      }
+    });
+  }
+
+  function handleAiGenerate() {
     setAiSuggestions(null);
     setAiRaw(null);
     setError(null);
-    try {
-      const res = await fetch("/api/ai/seo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pageKey: activeKey,
-          pageLabel: activePage.label,
-          currentTitle: getField("title"),
-          currentDescription: getField("description"),
-          currentKeywords: getField("keywords"),
-          context: extraContext,
-        }),
-      });
-      const data = await res.json();
-      setAiAvailable(data.aiAvailable ?? false);
-      if (data.suggestions) {
-        setAiSuggestions(data.suggestions);
-      } else if (data.raw) {
-        setAiRaw(data.raw);
-      }
-    } catch {
-      setError("AI isteği başarısız oldu.");
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  const handleSave = () => {
-    setSaved(null);
-    setError(null);
-    startTransition(async () => {
+    startAiTransition(async () => {
       try {
-        const body = {
-          pageKey: activeKey,
-          pageLabel: activePage.label,
-          title: (getField("title") as string) || null,
-          description: (getField("description") as string) || null,
-          keywords: (getField("keywords") as string) || null,
-          ogTitle: (getField("ogTitle") as string) || null,
-          ogDescription: (getField("ogDescription") as string) || null,
-          ogImage: (getField("ogImage") as string) || null,
-          canonicalUrl: (getField("canonicalUrl") as string) || null,
-          noIndex: getField("noIndex") === true,
-          schemaMarkup: (getField("schemaMarkup") as string) || null,
-        };
-        const res = await fetch("/api/admin/seo", {
+        const response = await fetch("/api/ai/seo", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+          body: JSON.stringify({
+            pageKey: activePage.key,
+            pageLabel: String(readField("pageLabel", activePage.label)),
+            pagePath,
+            currentTitle: title,
+            currentDescription: description,
+            currentKeywords: keywords,
+            currentPrimaryKeyword: primaryKeyword,
+            currentSecondaryKeywords: secondaryKeywords,
+            currentSearchIntent: String(readField("searchIntent", "")),
+            context: extraContext,
+          }),
         });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.error ?? "Kayıt başarısız.");
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error ?? "AI önerisi alınamadı.");
         }
-        const updated: SeoConfig = await res.json();
-        setConfigs((prev) => new Map(prev).set(activeKey, updated));
-        setForm({});
-        setSaved(activeKey);
-        setTimeout(() => setSaved(null), 3000);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Kayıt hatası.");
+        setAiAvailable(data.aiAvailable ?? false);
+        setAiSuggestions(data.suggestions ?? null);
+        setAiRaw(data.raw ?? null);
+      } catch (aiError) {
+        setError(aiError instanceof Error ? aiError.message : "AI isteği başarısız oldu.");
       }
     });
-  };
-
-  const titleVal = String(getField("title") || "");
-  const descVal = String(getField("description") || "");
-  const keywordsVal = String(getField("keywords") || "");
-  const ogTitleVal = String(getField("ogTitle") || "");
-  const ogDescVal = String(getField("ogDescription") || "");
-  const ogImageVal = String(getField("ogImage") || "");
-  const canonicalVal = String(getField("canonicalUrl") || "");
-  const schemaVal = String(getField("schemaMarkup") || "");
-  const noIndexVal = getField("noIndex") === true;
-
-  const pageUrl = `${siteUrl}${activeKey === "home" ? "" : `/${activeKey}`}`;
+  }
 
   return (
-    <div className="flex min-h-screen flex-col gap-6 p-6 lg:flex-row">
-      {/* Sidebar */}
-      <aside className="w-full shrink-0 lg:w-64">
-        <div className="sticky top-24 rounded-3xl border border-white/10 bg-zinc-900/60 p-4">
-          <p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-400">
-            <Search className="h-3.5 w-3.5" /> Sayfalar
+    <div className="grid gap-6 px-6 pb-8 pt-2 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <aside className="space-y-4 xl:sticky xl:top-24 xl:h-fit">
+        <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">SEO Coverage</p>
+              <p className="mt-1 text-2xl font-black text-white">{coverage.configured}/{coverage.total}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowCustomPage((current) => !current)}
+              className="inline-flex items-center gap-2 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs font-bold text-amber-300 hover:bg-amber-400/20"
+            >
+              <Plus className="h-4 w-4" /> Sayfa Ekle
+            </button>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <AuditChip label={`${coverage.missing} eksik`} state={coverage.missing > 0 ? "warn" : "ok"} />
+            <AuditChip label={`${pages.filter((page) => configs.get(page.key)?.noIndex).length} noindex`} state="warn" />
+          </div>
+
+          {showCustomPage && (
+            <div className="mt-4 space-y-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+              <input
+                value={customPageLabel}
+                onChange={(event) => setCustomPageLabel(event.target.value)}
+                placeholder="Örn: Blog Ana Sayfa"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-amber-400/40"
+              />
+              <input
+                value={customPagePath}
+                onChange={(event) => setCustomPagePath(event.target.value)}
+                placeholder="/blog"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-amber-400/40"
+              />
+              <button
+                type="button"
+                onClick={createCustomPage}
+                className="w-full rounded-xl bg-white px-3 py-2 text-sm font-semibold text-zinc-950 hover:bg-zinc-200"
+              >
+                Sayfa Oluştur
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-4">
+          <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+            <Search className="h-3.5 w-3.5" /> Sayfa Bazlı Yönetim
           </p>
-          <nav className="space-y-1">
-            {PAGES.map((page) => {
-              const cfg = configs.get(page.key);
-              const hasTitle = !!cfg?.title;
+          <div className="space-y-4">
+            {Object.entries(SEO_GROUP_LABELS).map(([groupKey, groupLabel]) => {
+              const groupPages = pages.filter((page) => page.group === groupKey);
+              if (groupPages.length === 0) return null;
               return (
-                <button
-                  key={page.key}
-                  onClick={() => switchPage(page.key)}
-                  className={`flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                    activeKey === page.key
-                      ? "bg-amber-400/15 text-amber-300"
-                      : "text-slate-300 hover:bg-white/5"
-                  }`}
-                >
-                  <span>{page.label}</span>
-                  {hasTitle ? (
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
-                  ) : (
-                    <AlertCircle className="h-3.5 w-3.5 text-zinc-600" />
-                  )}
-                </button>
+                <div key={groupKey}>
+                  <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-600">{groupLabel}</p>
+                  <div className="space-y-1.5">
+                    {groupPages.map((page) => {
+                      const configured = configs.get(page.key);
+                      const ready = Boolean(configured?.title || configured?.description || configured?.schemaMarkup);
+                      return (
+                        <button
+                          key={page.key}
+                          type="button"
+                          onClick={() => switchPage(page.key)}
+                          className={cn(
+                            "flex w-full items-start justify-between gap-3 rounded-2xl px-3 py-2.5 text-left transition",
+                            activeKey === page.key
+                              ? "border border-amber-400/25 bg-amber-400/10"
+                              : "border border-transparent bg-white/0 hover:border-white/10 hover:bg-white/5",
+                          )}
+                        >
+                          <div>
+                            <p className="text-sm font-semibold text-white">{page.label}</p>
+                            <p className="mt-0.5 text-xs text-zinc-500">{page.path}</p>
+                          </div>
+                          {ready ? (
+                            <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                          ) : (
+                            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
-          </nav>
+          </div>
         </div>
       </aside>
 
-      {/* Ana içerik */}
-      <div className="flex-1 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <section className="space-y-6">
+        <div className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black p-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h2 className="text-2xl font-black text-white">{activePage.label}</h2>
-            <p className="mt-0.5 text-sm text-zinc-400">{pageUrl}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            {saved === activeKey && (
-              <span className="flex items-center gap-1.5 text-sm font-medium text-emerald-300">
-                <Check className="h-4 w-4" /> Kaydedildi
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-xs font-semibold text-amber-300">
+                {SEO_GROUP_LABELS[activePage.group]}
               </span>
-            )}
+              {activePage.isCustom && (
+                <span className="rounded-full border border-sky-400/30 bg-sky-400/10 px-2.5 py-1 text-xs font-semibold text-sky-300">
+                  Custom
+                </span>
+              )}
+            </div>
+            <h2 className="mt-3 text-3xl font-black text-white">{activePage.label}</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-7 text-zinc-400">{activePage.description}</p>
+            <p className="mt-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-500">{pageUrl}</p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
             <button
+              type="button"
+              onClick={resetDraft}
+              className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
+            >
+              <RefreshCcw className="h-4 w-4" /> Taslağı Sıfırla
+            </button>
+            <button
+              type="button"
               onClick={handleSave}
               disabled={isPending}
-              className="flex items-center gap-2 rounded-2xl bg-amber-400 px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-amber-300 disabled:opacity-50 transition-colors"
+              className="inline-flex items-center gap-2 rounded-2xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-zinc-950 hover:bg-amber-300 disabled:opacity-50"
             >
               {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Kaydet
@@ -323,312 +682,570 @@ export default function SeoEditor({
           </div>
         </div>
 
+        {saved && (
+          <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm font-medium text-emerald-300">
+            SEO ayarları kaydedildi.
+          </div>
+        )}
         {error && (
-          <div className="flex items-center gap-2 rounded-2xl border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-300">
-            <X className="h-4 w-4 shrink-0" /> {error}
+          <div className="rounded-2xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm font-medium text-red-300">
+            {error}
           </div>
         )}
 
-        {/* AI Bölümü */}
-        <div className="rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-400/8 to-zinc-900/60 p-6">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-400/20">
-              <Brain className="h-5 w-5 text-amber-300" />
-            </div>
-            <div>
-              <h3 className="font-bold text-white">AI SEO Uzmanı</h3>
-              <p className="text-xs text-zinc-400">Bu sayfa için optimize edilmiş SEO önerisi al</p>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <textarea
-              value={extraContext}
-              onChange={(e) => setExtraContext(e.target.value)}
-              placeholder="Ek bağlam (opsiyonel): Hedef kitle, rakip siteler, odak konusu..."
-              rows={2}
-              className="w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-amber-400/40"
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-4 lg:col-span-2">
+            <SectionTitle
+              icon={Bot}
+              title="AI SEO Co-Pilot"
+              subtitle="Anahtar kelime, sosyal snippet, schema ve CTR odaklı öneriler üretir."
             />
-            <button
-              onClick={handleAiGenerate}
-              disabled={aiLoading}
-              className="flex items-center gap-2 rounded-2xl border border-amber-400/30 bg-amber-400/15 px-5 py-2.5 text-sm font-bold text-amber-300 hover:bg-amber-400/25 disabled:opacity-50 transition-colors"
-            >
-              {aiLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4" />
-              )}
-              {aiLoading ? "AI analiz ediyor..." : "AI ile SEO Önerisi Al"}
-            </button>
-          </div>
-
-          {/* AI Sonuçları */}
-          {aiSuggestions && (
-            <div className="mt-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="flex items-center gap-2 text-sm font-bold text-amber-300">
-                  <Sparkles className="h-4 w-4" />
-                  {aiAvailable ? "AI Önerileri" : "Temel Öneriler"}
-                </p>
+            <div className="space-y-3">
+              <textarea
+                value={extraContext}
+                onChange={(event) => setExtraContext(event.target.value)}
+                rows={3}
+                placeholder="Hedef kitle, dönüşüm amacı, rakipler, kampanya mesajı, içerik tonu..."
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-amber-400/40"
+              />
+              <div className="flex flex-wrap gap-3">
                 <button
-                  onClick={applyAllAi}
-                  className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-400/20 transition-colors"
+                  type="button"
+                  onClick={handleAiGenerate}
+                  disabled={isAiPending}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-2.5 text-sm font-bold text-amber-300 hover:bg-amber-400/20 disabled:opacity-50"
                 >
-                  Tümünü Uygula
+                  {isAiPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  AI Önerisi Al
+                </button>
+                <button
+                  type="button"
+                  onClick={applyAi}
+                  disabled={!aiSuggestions}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-40"
+                >
+                  <Wand2 className="h-4 w-4" /> Tümünü Uygula
                 </button>
               </div>
+            </div>
 
-              {/* Analiz */}
-              {aiSuggestions.analysis && (
-                <div className="rounded-2xl border border-white/8 bg-zinc-900/50 p-4 space-y-3">
-                  {(aiSuggestions.analysis.titleScore || aiSuggestions.analysis.descriptionScore) && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      {aiSuggestions.analysis.titleScore != null && (
-                        <><span className="text-xs text-zinc-400">Başlık:</span><ScoreBadge score={aiSuggestions.analysis.titleScore} /></>
-                      )}
-                      {aiSuggestions.analysis.descriptionScore != null && (
-                        <><span className="text-xs text-zinc-400 ml-2">Açıklama:</span><ScoreBadge score={aiSuggestions.analysis.descriptionScore} /></>
-                      )}
-                    </div>
-                  )}
-                  {aiSuggestions.analysis.serp && (
-                    <p className="text-xs text-zinc-300">
-                      <span className="font-semibold text-zinc-200">SERP: </span>
-                      {aiSuggestions.analysis.serp}
-                    </p>
-                  )}
-                  {aiSuggestions.analysis.competitorInsight && (
-                    <p className="text-xs text-zinc-300">
-                      <span className="font-semibold text-zinc-200">Rekabet: </span>
-                      {aiSuggestions.analysis.competitorInsight}
-                    </p>
-                  )}
-                  {aiSuggestions.analysis.estimatedCtr && (
-                    <p className="text-xs text-zinc-300">
-                      <span className="font-semibold text-zinc-200">Tahmini CTR: </span>
-                      {aiSuggestions.analysis.estimatedCtr}
-                    </p>
-                  )}
-                  {aiSuggestions.analysis.improvements && aiSuggestions.analysis.improvements.length > 0 && (
+            {aiSuggestions && (
+              <div className="mt-5 grid gap-4 xl:grid-cols-2">
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-amber-300" />
+                    <p className="text-sm font-bold text-white">AI Audit</p>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {aiSuggestions.analysis?.titleScore != null && (
+                      <AuditChip
+                        label={`Title ${aiSuggestions.analysis.titleScore}/100`}
+                        state={aiSuggestions.analysis.titleScore >= 80 ? "ok" : aiSuggestions.analysis.titleScore >= 60 ? "warn" : "error"}
+                      />
+                    )}
+                    {aiSuggestions.analysis?.descriptionScore != null && (
+                      <AuditChip
+                        label={`Description ${aiSuggestions.analysis.descriptionScore}/100`}
+                        state={aiSuggestions.analysis.descriptionScore >= 80 ? "ok" : aiSuggestions.analysis.descriptionScore >= 60 ? "warn" : "error"}
+                      />
+                    )}
+                  </div>
+                  <div className="mt-4 space-y-2 text-xs leading-6 text-zinc-300">
+                    {aiSuggestions.analysis?.keywordDensityNotes && <p>{aiSuggestions.analysis.keywordDensityNotes}</p>}
+                    {aiSuggestions.analysis?.competitorInsight && <p>{aiSuggestions.analysis.competitorInsight}</p>}
+                    {aiSuggestions.analysis?.estimatedCtr && <p>CTR: {aiSuggestions.analysis.estimatedCtr}</p>}
+                    {aiSuggestions.analysis?.serp && <p>SERP: {aiSuggestions.analysis.serp}</p>}
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-amber-300" />
+                    <p className="text-sm font-bold text-white">AI Önerileri</p>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(aiSuggestions.analysis?.targetKeywords ?? []).map((keyword) => (
+                      <span key={keyword} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-zinc-300">
+                        {keyword}
+                      </span>
+                    ))}
+                  </div>
+                  <ul className="mt-4 space-y-2 text-xs leading-6 text-zinc-300">
+                    {(aiSuggestions.analysis?.improvements ?? []).map((item) => (
+                      <li key={item} className="flex gap-2">
+                        <span className="text-amber-300">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {aiRaw && (
+              <pre className="mt-5 overflow-x-auto rounded-2xl border border-white/10 bg-black/30 p-4 text-xs leading-6 text-zinc-300">
+                {aiRaw}
+              </pre>
+            )}
+            {aiAvailable === false && (
+              <p className="mt-4 text-xs text-amber-300">AI anahtarı yoksa sistem temel öneri moduna düşer.</p>
+            )}
+          </div>
+
+          <div className="space-y-4 rounded-3xl border border-white/10 bg-zinc-900/60 p-4">
+            <SectionTitle
+              icon={Settings2}
+              title="Canlı Audit"
+              subtitle="Başlık, snippet, canonical, schema ve robots alanlarının durumunu canlı izler."
+            />
+            <div className="flex flex-wrap gap-2">
+              {auditItems.map((item) => (
+                <AuditChip key={item.label} label={item.label} state={item.state} />
+              ))}
+            </div>
+            <div className="space-y-2 rounded-2xl border border-white/10 bg-black/20 p-4 text-xs leading-6 text-zinc-300">
+              <p>Title: 45-60 karakter hedeflenir.</p>
+              <p>Description: 135-160 karakter hedeflenir.</p>
+              <p>Primary keyword başlığın başında veya ilk yarısında olmalı.</p>
+              <p>Canonical ve OG görseli olmayan sayfalar paylaşımda ve indexlemede zayıf kalır.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-2">
+          <SearchPreview url={pageUrl} title={title} description={description} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SocialPreview title={ogTitle || title} description={ogDescription || description} image={ogImage} network="Open Graph" />
+            <SocialPreview title={twitterTitle || title} description={twitterDescription || description} image={twitterImage || ogImage} network="Twitter / X" />
+          </div>
+        </div>
+
+        <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+          <div className="space-y-6">
+            <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
+              <SectionTitle
+                icon={Target}
+                title="Arama Stratejisi"
+                subtitle="Anahtar kelime hiyerarşisi, intent, path ve canonical mantığını sayfa bazında yönetin."
+              />
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">Sayfa Adı</label>
+                  <input
+                    value={String(readField("pageLabel", activePage.label))}
+                    onChange={(event) => setField("pageLabel", event.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">Sayfa Path</label>
+                  <input
+                    value={pagePath}
+                    onChange={(event) => setField("pagePath", event.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">Primary Keyword</label>
+                  <input
+                    value={primaryKeyword}
+                    onChange={(event) => setField("primaryKeyword", event.target.value)}
+                    placeholder="yds hazırlık platformu"
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">Search Intent</label>
+                  <select
+                    value={String(readField("searchIntent", "commercial"))}
+                    onChange={(event) => setField("searchIntent", event.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                  >
+                    {SEARCH_INTENT_OPTIONS.map((option) => (
+                      <option key={option} value={option} className="bg-zinc-900">
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="mb-2 block text-sm font-semibold text-white">Secondary Keywords</label>
+                <textarea
+                  value={secondaryKeywords}
+                  onChange={(event) => setField("secondaryKeywords", event.target.value)}
+                  rows={2}
+                  placeholder="yds online ders, yökdil çalışma sistemi, ydt deneme programı"
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-amber-400/40"
+                />
+              </div>
+
+              <div className="mt-4">
+                <label className="mb-2 block text-sm font-semibold text-white">Keyword Cluster / Tags</label>
+                <textarea
+                  value={keywords}
+                  onChange={(event) => setField("keywords", event.target.value)}
+                  rows={2}
+                  placeholder="YDS hazırlık, yökdil, ydt, online İngilizce, canlı ders, AI çalışma planı"
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-amber-400/40"
+                />
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
+              <SectionTitle
+                icon={Search}
+                title="SERP Snippet"
+                subtitle="Başlık ve açıklamayı CTR odaklı optimize edin; snippet limitlerini canlı görün."
+              />
+              <div className="space-y-4">
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="text-sm font-semibold text-white">Meta Title</label>
+                    <Counter value={title} ideal={[45, 60]} max={70} />
+                  </div>
+                  <input
+                    value={title}
+                    onChange={(event) => setField("title", event.target.value)}
+                    placeholder="YDS Hazırlık Platformu | Bilal Hoca YDS"
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-amber-400/40"
+                  />
+                </div>
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="text-sm font-semibold text-white">Meta Description</label>
+                    <Counter value={description} ideal={[135, 160]} max={180} />
+                  </div>
+                  <textarea
+                    value={description}
+                    onChange={(event) => setField("description", event.target.value)}
+                    rows={3}
+                    placeholder="AI destekli çalışma planı, vocabulary, reading, grammar ve canlı derslerle YDS hedefini daha hızlı yakala."
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-amber-400/40"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">Canonical URL</label>
+                  <input
+                    value={String(readField("canonicalUrl", pageUrl))}
+                    onChange={(event) => setField("canonicalUrl", event.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
+              <SectionTitle
+                icon={Share2}
+                title="Sosyal Paylaşım"
+                subtitle="OG ve Twitter kartlarını ayrı optimize edin; platform bazlı başlık, açıklama ve görsel kullanın."
+              />
+              <div className="mb-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={duplicateTitleToSocial}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
+                >
+                  <Copy className="h-3.5 w-3.5" /> Meta veriyi sosyal alana kopyala
+                </button>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">OG Title</label>
+                  <input
+                    value={ogTitle}
+                    onChange={(event) => setField("ogTitle", event.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">OG Type</label>
+                  <select
+                    value={String(readField("ogType", activePage.defaultSchemaType === "Product" ? "product" : "website"))}
+                    onChange={(event) => setField("ogType", event.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                  >
+                    {OG_TYPE_OPTIONS.map((option) => (
+                      <option key={option} value={option} className="bg-zinc-900">
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="mb-2 block text-sm font-semibold text-white">OG Description</label>
+                  <textarea
+                    value={ogDescription}
+                    onChange={(event) => setField("ogDescription", event.target.value)}
+                    rows={2}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">OG Image URL</label>
+                  <input
+                    value={ogImage}
+                    onChange={(event) => setField("ogImage", event.target.value)}
+                    placeholder="https://.../og-home.png"
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">Twitter Card</label>
+                  <select
+                    value={String(readField("twitterCard", "summary_large_image"))}
+                    onChange={(event) => setField("twitterCard", event.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                  >
+                    {TWITTER_CARD_OPTIONS.map((option) => (
+                      <option key={option} value={option} className="bg-zinc-900">
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">Twitter Title</label>
+                  <input
+                    value={twitterTitle}
+                    onChange={(event) => setField("twitterTitle", event.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">Twitter Image URL</label>
+                  <input
+                    value={twitterImage}
+                    onChange={(event) => setField("twitterImage", event.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="mb-2 block text-sm font-semibold text-white">Twitter Description</label>
+                  <textarea
+                    value={twitterDescription}
+                    onChange={(event) => setField("twitterDescription", event.target.value)}
+                    rows={2}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
+              <button
+                type="button"
+                onClick={() => setShowAdvanced((current) => !current)}
+                className="flex w-full items-center justify-between text-left"
+              >
+                <SectionTitle
+                  icon={Globe}
+                  title="Indexing & Robots"
+                  subtitle="noindex, nofollow, snippet limitleri ve robots direktiflerini yönetin."
+                />
+                {showAdvanced ? <ChevronUp className="h-5 w-5 text-zinc-500" /> : <ChevronDown className="h-5 w-5 text-zinc-500" />}
+              </button>
+              {showAdvanced && (
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-3">
+                    {[
+                      ["noIndex", "noindex"],
+                      ["noFollow", "nofollow"],
+                      ["noArchive", "noarchive"],
+                      ["noSnippet", "nosnippet"],
+                    ].map(([field, label]) => {
+                      const enabled = Boolean(readField(field as keyof SeoConfig, false));
+                      return (
+                        <button
+                          key={field}
+                          type="button"
+                          onClick={() => setField(field, !enabled)}
+                          className={cn(
+                            "rounded-full border px-3 py-2 text-xs font-semibold transition",
+                            enabled
+                              ? "border-amber-400/30 bg-amber-400/10 text-amber-300"
+                              : "border-white/10 bg-white/5 text-zinc-400",
+                          )}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={fillRobotsPreset}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
+                  >
+                    <Wand2 className="h-3.5 w-3.5" /> Google-friendly robots preset uygula
+                  </button>
+
+                  <div className="grid gap-4 md:grid-cols-2">
                     <div>
-                      <p className="mb-1 text-xs font-semibold text-zinc-200">İyileştirme Önerileri:</p>
-                      <ul className="space-y-1">
-                        {aiSuggestions.analysis.improvements.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2 text-xs text-zinc-400">
-                            <span className="text-amber-400 mt-0.5 shrink-0">→</span> {item}
-                          </li>
+                      <label className="mb-2 block text-sm font-semibold text-white">Max Snippet</label>
+                      <input
+                        value={String(readField("maxSnippet", ""))}
+                        onChange={(event) => setField("maxSnippet", event.target.value)}
+                        placeholder="-1"
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Max Video Preview</label>
+                      <input
+                        value={String(readField("maxVideoPreview", ""))}
+                        onChange={(event) => setField("maxVideoPreview", event.target.value)}
+                        placeholder="-1"
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Max Image Preview</label>
+                      <select
+                        value={String(readField("maxImagePreview", "large"))}
+                        onChange={(event) => setField("maxImagePreview", event.target.value)}
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                      >
+                        {MAX_IMAGE_PREVIEW_OPTIONS.map((option) => (
+                          <option key={option} value={option} className="bg-zinc-900">
+                            {option}
+                          </option>
                         ))}
-                      </ul>
+                      </select>
                     </div>
-                  )}
-                  {aiSuggestions.analysis.targetKeywords && aiSuggestions.analysis.targetKeywords.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {aiSuggestions.analysis.targetKeywords.map((kw) => (
-                        <span key={kw} className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-zinc-300">{kw}</span>
-                      ))}
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Breadcrumb Title</label>
+                      <input
+                        value={String(readField("breadcrumbTitle", activePage.label))}
+                        onChange={(event) => setField("breadcrumbTitle", event.target.value)}
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                      />
                     </div>
-                  )}
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-white">Robots Directives</label>
+                    <textarea
+                      value={robotsDirectives}
+                      onChange={(event) => setField("robotsDirectives", event.target.value)}
+                      rows={3}
+                      placeholder="max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-amber-400/40"
+                    />
+                  </div>
                 </div>
               )}
-
-              {/* Öneri alanları */}
-              <div className="grid gap-3 sm:grid-cols-2">
-                {(
-                  [
-                    { field: "title", label: "Title", value: aiSuggestions.title },
-                    { field: "description", label: "Description", value: aiSuggestions.description },
-                    { field: "keywords", label: "Keywords", value: aiSuggestions.keywords },
-                    { field: "ogTitle", label: "OG Title", value: aiSuggestions.ogTitle },
-                    { field: "ogDescription", label: "OG Description", value: aiSuggestions.ogDescription },
-                  ] as { field: string; label: string; value: string | undefined }[]
-                )
-                  .filter(({ value }) => !!value)
-                  .map(({ field, label, value }) => (
-                    <div key={field} className="rounded-2xl border border-white/8 bg-zinc-900/40 p-3">
-                      <div className="mb-1.5 flex items-center justify-between">
-                        <span className="text-xs font-bold text-zinc-400">{label}</span>
-                        <button
-                          onClick={() => applyAiField(field, value)}
-                          className="flex items-center gap-1 rounded-lg border border-amber-400/25 bg-amber-400/10 px-2 py-0.5 text-xs font-medium text-amber-300 hover:bg-amber-400/20"
-                        >
-                          <Edit2 className="h-3 w-3" /> Uygula
-                        </button>
-                      </div>
-                      <p className="text-xs leading-5 text-slate-300">{value}</p>
-                    </div>
-                  ))}
-              </div>
             </div>
-          )}
 
-          {aiRaw && (
-            <div className="mt-4 rounded-2xl border border-white/10 bg-zinc-900/50 p-4">
-              <p className="mb-2 text-xs font-bold text-zinc-400">Ham AI Yanıtı</p>
-              <pre className="whitespace-pre-wrap text-xs text-slate-300">{aiRaw}</pre>
-            </div>
-          )}
-        </div>
-
-        {/* SERP Önizleme */}
-        <SerpPreview title={titleVal} description={descVal} url={pageUrl} />
-
-        {/* Form */}
-        <div className="rounded-3xl border border-white/10 bg-zinc-900/50 p-6 space-y-5">
-          <h3 className="font-bold text-white">SEO Alanları</h3>
-
-          {/* Title */}
-          <div>
-            <div className="mb-1.5 flex items-center justify-between">
-              <label className="text-sm font-semibold text-slate-300">Meta Title</label>
-              <CharCounter value={titleVal} max={60} warn={50} />
-            </div>
-            <input
-              value={titleVal}
-              onChange={(e) => setField("title", e.target.value)}
-              placeholder="YDS Hazırlık | Bilal Hoca AI Platformu"
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-amber-400/40"
-            />
-            <p className="mt-1 text-xs text-zinc-500">Google arama sonuçlarında mavi başlık olarak görünür. 60 karakter altında tutun.</p>
-          </div>
-
-          {/* Description */}
-          <div>
-            <div className="mb-1.5 flex items-center justify-between">
-              <label className="text-sm font-semibold text-slate-300">Meta Description</label>
-              <CharCounter value={descVal} max={160} warn={140} />
-            </div>
-            <textarea
-              value={descVal}
-              onChange={(e) => setField("description", e.target.value)}
-              placeholder="YDS, YÖKDİL ve YDT sınavına hazırlanmak için AI destekli platform..."
-              rows={3}
-              className="w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-amber-400/40"
-            />
-            <p className="mt-1 text-xs text-zinc-500">Başlığın altında snippet olarak görünür. 155–160 karakter ideal.</p>
-          </div>
-
-          {/* Keywords */}
-          <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-300">Keywords</label>
-            <textarea
-              value={keywordsVal}
-              onChange={(e) => setField("keywords", e.target.value)}
-              placeholder="YDS hazırlık, YÖKDİL, online İngilizce, AI öğrenme, canlı ders"
-              rows={2}
-              className="w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-amber-400/40"
-            />
-            <p className="mt-1 text-xs text-zinc-500">Virgülle ayır. Schema ve içerik planlaması için kullanılır.</p>
-          </div>
-
-          {/* Open Graph */}
-          <div className="rounded-2xl border border-white/8 bg-zinc-900/40 p-4 space-y-4">
-            <h4 className="text-sm font-bold text-slate-200">Open Graph (Sosyal Medya)</h4>
-            <div>
-              <div className="mb-1.5 flex items-center justify-between">
-                <label className="text-sm font-medium text-slate-300">OG Title</label>
-                <CharCounter value={ogTitleVal} max={95} warn={70} />
-              </div>
-              <input
-                value={ogTitleVal}
-                onChange={(e) => setField("ogTitle", e.target.value)}
-                placeholder="Facebook/Twitter'da gösterilecek başlık"
-                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-amber-400/40"
-              />
-            </div>
-            <div>
-              <div className="mb-1.5 flex items-center justify-between">
-                <label className="text-sm font-medium text-slate-300">OG Description</label>
-                <CharCounter value={ogDescVal} max={200} warn={155} />
-              </div>
-              <textarea
-                value={ogDescVal}
-                onChange={(e) => setField("ogDescription", e.target.value)}
-                placeholder="Sosyal medyada paylaşımda açıklama"
-                rows={2}
-                className="w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-amber-400/40"
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-300">OG Image URL</label>
-              <input
-                value={ogImageVal}
-                onChange={(e) => setField("ogImage", e.target.value)}
-                placeholder="https://bilalhocayds.com/og-image.png (1200×630 px önerilir)"
-                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-amber-400/40"
-              />
-            </div>
-          </div>
-
-          {/* Gelişmiş */}
-          <div>
-            <button
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="flex items-center gap-2 text-sm font-semibold text-zinc-400 hover:text-white transition-colors"
-            >
-              {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              Gelişmiş Ayarlar
-            </button>
-            {showAdvanced && (
-              <div className="mt-4 space-y-4">
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-300">Canonical URL</label>
-                  <input
-                    value={canonicalVal}
-                    onChange={(e) => setField("canonicalUrl", e.target.value)}
-                    placeholder={pageUrl}
-                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-amber-400/40"
-                  />
-                  <p className="mt-1 text-xs text-zinc-500">Duplicate content sorununu önlemek için kullanın.</p>
-                </div>
-                <label className="flex cursor-pointer items-center gap-3">
-                  <button
-                    role="switch"
-                    aria-checked={noIndexVal}
-                    onClick={() => setField("noIndex", !noIndexVal)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      noIndexVal ? "bg-red-500" : "bg-zinc-600"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                        noIndexVal ? "translate-x-6" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
-                  <div>
-                    <p className="text-sm font-medium text-slate-300">noindex</p>
-                    <p className="text-xs text-zinc-500">Bu sayfayı arama motorlarından gizle</p>
-                  </div>
-                </label>
-              </div>
-            )}
-          </div>
-
-          {/* JSON-LD Schema */}
-          <div>
-            <button
-              onClick={() => setShowSchema(!showSchema)}
-              className="flex items-center gap-2 text-sm font-semibold text-zinc-400 hover:text-white transition-colors"
-            >
-              {showSchema ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              JSON-LD Schema Markup
-            </button>
-            {showSchema && (
-              <div className="mt-3">
-                <textarea
-                  value={schemaVal}
-                  onChange={(e) => setField("schemaMarkup", e.target.value)}
-                  placeholder={'{"@context":"https://schema.org","@type":"EducationalOrganization","name":"Bilal Hoca YDS"}'}
-                  rows={8}
-                  className="w-full resize-none rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 font-mono text-xs text-emerald-300 placeholder:text-zinc-600 outline-none focus:border-amber-400/40"
+            <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
+              <button
+                type="button"
+                onClick={() => setShowSchema((current) => !current)}
+                className="flex w-full items-center justify-between text-left"
+              >
+                <SectionTitle
+                  icon={ImageIcon}
+                  title="Structured Data & Sitemap"
+                  subtitle="Schema tipi, JSON-LD, sitemap priority ve change frequency alanlarını yönetin."
                 />
-                <p className="mt-1 text-xs text-zinc-500">Geçerli JSON-LD giriniz. AI butonu ile otomatik oluşturulabilir.</p>
+                {showSchema ? <ChevronUp className="h-5 w-5 text-zinc-500" /> : <ChevronDown className="h-5 w-5 text-zinc-500" />}
+              </button>
+              {showSchema && (
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Schema Type</label>
+                      <select
+                        value={String(readField("schemaType", activePage.defaultSchemaType))}
+                        onChange={(event) => setField("schemaType", event.target.value)}
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                      >
+                        {SCHEMA_TYPE_OPTIONS.map((option) => (
+                          <option key={option} value={option} className="bg-zinc-900">
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Change Frequency</label>
+                      <select
+                        value={String(readField("changeFrequency", "weekly"))}
+                        onChange={(event) => setField("changeFrequency", event.target.value)}
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                      >
+                        {CHANGE_FREQUENCY_OPTIONS.map((option) => (
+                          <option key={option} value={option} className="bg-zinc-900">
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Sitemap Priority</label>
+                      <input
+                        value={String(readField("sitemapPriority", activePage.key === "home" ? 1 : 0.8))}
+                        onChange={(event) => setField("sitemapPriority", event.target.value)}
+                        placeholder="0.8"
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/40"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Schema Generator Notu</label>
+                      <input
+                        value={String(readField("schemaType", activePage.defaultSchemaType))}
+                        readOnly
+                        className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-zinc-400 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <textarea
+                    value={schemaMarkup}
+                    onChange={(event) => setField("schemaMarkup", event.target.value)}
+                    rows={12}
+                    placeholder='{"@context":"https://schema.org","@type":"WebSite","name":"Bilal Hoca YDS"}'
+                    className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 font-mono text-xs leading-6 text-emerald-300 outline-none placeholder:text-zinc-600 focus:border-amber-400/40"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
+              <SectionTitle
+                icon={Settings2}
+                title="Editorial Notes & Custom Head"
+                subtitle="Sayfa özelinde içerik notları, test notları veya ek head etiketleri saklayın."
+              />
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">Content Notes</label>
+                  <textarea
+                    value={contentNotes}
+                    onChange={(event) => setField("contentNotes", event.target.value)}
+                    rows={4}
+                    placeholder="Bu sayfada intent commercial; CTA üst fold'da kalmalı, testimonial blokları genişletilmeli..."
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-amber-400/40"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-white">Custom Head Tags</label>
+                  <textarea
+                    value={String(readField("customHeadTags", ""))}
+                    onChange={(event) => setField("customHeadTags", event.target.value)}
+                    rows={6}
+                    placeholder={'<meta name="article:section" content="pricing" />'}
+                    className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 font-mono text-xs leading-6 text-zinc-300 outline-none placeholder:text-zinc-600 focus:border-amber-400/40"
+                  />
+                </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

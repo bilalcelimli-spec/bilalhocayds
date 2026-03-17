@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { authOptions } from "@/src/auth";
 import { prisma } from "@/src/lib/prisma";
+import { SEO_PAGE_PRESETS } from "@/src/lib/seo-presets";
 import SeoEditor from "@/src/components/admin/seo-editor";
 
 const adminNavItems = [
@@ -34,6 +35,8 @@ export default async function AdminSeoPage() {
   const siteUrl =
     process.env.NEXTAUTH_URL?.replace(/\/$/, "") ??
     "https://bilalhocayds.com";
+  const configuredCount = configs.filter((c) => c.title || c.description || c.schemaMarkup).length;
+  const totalPages = SEO_PAGE_PRESETS.length;
 
   // Serialize for client component
   const serialized = configs.map((c) => ({
@@ -79,15 +82,15 @@ export default async function AdminSeoPage() {
         <div className="flex flex-wrap gap-4 px-6 py-4">
           <div className="rounded-2xl border border-white/10 bg-zinc-900/50 px-5 py-3">
             <p className="text-xs text-zinc-400">Toplam Sayfa</p>
-            <p className="text-2xl font-black text-white">9</p>
+            <p className="text-2xl font-black text-white">{totalPages}</p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-zinc-900/50 px-5 py-3">
             <p className="text-xs text-zinc-400">SEO Konfigürasyonu</p>
-            <p className="text-2xl font-black text-emerald-400">{configs.filter((c) => c.title).length}</p>
+            <p className="text-2xl font-black text-emerald-400">{configuredCount}</p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-zinc-900/50 px-5 py-3">
             <p className="text-xs text-zinc-400">Eksik Yapılandırma</p>
-            <p className="text-2xl font-black text-amber-400">{9 - configs.filter((c) => c.title).length}</p>
+            <p className="text-2xl font-black text-amber-400">{Math.max(totalPages - configuredCount, 0)}</p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-zinc-900/50 px-5 py-3">
             <p className="text-xs text-zinc-400">noindex Sayfası</p>
