@@ -77,6 +77,21 @@ async function main() {
     console.log("Admin user upserted.");
   }
 
+  // Örnek öğrenci hesabı
+  const studentHash = await bcrypt.hash("student123", 10);
+  await prisma.user.upsert({
+    where: { email: "ogrenci@bilalhocayds.com" },
+    update: {},
+    create: {
+      name: "Örnek Öğrenci",
+      email: "ogrenci@bilalhocayds.com",
+      role: "STUDENT",
+      password: studentHash,
+      studentProfile: { create: {} },
+    },
+  });
+  console.log("Örnek öğrenci upserted.");
+
   console.log("Seed tamamlandi.");
 }
 
