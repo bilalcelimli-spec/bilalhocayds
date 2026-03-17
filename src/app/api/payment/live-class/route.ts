@@ -96,9 +96,11 @@ export async function POST(request: Request) {
   try {
     const result = await paytrCheckout({
       planName: liveClass.title,
-      amount: Math.round(liveClass.singlePrice * 100),
+      amount: liveClass.singlePrice,
       email: email.toLowerCase().trim(),
       phone: normalizedPhone,
+      userName: fullName.trim(),
+      userIp: ip,
       userId: userId ?? `guest:${purchase.id}`,
       referenceId,
     });
