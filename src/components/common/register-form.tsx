@@ -121,8 +121,6 @@ export function RegisterForm() {
   );
 }
 
-
-const interestOptions = [
   { key: "technology", label: "Teknoloji" },
   { key: "economy", label: "Ekonomi" },
   { key: "science", label: "Bilim" },
