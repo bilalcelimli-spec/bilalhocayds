@@ -245,3 +245,20 @@ model VerificationToken {
 
   @@id([identifier, token])
 }
+
+model SeoConfig {
+  id              String   @id @default(cuid())
+  pageKey         String   @unique  // e.g. "home", "pricing", "live-classes"
+  pageLabel       String            // Human readable: "Ana Sayfa"
+  title           String?
+  description     String?  @db.Text
+  keywords        String?  @db.Text
+  ogTitle         String?
+  ogDescription   String?  @db.Text
+  ogImage         String?
+  canonicalUrl    String?
+  noIndex         Boolean  @default(false)
+  schemaMarkup    String?  @db.Text  // JSON-LD string
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+}
