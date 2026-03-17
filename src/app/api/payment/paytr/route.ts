@@ -1,9 +1,13 @@
+import crypto from "node:crypto";
+
+import bcrypt from "bcrypt";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { paytrCheckout, type PaytrCheckoutResult } from "@/lib/payment/paytr-checkout";
 import { authOptions } from "@/src/auth";
+import { sendWelcomeEmail } from "@/src/lib/mail";
 import { prisma } from "@/src/lib/prisma";
 
 const requestSchema = z.object({
@@ -165,8 +169,12 @@ export async function POST(request: Request) {
     const normalizedEmail = email.toLowerCase();
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
-      select: { id: true, name: true },
+      select: { id: true, name: true, password: true },
     });
+
+    const rawPassword = crypto.randomBytes(9).toString("base64url").slice(0, 12);
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
+    const needsPassword = !existingUser?.password;
 
     const guestUser = existingUser
       ? await prisma.user.update({
@@ -174,6 +182,7 @@ export async function POST(request: Request) {
           data: {
             ...(existingUser.name ? {} : { name: fullName.trim() }),
             role: "STUDENT",
+            ...(needsPassword ? { password: hashedPassword } : {}),
             studentProfile: {
               upsert: {
                 update: {},
@@ -187,6 +196,7 @@ export async function POST(request: Request) {
           data: {
             name: fullName.trim(),
             email: normalizedEmail,
+            password: hashedPassword,
             role: "STUDENT",
             studentProfile: {
               create: {},
@@ -232,6 +242,18 @@ export async function POST(request: Request) {
         select: { id: true },
       });
       referenceId = `sub:${created.id}`;
+    }
+
+    if (needsPassword || !existingUser) {
+      const appBase = process.env.APP_URL ?? process.env.NEXTAUTH_URL ?? "https://bilalhocayds.com";
+      await sendWelcomeEmail({
+        to: normalizedEmail,
+        fullName: fullName.trim(),
+        password: rawPassword,
+        planName: plan.name,
+        billingCycle,
+        loginUrl: `${appBase}/login`,
+      }).catch((err) => console.error("[mail] Welcome email failed:", err));
     }
   }
 
