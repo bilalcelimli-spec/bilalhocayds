@@ -1,3 +1,5 @@
+import crypto from "node:crypto";
+
 function resolveAppBaseUrl() {
   if (process.env.APP_URL) {
     return process.env.APP_URL;
@@ -23,6 +25,8 @@ type PaytrCheckoutInput = {
   amount: number;
   email: string;
   phone: string;
+  userName: string;
+  userIp: string;
   userId: string;
   referenceId?: string;
 };
@@ -105,6 +109,8 @@ export async function paytrCheckout({
   amount,
   email,
   phone,
+  userName,
+  userIp,
   userId,
   referenceId,
 }: PaytrCheckoutInput): Promise<PaytrCheckoutResult> {
@@ -113,26 +119,25 @@ export async function paytrCheckout({
   }
 
   const appBaseUrl = resolveAppBaseUrl();
+  const iframeBaseUrl = resolveIframeBaseUrl();
   const merchantOrderId = referenceId ?? `paytr:${userId}:${Date.now()}`;
+  const merchantId = process.env.PAYTR_MERCHANT_ID ?? "";
+  const merchantKey = process.env.PAYTR_MERCHANT_KEY ?? "";
+  const merchantSalt = process.env.PAYTR_MERCHANT_SALT ?? "";
 
-  const payload = {
-    merchant_id: process.env.PAYTR_MERCHANT_ID,
+  const payload: Record<string, unknown> = {
+    merchant_id: merchantId,
     merchant_oid: merchantOrderId,
     email,
-    amount,
     phone,
-    user_id: userId,
+    user_name: userName,
+    user_ip: userIp,
     plan_name: planName,
     merchant_ok_url: `${appBaseUrl}/payment/success?merchant_oid=${encodeURIComponent(merchantOrderId)}`,
     merchant_fail_url: `${appBaseUrl}/payment/failure?merchant_oid=${encodeURIComponent(merchantOrderId)}`,
-    callback_url: `${appBaseUrl}/api/payment/paytr/callback`,
   };
 
-  if (
-    !process.env.PAYTR_MERCHANT_ID ||
-    !process.env.PAYTR_MERCHANT_KEY ||
-    !process.env.PAYTR_MERCHANT_SALT
-  ) {
+  if (!merchantId || !merchantKey || !merchantSalt) {
     return {
       success: true,
       status: "pending",
@@ -146,15 +151,49 @@ export async function paytrCheckout({
     };
   }
 
+  // PayTR kuruş cinsinden ister (TL * 100)
+  const paymentAmount = Math.round(amount * 100);
+  const userBasket = Buffer.from(
+    JSON.stringify([[planName, amount.toFixed(2), 1]])
+  ).toString("base64");
+  const noInstallment = "0";
+  const maxInstallment = "0";
+  const currency = "TL";
+  const testMode = "0";
+
+  // HMAC-SHA256 token (PayTR zorunlu)
+  const hashStr = `${merchantId}${userIp}${merchantOrderId}${email}${paymentAmount}${userBasket}${noInstallment}${maxInstallment}${currency}${testMode}${merchantSalt}`;
+  const paytrToken = crypto
+    .createHmac("sha256", merchantKey)
+    .update(hashStr)
+    .digest("base64");
+
+  const formBody = new URLSearchParams({
+    merchant_id: merchantId,
+    user_ip: userIp,
+    merchant_oid: merchantOrderId,
+    email,
+    payment_amount: String(paymentAmount),
+    paytr_token: paytrToken,
+    user_basket: userBasket,
+    no_installment: noInstallment,
+    max_installment: maxInstallment,
+    currency,
+    test_mode: testMode,
+    user_name: userName,
+    user_address: "Türkiye",
+    user_phone: phone,
+    merchant_ok_url: `${appBaseUrl}/payment/success?merchant_oid=${encodeURIComponent(merchantOrderId)}`,
+    merchant_fail_url: `${appBaseUrl}/payment/failure?merchant_oid=${encodeURIComponent(merchantOrderId)}`,
+    lang: "tr",
+    debug_on: "0",
+  });
+
   try {
-    const response = await fetch("https://www.paytr.com/odeme/api", {
+    const response = await fetch("https://www.paytr.com/odeme/api/get-token", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...payload,
-        merchant_key: process.env.PAYTR_MERCHANT_KEY,
-        merchant_salt: process.env.PAYTR_MERCHANT_SALT,
-      }),
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formBody.toString(),
     });
 
     if (!response.ok) {
@@ -162,13 +201,25 @@ export async function paytrCheckout({
     }
 
     const data = (await response.json()) as PaymentGatewayResponse;
-    const normalized = normalizePaytrResponse(data, payload, merchantOrderId);
 
-    if (!normalized.success) {
-      throw new Error(normalized.message ?? "PayTR olumsuz yanit verdi.");
+    if (String(data.status) === "failed") {
+      throw new Error(String(data.reason ?? "PayTR token alinamadi."));
     }
 
-    return normalized;
+    const token = typeof data.token === "string" ? data.token : undefined;
+    const redirectUrl = token && iframeBaseUrl ? `${iframeBaseUrl}${token}` : undefined;
+
+    return {
+      success: true,
+      provider: "paytr",
+      mode: "live",
+      status: "pending",
+      redirectUrl,
+      token,
+      orderReference: merchantOrderId,
+      raw: data,
+      payload,
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     throw new Error("PayTR payment failed: " + message);

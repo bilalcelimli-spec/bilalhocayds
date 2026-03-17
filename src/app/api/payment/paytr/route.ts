@@ -257,11 +257,16 @@ export async function POST(request: Request) {
     }
   }
 
+  const forwarded = request.headers.get("x-forwarded-for");
+  const userIp = forwarded?.split(",")[0]?.trim() ?? "127.0.0.1";
+
   const payment: PaytrCheckoutResult = await paytrCheckout({
     planName: plan.name,
     amount,
     email: email.toLowerCase(),
     phone: normalizedPhone,
+    userName: fullName.trim(),
+    userIp,
     userId: session?.user?.id ?? email.toLowerCase(),
     referenceId,
   });

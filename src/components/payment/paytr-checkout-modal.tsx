@@ -60,11 +60,20 @@ export default function PaytrCheckoutModal({
       }),
     });
 
-    const data = (await response.json()) as { error?: string };
+    const data = (await response.json()) as {
+      error?: string;
+      payment?: { redirectUrl?: string; token?: string; message?: string };
+    };
     setPending(false);
 
     if (!response.ok) {
       setError(data.error ?? "Ödeme başlatılırken bir hata oluştu.");
+      return;
+    }
+
+    const redirectUrl = data.payment?.redirectUrl;
+    if (redirectUrl) {
+      window.location.href = redirectUrl;
       return;
     }
 
