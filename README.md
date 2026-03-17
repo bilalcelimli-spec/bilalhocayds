@@ -31,6 +31,8 @@ PAYTR_IFRAME_BASE_URL=https://www.paytr.com/odeme/guvenli/
 
 ## PayTR Canliya Alma Checklist
 
+Detayli deployment notlari icin [docs/paytr-go-live-checklist.md](/Users/bilalcelimli/Desktop/bilalhocayds/docs/paytr-go-live-checklist.md) dosyasina bak.
+
 1. `APP_URL` ve `NEXTAUTH_URL` degerlerini canli domain ile guncelle.
 2. `PAYTR_MERCHANT_ID`, `PAYTR_MERCHANT_KEY` ve `PAYTR_MERCHANT_SALT` alanlarini PayTR panelindeki gercek bilgilerle doldur.
 3. Iframe veya token akisi kullaniyorsan `PAYTR_IFRAME_BASE_URL` degerini PayTR dokumanindaki dogru URL ile eslestir.
