@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, CalendarDays, Clock3, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowUpRight, BarChart3, BookOpenText, BrainCircuit, CalendarDays, Clock3, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/src/components/common/button";
 import { prisma } from "@/src/lib/prisma";
 import { LiveClassSinglePurchase } from "@/src/components/payment/live-class-single-purchase";
@@ -369,62 +369,131 @@ export default async function HomePage() {
           </p>
         </div>
 
-        <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-          {featureCards.map((item) => (
-            <div key={item.title} className="group rounded-[28px] border border-white/20 bg-white/8 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl">
-              <div className="mb-4 h-0.5 w-10 rounded-full bg-amber-400/50 transition-all group-hover:w-16 group-hover:bg-amber-400/80" />
-              <h3 className="text-xl font-bold text-white">{item.title}</h3>
-              <p className="mt-4 text-sm leading-7 text-slate-400">{item.text}</p>
-            </div>
-          ))}
+        <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {featureCards.map((item, index) => {
+            const Icon = [BrainCircuit, BookOpenText, BarChart3, CalendarDays][index] ?? Sparkles;
+            const eyebrow = ["Vocabulary Intelligence", "Reading Focus", "Grammar Control", "Live Mentoring"][index] ?? "Feature";
+
+            return (
+              <div key={item.title} className="group relative overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.26)] backdrop-blur-xl">
+                <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-300 group-hover:opacity-100">
+                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/60 to-transparent" />
+                  <div className="absolute -top-8 right-0 h-32 w-32 rounded-full bg-amber-400/10 blur-3xl" />
+                </div>
+
+                <div className="relative">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">{eyebrow}</p>
+                      <h3 className="mt-3 text-2xl font-black text-white">{item.title}</h3>
+                    </div>
+                    <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
+                      <Icon size={18} />
+                    </div>
+                  </div>
+
+                  <p className="mt-5 text-sm leading-7 text-slate-400">{item.text}</p>
+
+                  <div className="mt-6 flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3">
+                    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Etki</span>
+                    <span className="text-xs font-semibold text-white">Günlük aktif kullanım</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 
       <section id="system" className="mx-auto max-w-7xl px-6 pb-20 pt-4">
         <div className="grid gap-10 md:grid-cols-2 md:items-stretch">
-          <div className="flex flex-col rounded-[32px] border border-amber-400/25 bg-gradient-to-br from-amber-400/8 via-zinc-900/60 to-zinc-900/40 p-8 shadow-[0_20px_60px_rgba(212,168,67,0.10)] backdrop-blur-xl">
-            <div className="mb-5 h-px w-16 rounded-full bg-gradient-to-r from-amber-400/80 to-transparent" />
-            <h2 className="text-3xl font-black text-white md:text-4xl">Öğrenciyi her gün sistemde tutan akış</h2>
+          <div className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_34%),linear-gradient(135deg,rgba(18,20,28,0.98),rgba(10,11,15,0.95)_45%,rgba(31,24,12,0.92))] p-8 shadow-[0_30px_100px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.04),transparent)] opacity-40" />
+            <div className="relative">
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">
+              <span className="h-2 w-2 rounded-full bg-amber-400" />
+              Daily Retention Flow
+            </div>
+            <h2 className="mt-6 text-3xl font-black text-white md:text-4xl">Öğrenciyi her gün sistemde tutan akış</h2>
+            <p className="mt-4 max-w-xl text-sm leading-7 text-slate-400">
+              Her gün ne çalışacağını netleştiren, AI planı ve modül görevlerini canlı ders ritmiyle birleştiren operasyonel bir öğrenme akışı.
+            </p>
             <div className="mt-8 flex flex-col gap-4">
               {systemCards.map((item, index) => (
-                <div key={item} className="flex items-start gap-4 rounded-2xl border border-white/8 bg-zinc-900/50 p-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-sm font-black text-zinc-900">
+                <div key={item} className="flex items-start gap-4 rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-b from-[#fff2b8] to-[#d4a843] text-sm font-black text-zinc-950 shadow-[0_10px_30px_rgba(212,168,67,0.28)]">
                     {index + 1}
                   </div>
-                  <p className="pt-2 text-slate-300">{item}</p>
+                  <div>
+                    <p className="pt-1 text-base font-semibold text-white">{item}</p>
+                    <p className="mt-1 text-sm leading-6 text-slate-400">
+                      {index === 0
+                        ? "Süreç hedef puan ve mevcut seviyeye göre kişisel omurga ile başlar."
+                        : index === 1
+                          ? "Günlük plan, eksiklere göre otomatik önceliklendirme yapar."
+                          : index === 2
+                            ? "Görevler tamamlandıkça sistem çalışma disiplinini korur."
+                            : "Canlı derslerle haftalık temas, ilerlemenin hızını sabit tutar."}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
+            </div>
           </div>
 
-          <div className="flex flex-col rounded-[32px] border border-amber-400/25 bg-gradient-to-br from-amber-400/8 via-zinc-900/60 to-zinc-900/40 p-8 shadow-[0_20px_60px_rgba(212,168,67,0.10)] backdrop-blur-xl">
-            <div className="mb-5 h-px w-16 rounded-full bg-gradient-to-r from-amber-400/80 to-transparent" />
-            <h3 className="text-2xl font-black text-white">Bilal Hoca + AI modeli</h3>
+          <div className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-8 shadow-[0_30px_100px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+            <div className="pointer-events-none absolute -right-10 top-10 h-40 w-40 rounded-full bg-amber-400/10 blur-3xl" />
+            <div className="relative">
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">
+              <span className="h-2 w-2 rounded-full bg-amber-400" />
+              Bilal Hoca + AI Modeli
+            </div>
+            <h3 className="mt-6 text-3xl font-black text-white">Bilal Hoca + AI modeli</h3>
             <p className="mt-4 leading-8 text-slate-400">
-              Otomatik içerik, canlı ders stratejisi ve ölçülebilir takip tek merkezde.
+              Otomatik içerik, canlı ders stratejisi ve ölçülebilir takip tek merkezde birleşir. Öğrenciye ne çalışacağını değil, nasıl ilerleyeceğini de gösterir.
             </p>
             <div className="mt-6 space-y-4">
-              <div className="flex items-start gap-3 rounded-2xl border border-white/8 bg-white/5 p-4">
-                <span className="mt-0.5 text-amber-400">◆</span>
+              <div className="flex items-start gap-3 rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                <div className="rounded-xl border border-amber-400/20 bg-amber-400/10 p-2 text-amber-300">
+                  <BrainCircuit size={15} />
+                </div>
                 <div>
                   <p className="font-semibold text-white">Kişiselleştirilmiş plan</p>
                   <p className="mt-1 text-sm text-slate-400">AI her gün seviyene ve eksiklerine göre çalışma içeriği oluşturur.</p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 rounded-2xl border border-white/8 bg-white/5 p-4">
-                <span className="mt-0.5 text-amber-400">◆</span>
+              <div className="flex items-start gap-3 rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                <div className="rounded-xl border border-amber-400/20 bg-amber-400/10 p-2 text-amber-300">
+                  <BarChart3 size={15} />
+                </div>
                 <div>
                   <p className="font-semibold text-white">Anlık ilerleme takibi</p>
                   <p className="mt-1 text-sm text-slate-400">Tamamlanan görevler, zayıf konular ve gelişim grafiği panelden izlenir.</p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 rounded-2xl border border-white/8 bg-white/5 p-4">
-                <span className="mt-0.5 text-amber-400">◆</span>
+              <div className="flex items-start gap-3 rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                <div className="rounded-xl border border-amber-400/20 bg-amber-400/10 p-2 text-amber-300">
+                  <CalendarDays size={15} />
+                </div>
                 <div>
                   <p className="font-semibold text-white">Canlı ders entegrasyonu</p>
                   <p className="mt-1 text-sm text-slate-400">Bilal Hoca&apos;nın haftalık canlı dersleri AI planıyla koordineli ilerler.</p>
                 </div>
               </div>
+            </div>
+
+            <div className="mt-6 rounded-[24px] border border-amber-400/18 bg-[linear-gradient(135deg,rgba(212,168,67,0.14),rgba(255,255,255,0.03))] p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-300">Sistem Etkisi</p>
+                  <p className="mt-2 text-base font-bold text-white">İçerik, takip ve canlı ders ritmi tek omurgada çalışır.</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/8 p-3 text-white">
+                  <ArrowUpRight size={18} />
+                </div>
+              </div>
+            </div>
             </div>
           </div>
         </div>
