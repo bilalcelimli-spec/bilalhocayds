@@ -14,6 +14,7 @@ import {
   Library,
   LogOut,
   Menu,
+  Search,
   Settings,
   Shield,
   UserCog,
@@ -59,6 +60,7 @@ const hrefIconMap: Record<string, React.ComponentType<{ className?: string; size
   "/admin/plans": CreditCard,
   "/admin/crm": Users,
   "/admin/accounting": CreditCard,
+  "/admin/seo": Search,
 };
 
 const roleTheme = {

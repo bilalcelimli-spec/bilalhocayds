@@ -30,6 +30,7 @@ const adminNavItems = [
   { label: "Plan Yönetimi", href: "/admin/plans" },
   { label: "CRM & Lead", href: "/admin/crm" },
   { label: "Muhasebe", href: "/admin/accounting" },
+  { label: "SEO Yönetimi", href: "/admin/seo" },
   { label: "Öğrenci Modülleri", href: "/dashboard" },
   { label: "Öğretmen Paneli", href: "/teacher" },
 ];
