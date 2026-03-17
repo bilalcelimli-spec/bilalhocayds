@@ -1,5 +1,8 @@
+import { getServerSession } from "next-auth";
 import { prisma } from "@/src/lib/prisma";
+import { authOptions } from "@/src/auth";
 import PricingCheckout from "@/src/components/payment/pricing-checkout";
+import { SessionBanner } from "@/src/components/common/session-banner";
 
 function reorderPopularToMiddle<T extends { slug: string }>(items: T[]): T[] {
 	if (items.length !== 3) return items;
@@ -12,28 +15,38 @@ function reorderPopularToMiddle<T extends { slug: string }>(items: T[]): T[] {
 }
 
 export default async function PricingPage() {
-	const rawPlans = await prisma.plan.findMany({
-		where: { isActive: true },
-		orderBy: { monthlyPrice: "asc" },
-		select: {
-			id: true,
-			name: true,
-			slug: true,
-			description: true,
-			monthlyPrice: true,
-			yearlyPrice: true,
-			includesLiveClass: true,
-			includesAIPlanner: true,
-			includesReading: true,
-			includesGrammar: true,
-			includesVocab: true,
-		},
-	});
+	const [session, rawPlans] = await Promise.all([
+		getServerSession(authOptions),
+		prisma.plan.findMany({
+			where: { isActive: true },
+			orderBy: { monthlyPrice: "asc" },
+			select: {
+				id: true,
+				name: true,
+				slug: true,
+				description: true,
+				monthlyPrice: true,
+				yearlyPrice: true,
+				includesLiveClass: true,
+				includesAIPlanner: true,
+				includesReading: true,
+				includesGrammar: true,
+				includesVocab: true,
+			},
+		}),
+	]);
 
 	const plans = reorderPopularToMiddle(rawPlans);
+	const isLoggedInStudent = session?.user?.role === "STUDENT";
 
 	return (
 		<div className="mx-auto max-w-7xl px-6 py-10">
+			{isLoggedInStudent && (
+				<SessionBanner
+					userName={session.user.name ?? ""}
+					userEmail={session.user.email ?? ""}
+				/>
+			)}
 			<div className="mx-auto max-w-3xl text-center">
 				<div className="mx-auto mb-5 h-px w-20 bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
 				<span className="inline-flex rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-300">
