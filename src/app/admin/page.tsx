@@ -107,7 +107,6 @@ export default async function AdminPage() {
       userName={session.user.name ?? undefined}
       userRole={session.user.role}
     >
-      {/* Top stats */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
           {
@@ -141,7 +140,7 @@ export default async function AdminPage() {
         ].map((s) => (
           <div
             key={s.label}
-            className="rounded-2xl border border-white/10 bg-white/5 p-5"
+            className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.22)]"
           >
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
@@ -155,10 +154,8 @@ export default async function AdminPage() {
         ))}
       </div>
 
-      {/* Management sections */}
       <div className="grid gap-5 lg:grid-cols-3">
-        {/* Quick management links */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-5 lg:col-span-2">
+        <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_22px_60px_rgba(0,0,0,0.22)] lg:col-span-2">
           <div className="mb-5">
             <h2 className="text-lg font-bold text-white">Hızlı Yönetim</h2>
             <p className="mt-0.5 text-xs text-zinc-400">
@@ -243,7 +240,7 @@ export default async function AdminPage() {
               <Link
                 key={a.href}
                 href={a.href}
-                className={`group flex items-start gap-3 rounded-xl border p-4 transition-all hover:-translate-y-0.5 ${a.bg}`}
+                className={`group flex items-start gap-3 rounded-[24px] border p-4 shadow-[0_14px_40px_rgba(0,0,0,0.14)] transition-all hover:-translate-y-0.5 ${a.bg}`}
               >
                 <div className="mt-0.5">
                   <a.Icon size={16} className={`shrink-0 ${a.color}`} />
@@ -261,10 +258,8 @@ export default async function AdminPage() {
           </div>
         </div>
 
-        {/* Right column */}
         <div className="space-y-4">
-          {/* Content breakdown */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)]">
             <h3 className="mb-4 text-sm font-bold text-white">İçerik Dağılımı</h3>
             <div className="space-y-3">
               {[
@@ -290,8 +285,7 @@ export default async function AdminPage() {
             </div>
           </div>
 
-          {/* System info */}
-          <div className="rounded-2xl border border-violet-500/20 bg-violet-500/8 p-5">
+          <div className="rounded-[30px] border border-violet-500/20 bg-violet-500/8 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
             <div className="mb-2 flex items-center gap-2">
               <Shield size={14} className="text-violet-400" />
               <p className="text-xs font-semibold uppercase tracking-wide text-violet-300">
@@ -307,8 +301,7 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      {/* Recent users */}
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+      <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_22px_60px_rgba(0,0,0,0.22)]">
         <div className="mb-5 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-bold text-white">Son Kayıtlar</h2>
@@ -326,7 +319,7 @@ export default async function AdminPage() {
           {recentUsers.map((u) => (
             <div
               key={u.id}
-              className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.02] px-4 py-3"
+              className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3"
             >
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white">
                 {u.name?.charAt(0).toUpperCase() ?? "?"}

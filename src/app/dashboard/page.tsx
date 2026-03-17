@@ -88,39 +88,38 @@ export default async function DashboardPage() {
       userName={session.user.name ?? undefined}
       userRole={session.user.role}
     >
-      {/* Stats Row */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: "Bugünkü Kelimeler", value: "20", Icon: Languages, color: "text-blue-400" },
-          { label: "Reading Görevi", value: "1", Icon: BookOpen, color: "text-indigo-400" },
-          { label: "Grammar Alıştırması", value: "1", Icon: GraduationCap, color: "text-violet-400" },
-          { label: "Günlük Seri", value: "7 gün", Icon: Flame, color: "text-orange-400" },
+          { label: "Bugünkü Kelimeler", value: "20", Icon: Languages, color: "text-blue-300", tone: "border-blue-500/20 bg-blue-500/8" },
+          { label: "Reading Görevi", value: "1", Icon: BookOpen, color: "text-indigo-300", tone: "border-indigo-500/20 bg-indigo-500/8" },
+          { label: "Grammar Alıştırması", value: "1", Icon: GraduationCap, color: "text-violet-300", tone: "border-violet-500/20 bg-violet-500/8" },
+          { label: "Günlük Seri", value: "7 gün", Icon: Flame, color: "text-orange-300", tone: "border-orange-500/20 bg-orange-500/8" },
         ].map((s) => (
           <div
             key={s.label}
-            className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm"
+            className={"rounded-[28px] border p-5 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur-xl " + s.tone}
           >
             <div className="flex items-center justify-between">
-              <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-400">
                 {s.label}
               </p>
-              <s.Icon size={16} className={s.color} />
+              <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-3">
+                <s.Icon size={16} className={s.color} />
+              </div>
             </div>
-            <p className="mt-3 text-3xl font-black text-white">{s.value}</p>
+            <p className="mt-4 text-3xl font-black text-white">{s.value}</p>
           </div>
         ))}
       </div>
 
-      {/* Middle section */}
       <div className="grid gap-5 lg:grid-cols-3">
-        {/* Today's tasks */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm lg:col-span-2">
+        <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl lg:col-span-2">
           <div className="mb-5 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-white">Bugünkü Görevler</h2>
-              <p className="mt-0.5 text-xs text-zinc-400">4 görev · Tahmini 90 dk</p>
+              <p className="mt-0.5 text-xs uppercase tracking-[0.18em] text-zinc-500">4 görev · Tahmini 90 dk</p>
             </div>
-            <div className="flex items-center gap-1.5 rounded-xl border border-orange-500/20 bg-orange-500/10 px-3 py-1.5">
+            <div className="flex items-center gap-1.5 rounded-2xl border border-orange-500/20 bg-orange-500/10 px-3 py-2">
               <Flame size={13} className="text-orange-400" />
               <span className="text-xs font-semibold text-orange-300">7 günlük seri</span>
             </div>
@@ -130,7 +129,7 @@ export default async function DashboardPage() {
             {todayTasks.map((task) => (
               <div
                 key={task.id}
-                className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.02] px-4 py-3.5"
+                className="flex items-center gap-3 rounded-[22px] border border-white/8 bg-white/[0.04] px-4 py-4"
               >
                 {task.done ? (
                   <CheckCircle2 size={18} className="shrink-0 text-emerald-400" />
@@ -140,7 +139,7 @@ export default async function DashboardPage() {
                 <p className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-200">
                   {task.label}
                 </p>
-                <span className="shrink-0 rounded-lg bg-white/8 px-2 py-1 text-xs text-zinc-400">
+                <span className="shrink-0 rounded-xl border border-white/8 bg-black/20 px-2.5 py-1.5 text-xs text-zinc-400">
                   {task.module}
                 </span>
               </div>
@@ -148,9 +147,8 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Performance & next class */}
         <div className="space-y-4">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+          <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl">
             <h2 className="mb-5 text-lg font-bold text-white">Performans</h2>
             <div className="space-y-4">
               {[
@@ -174,8 +172,7 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          {/* Next live class */}
-          <div className="rounded-2xl border border-teal-500/20 bg-teal-500/8 p-5">
+          <div className="rounded-[30px] border border-teal-500/20 bg-teal-500/8 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.18)]">
             <div className="mb-2 flex items-center gap-2">
               <Video size={14} className="text-teal-400" />
               <p className="text-xs font-semibold uppercase tracking-wide text-teal-300">
@@ -202,8 +199,9 @@ export default async function DashboardPage() {
             <Link
               key={m.href}
               href={m.href}
-              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-5 transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/8"
+              className="group relative overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)] transition-all hover:-translate-y-0.5 hover:border-white/20"
             >
+              <div className="pointer-events-none absolute -right-8 top-4 h-24 w-24 rounded-full bg-white/5 blur-2xl" />
               <div
                 className={`mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${m.gradient}`}
               >
@@ -223,8 +221,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* AI Feature banner */}
-      <div className="rounded-2xl border border-fuchsia-500/20 bg-gradient-to-r from-fuchsia-900/25 via-indigo-900/15 to-cyan-900/15 p-5 sm:p-6">
+      <div className="rounded-[30px] border border-fuchsia-500/20 bg-gradient-to-r from-fuchsia-900/25 via-indigo-900/15 to-cyan-900/15 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.18)] sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-fuchsia-500/30 bg-fuchsia-500/15">

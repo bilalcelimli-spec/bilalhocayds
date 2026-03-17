@@ -85,11 +85,11 @@ export default async function DashboardLiveRecordingsPage() {
       userRole={session.user.role}
     >
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-sky-500/20 bg-sky-500/8 p-5">
+        <div className="rounded-[28px] border border-sky-500/20 bg-sky-500/8 p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
           <p className="text-xs font-semibold uppercase tracking-wide text-sky-300">Toplam Kayıt</p>
           <p className="mt-2 text-3xl font-black text-white">{recordingCount}</p>
         </div>
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/8 p-5">
+        <div className="rounded-[28px] border border-emerald-500/20 bg-emerald-500/8 p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
           <p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">Erişim Durumu</p>
           <p className="mt-2 text-sm font-semibold text-white">
             {hasLiveRecordingsAccess ? "Aktif" : "Pasif"}
@@ -100,7 +100,7 @@ export default async function DashboardLiveRecordingsPage() {
               : "Canlı ders erişimi olan aktif bir üyelik gerekiyor."}
           </p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
           <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Üyelik Bitişi</p>
           <p className="mt-2 text-sm font-semibold text-white">
             {activeSubscription?.endDate
@@ -113,7 +113,7 @@ export default async function DashboardLiveRecordingsPage() {
       </div>
 
       {!hasLiveRecordingsAccess ? (
-        <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-6">
+        <div className="rounded-[30px] border border-amber-400/30 bg-amber-400/10 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.16)]">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-amber-200">Erişim Kilitli</p>
@@ -134,7 +134,7 @@ export default async function DashboardLiveRecordingsPage() {
 
       <div className="space-y-3">
         {hasLiveRecordingsAccess && recordings.map((item) => (
-          <div key={item.id} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <div key={item.id} className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)]">
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <h3 className="text-lg font-bold text-white">{item.title}</h3>
@@ -172,14 +172,14 @@ export default async function DashboardLiveRecordingsPage() {
         ))}
 
         {hasLiveRecordingsAccess && recordings.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-10 text-center">
+          <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-10 text-center shadow-[0_20px_60px_rgba(0,0,0,0.22)]">
             <Video size={28} className="mx-auto text-zinc-500" />
             <p className="mt-3 text-sm text-zinc-400">Henüz yayınlanmış canlı ders kaydı bulunmuyor.</p>
           </div>
         ) : null}
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+      <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)]">
         <div className="flex items-start gap-3">
           <ShieldCheck size={18} className="mt-0.5 text-emerald-400" />
           <div>

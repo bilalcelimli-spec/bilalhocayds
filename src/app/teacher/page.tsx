@@ -76,7 +76,6 @@ export default async function TeacherPage() {
       userName={session.user.name ?? undefined}
       userRole={session.user.role}
     >
-      {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
           { label: "Toplam Öğrenci", value: totalStudents, Icon: Users, color: "text-emerald-400" },
@@ -86,7 +85,7 @@ export default async function TeacherPage() {
         ].map((s) => (
           <div
             key={s.label}
-            className="rounded-2xl border border-white/10 bg-white/5 p-5"
+            className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.22)]"
           >
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
@@ -99,10 +98,8 @@ export default async function TeacherPage() {
         ))}
       </div>
 
-      {/* Main columns */}
       <div className="grid gap-5 lg:grid-cols-3">
-        {/* Recent readings */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-5 lg:col-span-2">
+        <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_22px_60px_rgba(0,0,0,0.22)] lg:col-span-2">
           <div className="mb-5 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-white">Reading İçerikleri</h2>
@@ -123,7 +120,7 @@ export default async function TeacherPage() {
             {recentReadings.map((r) => (
               <div
                 key={r.id}
-                className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.02] px-4 py-3"
+                className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3"
               >
                 <BookOpen size={15} className="shrink-0 text-blue-400" />
                 <div className="min-w-0 flex-1">
@@ -149,8 +146,7 @@ export default async function TeacherPage() {
 
         {/* Right column */}
         <div className="space-y-4">
-          {/* Next live class */}
-          <div className="rounded-2xl border border-teal-500/20 bg-teal-500/8 p-5">
+          <div className="rounded-[30px] border border-teal-500/20 bg-teal-500/8 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
             <div className="mb-3 flex items-center gap-2">
               <Video size={14} className="text-teal-400" />
               <p className="text-xs font-semibold uppercase tracking-wide text-teal-300">
@@ -201,8 +197,7 @@ export default async function TeacherPage() {
             )}
           </div>
 
-          {/* Grammar topics */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)]">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-bold text-white">Grammar Konuları</h3>
               <Link
@@ -230,7 +225,6 @@ export default async function TeacherPage() {
         </div>
       </div>
 
-      {/* Quick actions */}
       <div>
         <h2 className="mb-4 text-lg font-bold text-white">Hızlı Eylemler</h2>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -267,7 +261,7 @@ export default async function TeacherPage() {
             <Link
               key={a.href}
               href={a.href}
-              className={`group flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-all hover:-translate-y-0.5 ${a.bg}`}
+              className={`group flex items-center gap-3 rounded-[24px] border px-4 py-3.5 shadow-[0_14px_40px_rgba(0,0,0,0.14)] transition-all hover:-translate-y-0.5 ${a.bg}`}
             >
               <a.Icon size={16} className={`shrink-0 ${a.color}`} />
               <span className="text-sm font-medium text-zinc-300 transition-colors group-hover:text-white">
