@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/src/components/common/button";
 import { prisma } from "@/src/lib/prisma";
 import { LiveClassSinglePurchase } from "@/src/components/payment/live-class-single-purchase";
+import { LeadCaptureSection } from "@/src/components/home/lead-capture-section";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 
@@ -308,6 +309,8 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      <LeadCaptureSection />
 
     </div>
   );
