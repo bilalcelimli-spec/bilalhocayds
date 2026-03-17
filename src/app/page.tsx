@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowUpRight, CalendarDays, Clock3, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/src/components/common/button";
 import { prisma } from "@/src/lib/prisma";
 import { LiveClassSinglePurchase } from "@/src/components/payment/live-class-single-purchase";
@@ -73,6 +74,8 @@ export default async function HomePage() {
   });
 
   const plans = reorderPopularToMiddle(rawPlans);
+  const premiumPlan = plans.find((plan) => plan.slug === "premium") ?? plans[0] ?? null;
+  const liveClassEnabledPlanCount = plans.filter((plan) => plan.includesLiveClass).length;
 
   const nextLiveClass = await prisma.liveClass.findFirst({
     where: {
@@ -93,35 +96,149 @@ export default async function HomePage() {
 
   return (
     <div>
-      <section className="relative overflow-hidden">
-        <div className="mx-auto max-w-7xl px-6 pt-28 md:pt-32">
-          <div className="flex flex-col items-center text-center">
-            <div className="mt-4 inline-flex items-center gap-2.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.18em] text-amber-300 shadow-[0_0_24px_rgba(212,168,67,0.12)]">
-              <span className="h-2 w-2 rounded-full bg-amber-400 opacity-80" />
-              AI DESTEKLİ ÖĞRENME PLATFORMU
-            </div>
+      <section className="relative overflow-hidden px-6 pt-16 md:pt-20">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute left-[8%] top-24 h-56 w-56 rounded-full bg-amber-400/12 blur-3xl" />
+          <div className="absolute right-[10%] top-16 h-72 w-72 rounded-full bg-white/6 blur-3xl" />
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/30 to-transparent" />
+        </div>
 
-            <h1 className="mt-10 max-w-5xl text-6xl font-extrabold leading-tight text-white md:text-8xl">
-              <span className="block">Bilal Hoca</span>
-              <span className="block bg-gradient-to-r from-amber-300 via-amber-200 to-yellow-300 bg-clip-text text-transparent">
-                Yeni Nesil YDS/YDT Hazırlığı
-              </span>
-            </h1>
+        <div className="mx-auto max-w-7xl">
+          <div className="relative overflow-hidden rounded-[40px] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_34%),linear-gradient(135deg,rgba(18,20,28,0.98),rgba(10,11,15,0.95)_45%,rgba(31,24,12,0.92))] px-6 py-10 shadow-[0_30px_120px_rgba(0,0,0,0.45)] md:px-10 md:py-14 xl:px-14 xl:py-16">
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.04),transparent)] opacity-40" />
+            <div className="pointer-events-none absolute -right-20 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full border border-amber-300/10" />
+            <div className="pointer-events-none absolute right-16 top-16 h-24 w-24 rounded-full border border-white/10" />
 
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-400">
-              Yapay zeka destekli kişisel çalışma planı, günlük görevler ve canlı
-              derslerle sınava daha akıllı hazırlan.
-            </p>
+            <div className="relative grid gap-10 xl:grid-cols-[minmax(0,1.15fr)_380px] xl:items-center">
+              <div>
+                <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-5 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-amber-300 shadow-[0_0_24px_rgba(212,168,67,0.12)]">
+                  <span className="h-2 w-2 rounded-full bg-amber-400" />
+                  Premium YDS Hazırlık Deneyimi
+                </div>
 
-            <div className="mt-8 flex flex-wrap justify-center gap-4">
-              <Button href="/register">Hemen Başla</Button>
-              <Button href="/pricing" variant="secondary" className="border-white/35">
-                Üyelik Planlarını Aç
-              </Button>
+                <div className="mt-7 flex flex-wrap items-center gap-3 text-[11px] font-medium uppercase tracking-[0.24em] text-slate-400">
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">AI Planlama</span>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Haftada 4 Saat Canlı Ders</span>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Bilal Hoca Rehberliği</span>
+                </div>
+
+                <h1 className="mt-8 max-w-5xl text-5xl font-black leading-[0.95] text-white md:text-7xl xl:text-[7.1rem]">
+                  <span className="block text-white/96">Bilal Hoca ile</span>
+                  <span className="mt-2 block bg-gradient-to-r from-[#fff2b8] via-[#f7d96b] to-[#d4a843] bg-clip-text text-transparent">
+                    Güçlü Bir
+                  </span>
+                  <span className="mt-2 block text-white">YDS/YDT Hazırlığı</span>
+                </h1>
+
+                <p className="mt-8 max-w-2xl text-base leading-8 text-slate-300 md:text-xl md:leading-9">
+                  Yapay zeka destekli kişisel çalışma planı, güçlü içerik akışı ve Zoom canlı derslerle hazırlığını daha kontrollü ve daha yüksek standartta yönet.
+                </p>
+
+                <div className="mt-10 flex flex-wrap gap-4">
+                  <Button href="/register" size="lg" className="min-w-[180px] rounded-2xl bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] text-zinc-950 shadow-[0_20px_50px_rgba(212,168,67,0.28)] hover:brightness-105">
+                    Hemen Başla
+                  </Button>
+                  <Button href="/pricing" variant="secondary" size="lg" className="min-w-[200px] rounded-2xl border-white/20 bg-white/6 backdrop-blur-sm hover:bg-white/10">
+                    Üyelik Planlarını Aç
+                  </Button>
+                </div>
+
+                <div className="mt-10 grid gap-4 md:grid-cols-3">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-sm">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Başlangıç</p>
+                    <p className="mt-3 text-2xl font-black text-white">
+                      {premiumPlan ? formatPrice(premiumPlan.monthlyPrice) : "Teklif al"}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-400">Yüksek standartta tasarlanan planlar</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-sm">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Canlı Ders</p>
+                    <p className="mt-3 text-2xl font-black text-white">4 Saat / Hafta</p>
+                    <p className="mt-1 text-sm text-slate-400">Ritmi koruyan düzenli Zoom programı</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-sm">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Esneklik</p>
+                    <p className="mt-3 text-2xl font-black text-white">Tek Ders</p>
+                    <p className="mt-1 text-sm text-slate-400">Üyelik dışında da satın alma açık</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative">
+                <div className="absolute -left-6 top-10 hidden h-24 w-24 rounded-full bg-amber-400/10 blur-2xl xl:block" />
+                <div className="relative overflow-hidden rounded-[32px] border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-5 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+                  <div className="rounded-[26px] border border-white/10 bg-[#0d1017]/90 p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Private Academic System</p>
+                        <h2 className="mt-3 text-2xl font-black text-white">Sınava hazırlanırken kalite standardını yükselt</h2>
+                      </div>
+                      <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
+                        <Sparkles size={18} />
+                      </div>
+                    </div>
+
+                    <div className="mt-6 space-y-3">
+                      <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-300">
+                            <ShieldCheck size={16} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-white">Kişisel çalışma omurgası</p>
+                            <p className="mt-1 text-xs leading-6 text-slate-400">AI destekli günlük akış, görev önceliği ve ilerleme düzeni.</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-xl bg-sky-500/10 p-2 text-sky-300">
+                            <Clock3 size={16} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-white">Haftalık yüksek temas</p>
+                            <p className="mt-1 text-xs leading-6 text-slate-400">{liveClassEnabledPlanCount} plan içinde haftada 4 saat canlı ders erişimi sunuluyor.</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border border-amber-400/18 bg-[linear-gradient(135deg,rgba(212,168,67,0.14),rgba(255,255,255,0.03))] p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Sıradaki Oturum</p>
+                            <p className="mt-2 text-base font-bold text-white">
+                              {nextLiveClass ? nextLiveClass.title : "Yeni premium oturum planlanıyor"}
+                            </p>
+                            <p className="mt-1 text-xs leading-6 text-amber-100/80">
+                              {nextLiveClass
+                                ? `${format(nextLiveClass.scheduledAt, "d MMMM yyyy · HH:mm", { locale: tr })} · ${nextLiveClass.durationMinutes} dk`
+                                : "Takvim çok yakında güncellenecek."}
+                            </p>
+                          </div>
+                          <Link href="/live-classes" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-white transition hover:bg-white/14">
+                            <ArrowUpRight size={18} />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 flex items-center justify-between rounded-2xl border border-white/8 bg-black/25 px-4 py-3">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Canlı Takvim</p>
+                        <p className="mt-1 text-sm font-semibold text-white">Tek ders satışına da açık premium program</p>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-slate-300">
+                        <CalendarDays size={14} className="text-amber-300" />
+                        Esnek katılım
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-
       </section>
 
       <section id="pricing" className="mx-auto max-w-7xl px-6 pb-12 pt-2 md:pt-4">

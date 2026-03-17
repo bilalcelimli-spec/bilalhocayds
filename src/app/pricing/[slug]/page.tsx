@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowUpRight, CalendarDays, ShieldCheck, Sparkles } from "lucide-react";
 
 import { prisma } from "@/src/lib/prisma";
 import PlanDetailPurchase from "@/src/components/payment/plan-detail-purchase";
@@ -93,22 +94,36 @@ export default async function PricingDetailPage({ params, searchParams }: PagePr
   ].filter((item): item is string => Boolean(item));
 
   const planLabel = plan.name.toLowerCase();
+  const monthlyLabel = plan.monthlyPrice
+    ? new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(plan.monthlyPrice)
+    : "Teklif al";
+  const yearlyLabel = plan.yearlyPrice
+    ? new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(plan.yearlyPrice)
+    : "Teklif al";
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">
       <div className="flex flex-wrap items-center gap-3">
         <Link
           href="/pricing"
-          className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
         >
           Planlara geri dön
         </Link>
       </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-        <section className="rounded-[32px] bg-slate-950 p-8 text-white shadow-[0_25px_80px_rgba(15,23,42,0.22)]">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">Plan Detayı</p>
-          <h1 className="mt-4 text-4xl font-black md:text-5xl">{plan.name}</h1>
+        <section className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_34%),linear-gradient(135deg,rgba(18,20,28,0.98),rgba(10,11,15,0.95)_45%,rgba(31,24,12,0.92))] p-8 text-white shadow-[0_30px_120px_rgba(0,0,0,0.42)] md:p-10">
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.04),transparent)] opacity-40" />
+          <div className="pointer-events-none absolute -right-20 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full border border-amber-300/10" />
+          <div className="pointer-events-none absolute right-16 top-16 h-24 w-24 rounded-full border border-white/10" />
+
+          <div className="relative">
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-5 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-amber-300 shadow-[0_0_24px_rgba(212,168,67,0.12)]">
+              <span className="h-2 w-2 rounded-full bg-amber-400" />
+              Plan Detayı
+            </div>
+          <h1 className="mt-6 text-4xl font-black md:text-6xl">{plan.name}</h1>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
             {plan.description ?? `${plan.name} paketi ile sınav hazırlığını daha düzenli ve ölçülebilir hale getir.`}
           </p>
@@ -127,22 +142,21 @@ export default async function PricingDetailPage({ params, searchParams }: PagePr
             </div>
           )}
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-              <p className="text-sm text-slate-400">Aylık fiyat</p>
-              <p className="mt-2 text-3xl font-black">
-                {plan.monthlyPrice
-                  ? new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(plan.monthlyPrice)
-                  : "Teklif al"}
-              </p>
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Aylık</p>
+              <p className="mt-3 text-3xl font-black text-white">{monthlyLabel}</p>
+              <p className="mt-1 text-sm text-slate-400">Esnek başlangıç ritmi</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-              <p className="text-sm text-slate-400">Yıllık fiyat</p>
-              <p className="mt-2 text-3xl font-black">
-                {plan.yearlyPrice
-                  ? new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(plan.yearlyPrice)
-                  : "Teklif al"}
-              </p>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Yıllık</p>
+              <p className="mt-3 text-3xl font-black text-white">{yearlyLabel}</p>
+              <p className="mt-1 text-sm text-slate-400">Daha kararlı çalışma akışı</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Canlı Ders</p>
+              <p className="mt-3 text-3xl font-black text-white">{plan.includesLiveClass ? "4 Saat" : "Opsiyonel"}</p>
+              <p className="mt-1 text-sm text-slate-400">{plan.includesLiveClass ? "Haftalık Zoom programı dahil" : "Tek ders satın alma açık"}</p>
             </div>
           </div>
 
@@ -150,8 +164,9 @@ export default async function PricingDetailPage({ params, searchParams }: PagePr
             <h2 className="text-xl font-bold">Bu planla neler kazanırsın?</h2>
             <div className="mt-5 grid gap-3">
               {features.map((feature) => (
-                <div key={feature} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-200">
-                  {feature}
+                <div key={feature} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-200">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-400/20 text-xs font-bold text-amber-300">✓</span>
+                  <span>{feature}</span>
                 </div>
               ))}
               {features.length === 0 ? (
@@ -163,17 +178,42 @@ export default async function PricingDetailPage({ params, searchParams }: PagePr
           </div>
 
           <div className="mt-10 grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
               <p className="text-sm font-semibold text-white">1. Adım</p>
-              <p className="mt-2 text-sm leading-6 text-slate-300">Planı incele ve sana uygun ödeme tipini seç.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-300">Planı incele ve çalışma yoğunluğuna göre ödeme tipini seç.</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
               <p className="text-sm font-semibold text-white">2. Adım</p>
-              <p className="mt-2 text-sm leading-6 text-slate-300">Bilgilerini gönder ve satış sürecini başlat.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-300">Bilgilerini gönder, satış akışını aynı panelden başlat.</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
               <p className="text-sm font-semibold text-white">3. Adım</p>
-              <p className="mt-2 text-sm leading-6 text-slate-300">Ödeme ve abonelik kaydın aynı akış içinde işleme alınsın.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-300">Ödeme ve erişim tanımı tek akış içinde tamamlanır.</p>
+            </div>
+          </div>
+
+          <div className="mt-10 grid gap-4 md:grid-cols-[1fr_1fr]">
+            <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+              <div className="flex items-start gap-3">
+                <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-emerald-300">
+                  <ShieldCheck size={18} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">Satış güvenliği</p>
+                  <p className="mt-2 text-sm leading-7 text-slate-300">Tutar bilgisi istemciden değil doğrudan plan kaydından alınır. Satış, lead ve abonelik kaydı aynı zincirde ilerler.</p>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-3xl border border-amber-400/20 bg-amber-400/10 p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-amber-200">Canlı ders notu</p>
+                  <p className="mt-2 text-sm leading-7 text-amber-100/85">{plan.includesLiveClass ? "Bu planda haftada 4 saat canlı ders programı ve soru çözüm desteği yer alır." : "Canlı dersleri istersen bu plan dışında tek tek satın alarak ekleyebilirsin."}</p>
+                </div>
+                <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
+                  <CalendarDays size={18} />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -200,6 +240,7 @@ export default async function PricingDetailPage({ params, searchParams }: PagePr
               </div>
             </div>
           </div>
+          </div>
         </section>
 
         <PlanDetailPurchase
@@ -215,20 +256,23 @@ export default async function PricingDetailPage({ params, searchParams }: PagePr
       </div>
 
       <section className="mt-10 grid gap-8 lg:grid-cols-[1fr_1fr]">
-        <div className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-8 shadow-[0_24px_70px_rgba(0,0,0,0.22)]">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Öğrenci Yorumları</p>
-              <h2 className="mt-3 text-3xl font-black text-slate-950">Bu planı neden tercih ediyorlar?</h2>
+              <h2 className="mt-3 text-3xl font-black text-white">Bu planı neden tercih ediyorlar?</h2>
+            </div>
+            <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
+              <Sparkles size={18} />
             </div>
           </div>
 
           <div className="mt-8 grid gap-4">
             {testimonials.map((item) => (
-              <div key={item.name} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                <p className="text-base leading-7 text-slate-700">“{item.quote}”</p>
+              <div key={item.name} className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                <p className="text-base leading-7 text-slate-300">“{item.quote}”</p>
                 <div className="mt-4">
-                  <p className="text-sm font-bold text-slate-950">{item.name}</p>
+                  <p className="text-sm font-bold text-white">{item.name}</p>
                   <p className="text-xs text-slate-500">{item.role}</p>
                 </div>
               </div>
@@ -236,15 +280,20 @@ export default async function PricingDetailPage({ params, searchParams }: PagePr
           </div>
         </div>
 
-        <div className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-8 shadow-[0_24px_70px_rgba(0,0,0,0.22)]">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Sık Sorulan Sorular</p>
-          <h2 className="mt-3 text-3xl font-black text-slate-950">Karar vermeden önce en çok sorulanlar</h2>
+          <div className="mt-3 flex items-start justify-between gap-4">
+            <h2 className="text-3xl font-black text-white">Karar vermeden önce en çok sorulanlar</h2>
+            <Link href="/pricing" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-white transition hover:bg-white/14">
+              <ArrowUpRight size={18} />
+            </Link>
+          </div>
 
           <div className="mt-8 space-y-4">
             {faqs.map((item) => (
-              <div key={item.question} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                <h3 className="text-base font-bold text-slate-950">{item.question}</h3>
-                <p className="mt-3 text-sm leading-7 text-slate-600">{item.answer}</p>
+              <div key={item.question} className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                <h3 className="text-base font-bold text-white">{item.question}</h3>
+                <p className="mt-3 text-sm leading-7 text-slate-300">{item.answer}</p>
               </div>
             ))}
           </div>

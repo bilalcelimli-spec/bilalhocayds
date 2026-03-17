@@ -1,5 +1,6 @@
 "use client";
 
+import { CalendarDays, Mail, ShieldCheck, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -99,10 +100,19 @@ export function LiveClassSinglePurchase({
   }
 
   return (
-    <div className="rounded-2xl border border-amber-400/30 bg-gradient-to-br from-amber-400/5 to-zinc-900/60 p-5">
+    <div className="rounded-[28px] border border-white/12 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_20px_70px_rgba(0,0,0,0.30)] backdrop-blur-xl">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Tek Ders Satın Alım</p>
+          <h3 className="mt-2 text-xl font-black text-white">Canlı oturuma doğrudan katılım</h3>
+        </div>
+        <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
+          <Sparkles size={18} />
+        </div>
+      </div>
 
       {/* Ders özeti */}
-      <div className="mb-4 rounded-xl border border-white/8 bg-zinc-900/50 p-4">
+      <div className="mb-4 rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-sm font-bold text-white">{title}</p>
@@ -120,7 +130,24 @@ export function LiveClassSinglePurchase({
         ) : null}
 
         {/* Ne içeriyor açıklaması */}
-        <div className="mt-3 border-t border-white/8 pt-3 space-y-1.5">
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <div className="rounded-2xl border border-white/8 bg-black/20 p-3">
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
+              <CalendarDays size={14} className="text-amber-300" />
+              Oturum bilgisi
+            </div>
+            <p className="mt-2 text-xs leading-6 text-slate-400">Ders saatinde canlı katılım, ders sonrası kayıt erişimi ve soru-cevap hakkı.</p>
+          </div>
+          <div className="rounded-2xl border border-white/8 bg-black/20 p-3">
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
+              <Mail size={14} className="text-amber-300" />
+              Teslim akışı
+            </div>
+            <p className="mt-2 text-xs leading-6 text-slate-400">Ödeme onaylandıktan sonra ders bağlantısı e-posta adresine otomatik iletilir.</p>
+          </div>
+        </div>
+
+        <div className="mt-4 border-t border-white/8 pt-3 space-y-1.5">
           <p className="text-xs font-semibold text-slate-300">Bu satın alıma dahil:</p>
           <ul className="space-y-1">
             {[
@@ -134,9 +161,15 @@ export function LiveClassSinglePurchase({
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-xs text-zinc-500">
+          <div className="mt-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs leading-6 text-emerald-100/85">
+            <div className="flex items-center gap-2 font-semibold text-emerald-300">
+              <ShieldCheck size={13} />
+              Güvenli teslim
+            </div>
+            <p className="mt-1 text-emerald-100/80">
             Ödeme onaylanır onaylanmaz ders bağlantısı e-posta adresinize iletilecektir.
-          </p>
+            </p>
+          </div>
         </div>
       </div>
 
@@ -168,7 +201,7 @@ export function LiveClassSinglePurchase({
         {error ? <p className="text-xs text-red-300">{error}</p> : null}
         {success ? <p className="text-xs text-emerald-300">{success}</p> : null}
 
-        <Button type="submit" className="w-full" disabled={pending || !singlePrice || singlePrice <= 0}>
+        <Button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] text-zinc-950 shadow-[0_20px_50px_rgba(212,168,67,0.28)] hover:brightness-105" disabled={pending || !singlePrice || singlePrice <= 0} size="lg">
           {pending ? "Yönlendiriliyor..." : `Derse Katıl · ${formatPrice(singlePrice)}`}
         </Button>
       </form>
