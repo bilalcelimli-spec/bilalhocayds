@@ -5,8 +5,15 @@ import { Navbar } from "@/src/components/layout/navbar";
 import { Footer } from "@/src/components/layout/footer";
 
 export const metadata: Metadata = {
-  title: "BilalHocayds AI",
+  title: "Bilal Hoca YDS",
   description: "AI destekli YDS / YÖKDİL / YDT hazırlık platformu",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/logo.png", type: "image/png", sizes: "500x500" },
+    ],
+    apple: { url: "/logo.png", sizes: "500x500" },
+  },
 };
 
 export default function RootLayout({
