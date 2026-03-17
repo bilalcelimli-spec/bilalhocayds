@@ -59,6 +59,9 @@ export default async function PricingPage() {
 					Vocabulary, reading, grammar, AI planner ve canlı ders erişimini ihtiyacına
 					göre seç. Tüm planlar sınav odaklı içeriklerle hazırlandı.
 				</p>
+				<p className="mt-3 text-sm leading-7 text-amber-300/90">
+					Canlı ders içeren paketlerde program haftada 4 saat olarak planlanır. Dilersen tek tek canlı ders satın alma seçeneğini de kullanabilirsin.
+				</p>
 			</div>
 
 			<PricingCheckout plans={plans} />

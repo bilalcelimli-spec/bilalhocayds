@@ -16,6 +16,7 @@ import { tr } from "date-fns/locale";
 
 import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
+import { buildZoomDesktopLink, getMeetingPlatformLabel } from "@/src/lib/meeting-platform";
 import { prisma } from "@/src/lib/prisma";
 
 const teacherNavItems = [
@@ -64,6 +65,7 @@ export default async function TeacherPage() {
       take: 4,
     }),
   ]);
+  const zoomDesktopLink = buildZoomDesktopLink(nextClass?.meetingLink);
 
   return (
     <DashboardShell
@@ -167,15 +169,31 @@ export default async function TeacherPage() {
                   {nextClass.durationMinutes} dakika
                 </p>
                 {nextClass.meetingLink && (
-                  <Link
-                    href={nextClass.meetingLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-500"
-                  >
-                    Derse Katıl
-                    <ArrowRight size={14} />
-                  </Link>
+                  <p className="mt-1 text-xs text-zinc-400">
+                    Platform: {getMeetingPlatformLabel(nextClass.meetingLink)}
+                  </p>
+                )}
+                {nextClass.meetingLink && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {zoomDesktopLink ? (
+                      <a
+                        href={zoomDesktopLink}
+                        className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500"
+                      >
+                        Zoom&apos;da Aç
+                        <ArrowRight size={14} />
+                      </a>
+                    ) : null}
+                    <Link
+                      href={nextClass.meetingLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-500"
+                    >
+                      Derse Katıl
+                      <ArrowRight size={14} />
+                    </Link>
+                  </div>
                 )}
               </>
             ) : (

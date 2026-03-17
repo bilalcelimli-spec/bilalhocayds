@@ -51,6 +51,11 @@ const faqs = [
     answer:
       "Evet. Planın kapsamına göre canlı ders, AI planlama ve içerik takibi için destek akışı devam eder.",
   },
+  {
+    question: "Canlı dersler haftada ne kadar sürüyor ve tek ders satın alabiliyor muyum?",
+    answer:
+      "Canlı ders içeren paketlerde program haftada toplam 4 saat olacak şekilde planlanır. Ayrıca paket dışında tek tek canlı ders satın alma seçeneği de açıktır.",
+  },
 ];
 
 export default async function PricingDetailPage({ params, searchParams }: PageProps) {
@@ -84,7 +89,7 @@ export default async function PricingDetailPage({ params, searchParams }: PagePr
     plan.includesReading && "Reading modülü ile metin ve analiz çalışması",
     plan.includesGrammar && "Grammar modülü ile konu ve soru takibi",
     plan.includesAIPlanner && "AI çalışma planı ile günlük yönlendirme",
-    plan.includesLiveClass && "Canlı ders erişimi ve soru çözüm desteği",
+    plan.includesLiveClass && "Haftada 4 saat canlı ders erişimi ve soru çözüm desteği",
   ].filter((item): item is string => Boolean(item));
 
   const planLabel = plan.name.toLowerCase();
@@ -111,6 +116,16 @@ export default async function PricingDetailPage({ params, searchParams }: PagePr
           <div className="mt-6 inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
             {planLabel} paketi için detaylı satış ve bilgilendirme ekranı
           </div>
+
+          {plan.includesLiveClass ? (
+            <div className="mt-6 rounded-2xl border border-amber-400/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
+              Bu pakette haftada 4 saat canlı ders erişimi bulunur. Paket dışında da tek tek canlı ders satın alma seçeneği açıktır.
+            </div>
+          ) : (
+            <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-7 text-slate-300">
+              Canlı dersleri bu paket dışında tek tek satın alma modeliyle de alabilirsin.
+            </div>
+          )}
 
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5">

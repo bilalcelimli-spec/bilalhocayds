@@ -73,7 +73,7 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
             plan.includesReading && "Reading modülü",
             plan.includesGrammar && "Grammar modülü",
             plan.includesAIPlanner && "AI çalışma planı",
-            plan.includesLiveClass && "Canlı ders erişimi",
+            plan.includesLiveClass && "Haftada 4 saat canlı ders erişimi",
           ].filter((feature): feature is string => Boolean(feature));
 
           const displayPrice =
@@ -133,6 +133,9 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
                 >
                   {displayPrice && displayPrice > 0 ? "Bu Planla Başla" : "Teklif Al"}
                 </Button>
+                <p className="mt-3 text-center text-xs leading-5 text-zinc-500">
+                  Tek tek canlı ders satın alma seçeneği ayrıca açıktır.
+                </p>
               </div>
             </div>
           );

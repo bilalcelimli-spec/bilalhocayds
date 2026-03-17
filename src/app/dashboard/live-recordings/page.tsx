@@ -7,6 +7,7 @@ import { CalendarDays, Clock3, ExternalLink, ShieldCheck, Video } from "lucide-r
 
 import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
+import { getMeetingPlatformLabel } from "@/src/lib/meeting-platform";
 import { prisma } from "@/src/lib/prisma";
 
 const studentNavItems = [
@@ -18,16 +19,6 @@ const studentNavItems = [
   { label: "Canlı Dersler", href: "/live-classes" },
   { label: "Fiyatlandırma", href: "/pricing" },
 ];
-
-function getPlatformLabel(url: string | null) {
-  if (!url) return "Bağlantı";
-  const lower = url.toLowerCase();
-
-  if (lower.includes("zoom")) return "Zoom";
-  if (lower.includes("meet.google") || lower.includes("google")) return "Google Meet";
-
-  return "Harici Link";
-}
 
 export default async function DashboardLiveRecordingsPage() {
   const session = await getServerSession(authOptions);
@@ -157,7 +148,7 @@ export default async function DashboardLiveRecordingsPage() {
                     {item.durationMinutes} dk
                   </span>
                   <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-sky-200">
-                    {getPlatformLabel(item.meetingLink ?? item.recordingUrl)}
+                    {getMeetingPlatformLabel(item.meetingLink ?? item.recordingUrl)}
                   </span>
                 </div>
                 {item.topicOutline ? (

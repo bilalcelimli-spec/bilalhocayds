@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 
 import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
+import { buildZoomDesktopLink, getMeetingPlatformLabel } from "@/src/lib/meeting-platform";
 import { prisma } from "@/src/lib/prisma";
 
 const adminNavItems = [
@@ -168,12 +169,16 @@ export default async function AdminLiveClassesPage() {
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
         <h2 className="text-sm font-bold text-white">Yeni Canlı Ders Ekle</h2>
+        <p className="mt-2 text-xs leading-6 text-zinc-400">
+          Toplantı linki alanına Zoom veya Google Meet bağlantısı yapıştır. Sistem Zoom linklerini otomatik algılar ve kullanıcıya uygun katılım butonları gösterir.
+          Satış sayfalarında canlı ders paketi haftada 4 saat program olarak anlatılıyor.
+        </p>
         <form action={createClassAction} className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           <input name="title" required placeholder="Ders başlığı" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <input type="datetime-local" name="scheduledAt" required className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <input type="number" name="durationMinutes" min={15} defaultValue={60} required className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
-          <input name="meetingLink" placeholder="Toplantı linki" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
-          <input name="recordingUrl" placeholder="Kayıt linki" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
+          <input name="meetingLink" placeholder="Zoom / Meet toplantı linki" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
+          <input name="recordingUrl" placeholder="Zoom kayıt / video linki" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <input type="number" step="0.01" min={0} name="singlePrice" placeholder="Tek ders satış fiyatı (TRY)" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <textarea name="description" placeholder="Açıklama" rows={2} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <textarea name="topicOutline" placeholder="Konu başlıkları" rows={2} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
@@ -185,6 +190,8 @@ export default async function AdminLiveClassesPage() {
       <div className="space-y-3">
         {classes.map((c) => {
           const isUpcoming = !isPast(c.scheduledAt);
+          const zoomDesktopLink = buildZoomDesktopLink(c.meetingLink);
+          const platformLabel = getMeetingPlatformLabel(c.meetingLink);
           return (
             <div
               key={c.id}
@@ -224,8 +231,8 @@ export default async function AdminLiveClassesPage() {
                           className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300"
                         />
                       </div>
-                      <input name="meetingLink" defaultValue={c.meetingLink ?? ""} placeholder="Toplantı" className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
-                      <input name="recordingUrl" defaultValue={c.recordingUrl ?? ""} placeholder="Kayıt" className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
+                      <input name="meetingLink" defaultValue={c.meetingLink ?? ""} placeholder="Zoom / Meet toplantı linki" className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
+                      <input name="recordingUrl" defaultValue={c.recordingUrl ?? ""} placeholder="Zoom kayıt / video linki" className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
                       <input type="number" step="0.01" min={0} name="singlePrice" defaultValue={c.singlePrice ?? 0} placeholder="Tek ders fiyatı" className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
                       <textarea name="description" defaultValue={c.description ?? ""} rows={2} className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
                       <textarea name="topicOutline" defaultValue={c.topicOutline ?? ""} rows={2} className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
@@ -248,6 +255,11 @@ export default async function AdminLiveClassesPage() {
                       {c.singlePrice && c.singlePrice > 0 ? (
                         <span className="rounded-md border border-amber-400/35 bg-amber-400/10 px-2 py-0.5 text-amber-300">
                           Tek ders: {new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(c.singlePrice)}
+                        </span>
+                      ) : null}
+                      {c.meetingLink ? (
+                        <span className="rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-sky-300">
+                          {platformLabel}
                         </span>
                       ) : null}
                     </div>
@@ -275,6 +287,15 @@ export default async function AdminLiveClassesPage() {
                       Toplantı
                       <ExternalLink size={11} />
                     </Link>
+                  )}
+                  {zoomDesktopLink && (
+                    <a
+                      href={zoomDesktopLink}
+                      className="flex items-center gap-1 rounded-lg bg-emerald-500/15 px-2.5 py-1.5 text-xs text-emerald-300 transition hover:bg-emerald-500/25"
+                    >
+                      Zoom Aç
+                      <ExternalLink size={11} />
+                    </a>
                   )}
                   {c.recordingUrl && (
                     <Link

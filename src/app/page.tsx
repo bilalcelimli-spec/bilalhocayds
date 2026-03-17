@@ -140,7 +140,7 @@ export default async function HomePage() {
               plan.includesReading && "Reading modülü",
               plan.includesGrammar && "Grammar modülü",
               plan.includesAIPlanner && "AI çalışma planı",
-              plan.includesLiveClass && "Canlı ders erişimi",
+              plan.includesLiveClass && "Haftada 4 saat canlı ders erişimi",
             ].filter((item): item is string => Boolean(item));
 
             const isHighlighted = plan.slug === "premium";
@@ -171,6 +171,9 @@ export default async function HomePage() {
                     </li>
                   ))}
                 </ul>
+                <p className="mt-4 text-xs leading-5 text-zinc-500">
+                  Tek tek canlı ders satın alma seçeneği de ayrıca açıktır.
+                </p>
                 <div className="mt-8">
                   <Button href="/pricing" className="w-full">
                     Bu Planla Başla

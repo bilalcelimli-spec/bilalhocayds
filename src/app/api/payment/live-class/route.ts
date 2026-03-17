@@ -30,6 +30,7 @@ export async function POST(request: Request) {
   }
 
   const { liveClassId, fullName, email, phone } = parsed.data;
+  const normalizedEmail = email.toLowerCase().trim();
 
   const liveClass = await prisma.liveClass.findUnique({
     where: { id: liveClassId },
@@ -62,18 +63,41 @@ export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id ?? null;
 
-  // Check for duplicate purchase
   if (userId) {
-    const existing = await prisma.liveClassPurchase.findFirst({
-      where: { liveClassId, userId, status: "PAID" },
+    const activeLiveClassSubscription = await prisma.subscription.findFirst({
+      where: {
+        userId,
+        status: { in: ["ACTIVE", "TRIALING"] },
+        startDate: { lte: new Date() },
+        OR: [{ endDate: null }, { endDate: { gte: new Date() } }],
+        plan: { includesLiveClass: true },
+      },
       select: { id: true },
     });
-    if (existing) {
+
+    if (activeLiveClassSubscription) {
       return NextResponse.json(
-        { error: "Bu derse zaten satın alım yaptınız." },
+        { error: "Canlı ders erişimin zaten aktif. Bu ders için ayrıca tekil satın alım gerekmiyor." },
         { status: 409 },
       );
     }
+  }
+
+  // Check for duplicate purchase
+  const existing = await prisma.liveClassPurchase.findFirst({
+    where: {
+      liveClassId,
+      status: "PAID",
+      OR: userId ? [{ userId }, { email: normalizedEmail }] : [{ email: normalizedEmail }],
+    },
+    select: { id: true },
+  });
+
+  if (existing) {
+    return NextResponse.json(
+      { error: "Bu derse zaten satın alım yaptınız." },
+      { status: 409 },
+    );
   }
 
   const normalizedPhone = phone.replace(/\D/g, "");
@@ -85,7 +109,7 @@ export async function POST(request: Request) {
       userId,
       amount: liveClass.singlePrice,
       fullName: fullName.trim(),
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
       phone: normalizedPhone,
       referenceId,
       status: "PENDING",
@@ -97,7 +121,7 @@ export async function POST(request: Request) {
     const result = await paytrCheckout({
       planName: liveClass.title,
       amount: liveClass.singlePrice,
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
       phone: normalizedPhone,
       userName: fullName.trim(),
       userIp: ip,

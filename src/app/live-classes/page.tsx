@@ -1,16 +1,17 @@
 import { Button } from "@/src/components/common/button";
 import { prisma } from "@/src/lib/prisma";
 import { LiveClassSinglePurchase } from "@/src/components/payment/live-class-single-purchase";
+import { buildZoomDesktopLink, getMeetingPlatformLabel } from "@/src/lib/meeting-platform";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/src/auth";
 
 const classBenefits = [
-	"Canli soru-cevap imkani",
+	"Haftada 4 saat planlanan canli ders programi",
+	"Zoom uzerinden canli soru-cevap imkani",
 	"Ders kayitlarina sonradan erisim",
-	"Haftalik odak konu planlamasi",
-	"Sinav formatina uygun cozum teknikleri",
+	"Tek tek ders satin alma secenegi",
 ];
 
 function formatPrice(price: number | null) {
@@ -28,9 +29,23 @@ function formatPrice(price: number | null) {
 export default async function LiveClassesPage() {
 	const now = new Date();
 	const session = await getServerSession(authOptions);
-	const classes = await prisma.liveClass.findMany({
-		orderBy: { scheduledAt: "asc" },
-	});
+	const [classes, activeLiveClassSubscription] = await Promise.all([
+		prisma.liveClass.findMany({
+			orderBy: { scheduledAt: "asc" },
+		}),
+		session?.user?.id
+			? prisma.subscription.findFirst({
+				where: {
+					userId: session.user.id,
+					status: { in: ["ACTIVE", "TRIALING"] },
+					startDate: { lte: now },
+					OR: [{ endDate: null }, { endDate: { gte: now } }],
+					plan: { includesLiveClass: true },
+				},
+				include: { plan: { select: { name: true } } },
+			})
+			: Promise.resolve(null),
+	]);
 
 	const upcomingClasses = classes.filter((item) => item.scheduledAt >= now);
 	const pastClasses = classes.filter((item) => item.scheduledAt < now);
@@ -55,6 +70,7 @@ export default async function LiveClassesPage() {
 				).map((item) => item.liveClassId),
 		  )
 		: new Set<string>();
+	const hasLiveClassPlan = Boolean(activeLiveClassSubscription);
 
 	return (
 		<div className="mx-auto max-w-7xl px-6 py-10">
@@ -69,7 +85,7 @@ export default async function LiveClassesPage() {
 							Canli ders takvimi ile haftalik ritmini koru
 						</h1>
 						<p className="mt-3 max-w-2xl text-slate-300 md:text-lg">
-							Haftalik grup dersleri, soru cozum oturumlari ve strateji anlatimlariyla
+							Haftada 4 saatlik Zoom grup dersleri, soru cozum oturumlari ve strateji anlatimlariyla
 							sinava hazirligini sistemli, olculebilir ve surekli hale getir.
 						</p>
 					</div>
@@ -88,7 +104,7 @@ export default async function LiveClassesPage() {
 					<p className="text-sm text-slate-400">Bu Hafta Ders</p>
 					<h2 className="mt-2 text-3xl font-black text-white">{weeklyCount} oturum</h2>
 					<p className="mt-2 text-sm text-slate-300">
-						YDS odakli haftalik canli program aktif.
+						Program haftada 4 saatlik canli ders ritmine gore ilerler.
 					</p>
 				</div>
 
@@ -116,14 +132,26 @@ export default async function LiveClassesPage() {
 					<p className="text-sm text-amber-200">Tek Ders Satin Alim</p>
 					<h2 className="mt-2 text-3xl font-black text-white">{purchasableCount} oturum</h2>
 					<p className="mt-2 text-sm text-slate-200">
-						Yillik uyelikten bagimsiz tek ders katilim satin alimi acik.
+						Uyelikten bagimsiz tek tek ders satin alimi da acik.
 					</p>
 				</div>
 			</div>
 
+			{hasLiveClassPlan ? (
+				<div className="mt-6 rounded-3xl border border-emerald-400/30 bg-emerald-400/10 p-5 text-white">
+					<p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">Aktif Canli Ders Erisimi</p>
+					<p className="mt-2 text-lg font-bold">
+						{activeLiveClassSubscription?.plan.name} planin ile tum canli derslere ekstra odeme olmadan katilabilirsin.
+					</p>
+					<p className="mt-2 text-sm text-emerald-100/80">
+						Zoom baglantilari ders kartlarinda otomatik gorunur. Tek ders satin alma sadece uyeligi olmayanlar icin gerekir.
+					</p>
+				</div>
+			) : null}
+
 			<div className="mt-10 grid gap-6 lg:grid-cols-3">
 				{/* Yaklaşan ders spotlight */}
-				{nextClass && !purchasedClassIds.has(nextClass.id) && (nextClass.singlePrice ?? 0) > 0 ? (
+				{nextClass ? (
 					<div className="rounded-3xl border-2 border-amber-400/50 bg-gradient-to-br from-amber-400/10 via-zinc-900/80 to-zinc-900/60 p-6 shadow-[0_20px_60px_rgba(212,168,67,0.20)] backdrop-blur-xl lg:col-span-3">
 						<div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
 							<div className="flex-1">
@@ -143,15 +171,40 @@ export default async function LiveClassesPage() {
 								) : null}
 							</div>
 							<div className="w-full lg:w-80 shrink-0">
-								<LiveClassSinglePurchase
-									liveClassId={nextClass.id}
-									title={nextClass.title}
-									description={nextClass.description}
-									topicOutline={nextClass.topicOutline}
-									scheduledAt={nextClass.scheduledAt}
-									durationMinutes={nextClass.durationMinutes}
-									singlePrice={nextClass.singlePrice}
-								/>
+								{hasLiveClassPlan || purchasedClassIds.has(nextClass.id) ? (
+									<div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-5">
+										<p className="text-sm font-bold text-emerald-200">
+											{hasLiveClassPlan ? "Bu ders planina dahil" : "Bu dersi satin aldin"}
+										</p>
+										<p className="mt-2 text-xs leading-6 text-emerald-100/80">
+											{nextClass.meetingLink
+												? `${getMeetingPlatformLabel(nextClass.meetingLink)} baglantin hazir.`
+												: "Ders baglantisi ders saatine yakin aktif edilir ve e-posta ile de paylasilir."}
+										</p>
+										<div className="mt-4 flex flex-wrap gap-3">
+											{buildZoomDesktopLink(nextClass.meetingLink) ? (
+												<a href={buildZoomDesktopLink(nextClass.meetingLink) ?? "#"} className="inline-flex items-center rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-emerald-300">
+													Zoom&apos;da Ac
+												</a>
+											) : null}
+											{nextClass.meetingLink ? (
+												<a href={nextClass.meetingLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">
+													Tarayicida Katil
+												</a>
+											) : null}
+										</div>
+									</div>
+								) : (
+									<LiveClassSinglePurchase
+										liveClassId={nextClass.id}
+										title={nextClass.title}
+										description={nextClass.description}
+										topicOutline={nextClass.topicOutline}
+										scheduledAt={nextClass.scheduledAt}
+										durationMinutes={nextClass.durationMinutes}
+										singlePrice={nextClass.singlePrice}
+									/>
+								)}
 							</div>
 						</div>
 					</div>
@@ -179,6 +232,8 @@ export default async function LiveClassesPage() {
 
 						{upcomingClasses.map((item, index) => {
 							const alreadyPurchased = purchasedClassIds.has(item.id);
+							const hasAccess = hasLiveClassPlan || alreadyPurchased;
+							const zoomDesktopLink = buildZoomDesktopLink(item.meetingLink);
 							return (
 							<div
 								key={item.id}
@@ -203,17 +258,38 @@ export default async function LiveClassesPage() {
 										</div>
 									</div>
 									<span className="inline-flex rounded-full border border-amber-400/35 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-300">
-										{alreadyPurchased
-											? "SATIN ALINDI"
+										{hasLiveClassPlan
+											? "UYELIKTE DAHIL"
+											: alreadyPurchased
+												? "SATIN ALINDI"
 											: (item.singlePrice ?? 0) > 0
 												? `TEK DERS ${formatPrice(item.singlePrice)}`
 												: "SADECE UYELIK"}
 									</span>
 								</div>
 								<div className="mt-4">
-									{alreadyPurchased ? (
-										<div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4 text-sm font-semibold text-emerald-200">
-											Bu derse tek ders satin alim ile erisim hakkin var.
+									{hasAccess ? (
+										<div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4 text-sm text-emerald-100">
+											<p className="font-semibold text-emerald-200">
+												{hasLiveClassPlan ? "Planin ile bu derse dogrudan katilabilirsin." : "Bu derse tek ders satin alim ile erisim hakkin var."}
+											</p>
+											<p className="mt-2 text-xs text-emerald-100/80">
+												{item.meetingLink
+													? `${getMeetingPlatformLabel(item.meetingLink)} baglantisi aktif.`
+													: "Baglanti ders saatine yakin aktif edilir ve e-posta ile de paylasilir."}
+											</p>
+											<div className="mt-3 flex flex-wrap gap-2">
+												{zoomDesktopLink ? (
+													<a href={zoomDesktopLink} className="inline-flex items-center rounded-xl bg-emerald-400 px-3 py-2 text-xs font-semibold text-zinc-950 hover:bg-emerald-300">
+														Zoom&apos;da Ac
+													</a>
+												) : null}
+												{item.meetingLink ? (
+													<a href={item.meetingLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10">
+														Derse Katil
+													</a>
+												) : null}
+											</div>
 										</div>
 									) : (
 										<LiveClassSinglePurchase
@@ -262,10 +338,10 @@ export default async function LiveClassesPage() {
 
 					<div className="rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-400/15 to-zinc-900/70 p-6 text-white shadow-[0_14px_40px_rgba(212,168,67,0.16)]">
 						<p className="text-sm font-semibold text-amber-200">Bilal Hoca notu</p>
-						<h3 className="mt-2 text-xl font-black">Tek ders satin alim bagimsizdir</h3>
+						<h3 className="mt-2 text-xl font-black">Haftada 4 saat + tek ders secenegi</h3>
 						<p className="mt-3 text-sm leading-7 text-slate-200">
-							Yillik uyeligin olmasa bile tek ders satin alip ilgili oturuma katilabilirsin.
-							Yillik plan ise tum derslere devamli erisim avantajini korur.
+							Canli ders paketleri haftada 4 saatlik duzenli programa gore planlanir.
+							Uyelik istemezsen ilgili oturumu tek tek satin alip Zoom uzerinden katilim saglayabilirsin.
 						</p>
 					</div>
 				</div>
