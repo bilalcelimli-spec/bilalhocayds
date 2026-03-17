@@ -10,6 +10,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,7 +26,7 @@ export function LoginForm() {
     setPending(false);
 
     if (result?.error) {
-      setError("Email veya şifre hatalı.");
+      setError("E-posta veya şifre hatalı. Lütfen kontrol et.");
       return;
     }
 
@@ -37,11 +38,12 @@ export function LoginForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="mb-2 block text-sm font-medium text-slate-300">
-          Email
+          E-posta
         </label>
         <input
           type="email"
-          className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-white/45"
+          required
+          className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/20"
           placeholder="ornek@mail.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -52,23 +54,34 @@ export function LoginForm() {
         <label className="mb-2 block text-sm font-medium text-slate-300">
           Şifre
         </label>
-        <input
-          type="password"
-          className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-white/45"
-          placeholder="******"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        <div className="relative">
+          <input
+            type={showPassword ? "text" : "password"}
+            required
+            className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 pr-16 text-white outline-none placeholder:text-slate-500 focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/20"
+            placeholder="Şifreniz"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white"
+            tabIndex={-1}
+          >
+            {showPassword ? "Gizle" : "Göster"}
+          </button>
+        </div>
       </div>
 
       {error ? (
-        <p className="text-sm font-medium text-red-400">{error}</p>
+        <p className="rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-sm text-red-400">{error}</p>
       ) : null}
 
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-2xl bg-white px-5 py-3 font-semibold text-zinc-900 transition hover:bg-zinc-200 disabled:opacity-50"
+        className="w-full rounded-2xl bg-amber-400 px-5 py-3 font-bold text-zinc-900 shadow-[0_4px_20px_rgba(212,168,67,0.3)] transition hover:bg-amber-300 disabled:opacity-50"
       >
         {pending ? "Giriş yapılıyor..." : "Giriş Yap"}
       </button>

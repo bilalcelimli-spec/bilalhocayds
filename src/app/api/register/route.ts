@@ -8,8 +8,8 @@ const registerSchema = z.object({
   name: z.string().min(2),
   email: z.email(),
   password: z.string().min(6),
-  interestTags: z.array(z.string().min(2)).min(1).max(8),
-  priorityTags: z.array(z.string().min(2)).max(2).default([]),
+  interestTags: z.array(z.string().min(2)).min(1).max(8).optional().default([]),
+  priorityTags: z.array(z.string().min(2)).max(2).optional().default([]),
 });
 
 export async function POST(req: Request) {
@@ -25,73 +25,65 @@ export async function POST(req: Request) {
     }
 
     const { name, email, password, interestTags, priorityTags } = parsed.data;
-    const normalizedPriority = priorityTags.filter((tag) => interestTags.includes(tag));
-    const orderedInterestTags = [
-      ...normalizedPriority,
-      ...interestTags.filter((tag) => !normalizedPriority.includes(tag)),
-    ];
-
     const normalizedEmail = email.toLowerCase();
+
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
       select: { id: true, password: true },
     });
 
-    if (!existingUser) {
-      return Response.json(
-        { error: "Kayit icin once bir paket satin almalisin." },
-        { status: 403 },
-      );
-    }
-
-    if (existingUser.password) {
-      return Response.json({ error: "Bu email zaten kayitli" }, { status: 409 });
-    }
-
-    const now = new Date();
-    const activeSubscription = await prisma.subscription.findFirst({
-      where: {
-        userId: existingUser.id,
-        status: { in: ["ACTIVE", "TRIALING"] },
-        startDate: { lte: now },
-        OR: [{ endDate: null }, { endDate: { gte: now } }],
-      },
-      select: { id: true },
-    });
-
-    if (!activeSubscription) {
-      return Response.json(
-        { error: "Aktif paket bulunamadi. Once odeme adimini tamamlamalisin." },
-        { status: 403 },
-      );
+    if (existingUser?.password) {
+      // Hesap zaten aktif → giriş yap
+      return Response.json({ error: "Bu e-posta adresi zaten kayıtlı. Giriş sayfasını kullan." }, { status: 409 });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.update({
-      where: { id: existingUser.id },
-      data: {
-        name,
-        password: hashedPassword,
-        role: "STUDENT",
-        studentProfile: {
-          upsert: {
-            update: {
-              interestTags: orderedInterestTags,
-            },
-            create: {
-            interestTags: orderedInterestTags,
+    const normalizedPriority = (priorityTags ?? []).filter((tag) => (interestTags ?? []).includes(tag));
+    const orderedInterestTags = [
+      ...normalizedPriority,
+      ...(interestTags ?? []).filter((tag) => !normalizedPriority.includes(tag)),
+    ];
+
+    let user;
+
+    if (existingUser) {
+      // Satın alma sırasında oluşturulmuş hesap — şifreyi set et
+      user = await prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          name,
+          password: hashedPassword,
+          role: "STUDENT",
+          studentProfile: {
+            upsert: {
+              update: { interestTags: orderedInterestTags },
+              create: { interestTags: orderedInterestTags },
             },
           },
         },
-      },
-    });
+      });
+    } else {
+      // Yeni kullanıcı — serbest kayıt, abonelik sonradan alınır
+      user = await prisma.user.create({
+        data: {
+          name,
+          email: normalizedEmail,
+          password: hashedPassword,
+          role: "STUDENT",
+          studentProfile: {
+            create: { interestTags: orderedInterestTags },
+          },
+        },
+      });
+    }
 
     return Response.json(
-      { message: "Kullanici olusturuldu", userId: user.id },
+      { message: "Kayit basarili", userId: user.id },
       { status: 201 }
     );
   } catch {
     return Response.json({ error: "Sunucu hatasi" }, { status: 500 });
   }
 }
+
