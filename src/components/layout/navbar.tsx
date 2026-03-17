@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/src/auth";
 import { Button } from "@/src/components/common/button";
+import { NavSignOutButton } from "@/src/components/layout/nav-sign-out-button";
 
 export async function Navbar() {
   const session = await getServerSession(authOptions);
@@ -53,7 +54,10 @@ export async function Navbar() {
 
         <div className="flex items-center gap-3">
           {session?.user ? (
-            <Button href={dashboardHref}>Dashboard</Button>
+            <>
+              <Button href={dashboardHref}>Dashboard</Button>
+              <NavSignOutButton />
+            </>
           ) : (
             <>
               <Link href="/login" className="text-sm font-medium text-zinc-300 hover:text-white">
