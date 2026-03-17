@@ -104,12 +104,15 @@ export async function POST(request: Request) {
   });
 
   const referenceId = purchase.referenceId;
+  const userIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "127.0.0.1";
 
   const payment = await paytrCheckout({
     planName: `Tek Ders - ${liveClass.title}`,
     amount: liveClass.singlePrice,
     email: email.toLowerCase(),
     phone: normalizedPhone,
+    userName: fullName.trim(),
+    userIp,
     userId: session?.user?.id ?? email.toLowerCase(),
     referenceId,
   });
