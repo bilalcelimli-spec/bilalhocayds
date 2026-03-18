@@ -14,6 +14,10 @@ const bodySchema = z.object({
   phone: z.string().min(10).max(20),
 });
 
+function createLivePurchaseReferenceId(liveClassId: string) {
+  return `livep${liveClassId}${Date.now()}`;
+}
+
 export async function POST(request: Request) {
   const ip = getClientIp(request);
   if (isRateLimited(`livepay:${ip}`, 8, 60_000)) {
@@ -101,7 +105,7 @@ export async function POST(request: Request) {
   }
 
   const normalizedPhone = phone.replace(/\D/g, "");
-  const referenceId = `livep:${liveClassId}:${Date.now()}`;
+  const referenceId = createLivePurchaseReferenceId(liveClassId);
 
   const purchase = await prisma.liveClassPurchase.create({
     data: {

@@ -17,6 +17,14 @@ const requestSchema = z.object({
 
 const rateLimitStore = new Map<string, number[]>();
 
+function createLeadReferenceId() {
+  return `lead${Date.now()}`;
+}
+
+function createSubscriptionReferenceId(subscriptionId: string) {
+  return `sub${subscriptionId}`;
+}
+
 function getClientKey(request: Request) {
   const forwarded = request.headers.get("x-forwarded-for");
   const ip = forwarded?.split(",")[0]?.trim() ?? "unknown";
@@ -114,7 +122,7 @@ export async function POST(request: Request) {
 
     const session = await getServerSession(authOptions);
 
-    let referenceId = `lead:${email.toLowerCase()}`;
+    let referenceId = createLeadReferenceId();
     if (session?.user?.id) {
       const now = new Date();
       const endDate = new Date(now);
@@ -142,7 +150,7 @@ export async function POST(request: Request) {
           },
           select: { id: true },
         });
-        referenceId = `sub:${updated.id}`;
+        referenceId = createSubscriptionReferenceId(updated.id);
       } else {
         const created = await prisma.subscription.create({
           data: {
@@ -156,7 +164,7 @@ export async function POST(request: Request) {
           },
           select: { id: true },
         });
-        referenceId = `sub:${created.id}`;
+        referenceId = createSubscriptionReferenceId(created.id);
       }
     } else {
       const now = new Date();
@@ -218,7 +226,7 @@ export async function POST(request: Request) {
           },
           select: { id: true },
         });
-        referenceId = `sub:${updated.id}`;
+        referenceId = createSubscriptionReferenceId(updated.id);
       } else {
         const created = await prisma.subscription.create({
           data: {
@@ -232,9 +240,8 @@ export async function POST(request: Request) {
           },
           select: { id: true },
         });
-        referenceId = `sub:${created.id}`;
+        referenceId = createSubscriptionReferenceId(created.id);
       }
-
     }
 
     const forwarded = request.headers.get("x-forwarded-for");

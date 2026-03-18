@@ -15,6 +15,10 @@ const requestSchema = z.object({
 
 const rateLimitStore = new Map<string, number[]>();
 
+function createLivePurchaseReferenceId() {
+  return `livep${Date.now()}${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function getClientKey(request: Request) {
   const forwarded = request.headers.get("x-forwarded-for");
   const ip = forwarded?.split(",")[0]?.trim() ?? "unknown";
@@ -98,7 +102,7 @@ export async function POST(request: Request) {
       fullName: fullName.trim(),
       email: email.toLowerCase(),
       phone: normalizedPhone,
-      referenceId: `livep:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
+      referenceId: createLivePurchaseReferenceId(),
     },
     select: { id: true, referenceId: true },
   });

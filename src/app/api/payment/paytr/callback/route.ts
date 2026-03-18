@@ -62,8 +62,8 @@ export async function POST(request: Request) {
     return textResponse("PAYTR notification failed", 400);
   }
 
-  if (merchantOid.startsWith("sub:")) {
-    const subscriptionId = merchantOid.slice(4);
+  if (merchantOid.startsWith("sub")) {
+    const subscriptionId = merchantOid.slice(3);
     const nextStatus = status === "success" ? "ACTIVE" : "PAST_DUE";
 
     await prisma.subscription
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
       .catch(() => null);
   }
 
-  if (merchantOid.startsWith("livep:")) {
+  if (merchantOid.startsWith("livep")) {
     const nextStatus = status === "success" ? "PAID" : "FAILED";
     await prisma.liveClassPurchase
       .updateMany({
@@ -123,7 +123,7 @@ export async function POST(request: Request) {
     }
   }
 
-  if (merchantOid.startsWith("lead:") && status !== "success") {
+  if (merchantOid.startsWith("lead") && status !== "success") {
     console.error("PayTR lead payment failed", {
       merchantOid,
       failedReasonCode,
