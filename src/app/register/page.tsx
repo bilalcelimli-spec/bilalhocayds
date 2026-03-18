@@ -72,7 +72,7 @@ export default function RegisterPage() {
           <div className="pointer-events-none absolute -left-8 bottom-10 h-40 w-40 rounded-full bg-amber-400/10 blur-3xl" />
 
           <div className="relative">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Create Account</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Yeni Hesap</p>
             <h2 className="mt-3 text-3xl font-black text-white">Hesap Oluştur</h2>
             <p className="mt-3 text-sm leading-7 text-slate-400">
               Ad, e-posta ve şifre ile saniyeler içinde kayıt ol. Kayıt sonrası giriş ekranına yönlendirilirsin.

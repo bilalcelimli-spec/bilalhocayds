@@ -44,7 +44,7 @@ async function main() {
     create: {
       name: "Premium",
       slug: "premium",
-      description: "Tum moduller + canli dersler",
+      description: "Tüm modüller + canlı dersler",
       monthlyPrice: 799,
       yearlyPrice: 7990,
       includesVocab: true,

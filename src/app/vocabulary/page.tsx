@@ -5,9 +5,9 @@ export const dynamic = "force-dynamic";
 
 const studySteps = [
 	"10 kelimeyi sesli tekrar ederek oku",
-	"Her kelime icin en az bir baglamsal ipucu cikar",
-	"AI ornek cumlesini incele ve kendi cumleni yaz",
-	"Gun sonunda mini quiz ile tekrar et",
+	"Her kelime için en az bir bağlamsal ipucu çıkar",
+	"AI örnek cümlesini incele ve kendi cümleni yaz",
+	"Gün sonunda mini quiz ile tekrar et",
 ];
 
 export default async function VocabularyPage() {
@@ -22,17 +22,17 @@ export default async function VocabularyPage() {
 						AI Vocabulary Lab
 					</span>
 					<h1 className="mt-4 text-3xl font-black text-white md:text-4xl">
-						Her gun 10 akademik kelime ile AI destekli calisma
+						Her gün 10 akademik kelime ile AI destekli çalışma
 					</h1>
 					<p className="mt-3 max-w-2xl text-slate-300">
-						Bugun icin secilen 10 akademik kelime; Ingilizce ornek cumle, Turkce
-						anlam ve ceviri ile birlikte hazirlandi.
+						Bugün için seçilen 10 akademik kelime; İngilizce örnek cümle, Türkçe
+						anlam ve çeviri ile birlikte hazırlandı.
 					</p>
 				</div>
 
 				<div className="flex flex-wrap gap-3">
 					<Button href="/dashboard" variant="outline">
-						Dashboard&apos;a Don
+						Dashboard&apos;a Dön
 					</Button>
 					<Button href="/pricing">Premium Kelime Setleri</Button>
 				</div>
@@ -40,10 +40,10 @@ export default async function VocabularyPage() {
 
 			<div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
 				<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl">
-					<p className="text-sm text-slate-400">Bugunku Hedef</p>
+					<p className="text-sm text-slate-400">Bugünkü Hedef</p>
 					<h2 className="mt-2 text-3xl font-black text-white">10 kelime</h2>
 					<p className="mt-2 text-sm text-slate-300">
-						AI secimiyle bugun odaklanilacak akademik set.
+						AI seçimiyle bugün odaklanılacak akademik set.
 					</p>
 				</div>
 
@@ -51,23 +51,23 @@ export default async function VocabularyPage() {
 					<p className="text-sm text-slate-400">AI Modeli</p>
 					<h2 className="mt-2 text-3xl font-black text-white">{vocab.model}</h2>
 					<p className="mt-2 text-sm text-slate-300">
-						Gorevler gunluk tarih ve seviye odagina gore uretilir.
+						Görevler günlük tarih ve seviye odağına göre üretilir.
 					</p>
 				</div>
 
 				<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl">
-					<p className="text-sm text-slate-400">Ornek Cumle</p>
+					<p className="text-sm text-slate-400">Örnek Cümle</p>
 					<h2 className="mt-2 text-3xl font-black text-white">20 adet</h2>
 					<p className="mt-2 text-sm text-slate-300">
-						Her kelime kartinda 2 ornek cumle ve 2 Turkce ceviri.
+						Her kelime kartında 2 örnek cümle ve 2 Türkçe çeviri.
 					</p>
 				</div>
 
 				<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl">
-					<p className="text-sm text-slate-400">Guncelleme</p>
+					<p className="text-sm text-slate-400">Güncelleme</p>
 					<h2 className="mt-2 text-3xl font-black text-white">Gunluk</h2>
 					<p className="mt-2 text-sm text-slate-300">
-						Liste her gun farkli bir akademik odakla yenilenir.
+						Liste her gün farklı bir akademik odakla yenilenir.
 					</p>
 				</div>
 			</div>
@@ -76,13 +76,13 @@ export default async function VocabularyPage() {
 				<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl lg:col-span-2">
 					<div className="flex items-center justify-between gap-4">
 						<div>
-							<h2 className="text-xl font-bold text-white">Bugunun 10 akademik kelimesi</h2>
+							<h2 className="text-xl font-bold text-white">Bugünün 10 akademik kelimesi</h2>
 							<p className="mt-1 text-sm text-slate-300">
-								Her kartta kelime, seviye, Turkce anlam, ornek cumle ve ceviri yer alir.
+								Her kartta kelime, seviye, Türkçe anlam, örnek cümle ve çeviri yer alır.
 							</p>
 						</div>
 						<Button variant="secondary" size="sm">
-							Mini Quiz Baslat
+							Mini Quiz Başlat
 						</Button>
 					</div>
 
@@ -118,7 +118,7 @@ export default async function VocabularyPage() {
 
 				<div className="space-y-6">
 					<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl">
-						<h2 className="text-xl font-bold text-white">Calisma akisi</h2>
+						<h2 className="text-xl font-bold text-white">Çalışma akışı</h2>
 						<div className="mt-5 space-y-3">
 							{studySteps.map((step, index) => (
 								<div
@@ -135,21 +135,21 @@ export default async function VocabularyPage() {
 					</div>
 
 					<div className="rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-400/15 to-zinc-900/70 p-6 text-white shadow-[0_12px_40px_rgba(212,168,67,0.12)]">
-						<p className="text-sm font-semibold text-amber-200">Bilal Hoca onerisi</p>
-						<h3 className="mt-2 text-xl font-black">Academic word list tekrar gunu</h3>
+						<p className="text-sm font-semibold text-amber-200">Bilal Hoca önerisi</p>
+						<h3 className="mt-2 text-xl font-black">Academic word list tekrar günü</h3>
 						<p className="mt-3 text-sm leading-7 text-slate-200">
-							Bugun ozellikle academic ve baglac temelli kelimelere odaklan. YDS
-							reading sorularinda bu grup sana hiz kazandirir.
+							Bugün özellikle academic ve bağlaç temelli kelimelere odaklan. YDS
+							reading sorularında bu grup sana hız kazandırır.
 						</p>
 					</div>
 				</div>
 			</div>
 
-			<div className="mt-8 rounded-3xl border border-zinc-300 bg-zinc-200 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.12)]">
+			<div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.12)]">
 				<div className="flex flex-wrap items-center justify-between gap-3">
-					<h2 className="text-xl font-bold text-white">Gunluk AI okuma parcasi</h2>
+					<h2 className="text-xl font-bold text-white">Günlük AI okuma parçası</h2>
 					<span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-300">
-						Gunun kelimeleri bu metinde geciyor
+						Günün kelimeleri bu metinde geçiyor
 					</span>
 				</div>
 				<h3 className="mt-3 text-lg font-semibold text-slate-100">{vocab.reading.title}</h3>
