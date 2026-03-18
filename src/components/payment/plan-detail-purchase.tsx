@@ -50,6 +50,25 @@ export default function PlanDetailPurchase({ plan, initialCycle }: PlanDetailPur
 
   const amount = billingCycle === "YEARLY" ? plan.yearlyPrice : plan.monthlyPrice;
 
+  async function readResponsePayload(response: Response) {
+    const contentType = response.headers.get("content-type") ?? "";
+    if (contentType.includes("application/json")) {
+      return (await response.json()) as {
+        error?: string;
+        orderReference?: string;
+        payment?: {
+          redirectUrl?: string;
+          token?: string;
+          message?: string;
+          status?: string;
+        };
+      };
+    }
+
+    const text = await response.text();
+    return { error: text || "Beklenmeyen sunucu cevabi alindi." };
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!amount || amount <= 0) {
@@ -61,55 +80,51 @@ export default function PlanDetailPurchase({ plan, initialCycle }: PlanDetailPur
     setError("");
     setSuccess("");
 
-    const response = await fetch("/api/payment/paytr", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        planId: plan.id,
-        planSlug: plan.slug,
-        billingCycle,
-        fullName,
-        email,
-        phone,
-      }),
-    });
+    try {
+      const response = await fetch("/api/payment/paytr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          planId: plan.id,
+          planSlug: plan.slug,
+          billingCycle,
+          fullName,
+          email,
+          phone,
+        }),
+      });
 
-    const data = (await response.json()) as {
-      error?: string;
-      orderReference?: string;
-      payment?: {
-        redirectUrl?: string;
-        token?: string;
-        message?: string;
-        status?: string;
-      };
-    };
-    setPending(false);
+      const data = await readResponsePayload(response);
+      setPending(false);
 
-    if (!response.ok) {
-      setError(data.error ?? "Satış işlemi başlatılamadı.");
-      return;
-    }
+      if (!response.ok) {
+        setError(data.error ?? "Satış işlemi başlatılamadı.");
+        return;
+      }
 
-    const redirectUrl = resolvePaytrRedirectUrl(data.payment);
+      const redirectUrl = resolvePaytrRedirectUrl(data.payment);
 
-    if (redirectUrl) {
-      window.location.href = redirectUrl;
-      return;
-    }
+      if (redirectUrl) {
+        window.location.href = redirectUrl;
+        return;
+      }
 
-    if (data.payment?.token) {
+      if (data.payment?.token) {
+        setSuccess(
+          data.payment.message ??
+            "Ödeme oturumu oluşturuldu ama yönlendirme URL'i üretilemedi.",
+        );
+        return;
+      }
+
       setSuccess(
-        data.payment.message ??
-          "Ödeme oturumu oluşturuldu ama yönlendirme URL'i üretilemedi.",
+        data.payment?.message ??
+          "Satış süreci başlatıldı. Ödeme yönlendirmesi ve takip için sizinle iletişime geçilecektir.",
       );
-      return;
+    } catch (error) {
+      setPending(false);
+      setError(error instanceof Error ? error.message : "Satış işlemi sırasında beklenmeyen bir hata oluştu.");
     }
-
-    setSuccess(
-      data.payment?.message ??
-        "Satış süreci başlatıldı. Ödeme yönlendirmesi ve takip için sizinle iletişime geçilecektir.",
-    );
   }
 
   return (
