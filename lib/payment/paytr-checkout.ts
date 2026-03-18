@@ -46,64 +46,6 @@ export type PaytrCheckoutResult = {
   payload: Record<string, unknown>;
 };
 
-function extractFirstString(
-  source: PaymentGatewayResponse,
-  keys: string[],
-): string | undefined {
-  for (const key of keys) {
-    const value = source[key];
-    if (typeof value === "string" && value.trim()) {
-      return value;
-    }
-  }
-
-  return undefined;
-}
-
-function normalizePaytrResponse(
-  response: PaymentGatewayResponse,
-  payload: Record<string, unknown>,
-  orderReference: string,
-): PaytrCheckoutResult {
-  const iframeBaseUrl = resolveIframeBaseUrl();
-  const token = extractFirstString(response, ["token", "iframe_token", "paytr_token"]);
-  const directRedirectUrl = extractFirstString(response, [
-    "redirectUrl",
-    "redirect_url",
-    "payment_url",
-    "payment_link",
-    "link",
-    "url",
-  ]);
-
-  const redirectUrl = directRedirectUrl ?? (token && iframeBaseUrl ? `${iframeBaseUrl}${token}` : undefined);
-  const statusValue = String(response.status ?? response.result ?? "").toLowerCase();
-  const successFlag =
-    response.success === true ||
-    statusValue === "success" ||
-    statusValue === "ok" ||
-    Boolean(redirectUrl) ||
-    Boolean(token);
-  const status: PaytrCheckoutResult["status"] = successFlag
-    ? redirectUrl || token
-      ? "pending"
-      : "success"
-    : "failed";
-
-  return {
-    success: successFlag,
-    provider: "paytr",
-    mode: "live",
-    status,
-    message: extractFirstString(response, ["message", "reason", "error_message", "failed_reason_msg"]),
-    redirectUrl,
-    token,
-    orderReference,
-    raw: response,
-    payload,
-  };
-}
-
 export async function paytrCheckout({
   planName,
   amount,

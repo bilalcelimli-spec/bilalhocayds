@@ -22,7 +22,6 @@ import {
   Sparkles,
   Target,
   Wand2,
-  X,
 } from "lucide-react";
 
 import {
@@ -352,41 +351,44 @@ export default function SeoEditor({
   const contentNotes = String(readField("contentNotes", ""));
   const robotsDirectives = String(readField("robotsDirectives", ""));
 
-  const auditItems = useMemo(() => {
-    const titleLength = title.trim().length;
-    const descLength = description.trim().length;
-    const states = [
-      {
-        label: title ? "Title hazır" : "Title eksik",
-        state: !title ? "error" : titleLength >= 45 && titleLength <= 60 ? "ok" : "warn",
-      },
-      {
-        label: description ? "Description hazır" : "Description eksik",
-        state: !description ? "error" : descLength >= 135 && descLength <= 160 ? "ok" : "warn",
-      },
-      {
-        label: primaryKeyword ? "Ana kelime tanımlı" : "Ana kelime eksik",
-        state: primaryKeyword ? "ok" : "warn",
-      },
-      {
-        label: ogImage ? "OG görsel hazır" : "OG görsel eksik",
-        state: ogImage ? "ok" : "warn",
-      },
-      {
-        label: schemaMarkup ? "Schema hazır" : "Schema eksik",
-        state: schemaMarkup ? "ok" : "warn",
-      },
-      {
-        label: readField("canonicalUrl", "") ? "Canonical hazır" : "Canonical eksik",
-        state: readField("canonicalUrl", "") ? "ok" : "warn",
-      },
-      {
-        label: readField("noIndex", false) ? "Noindex aktif" : "Index açık",
-        state: readField("noIndex", false) ? "warn" : "ok",
-      },
-    ] as Array<{ label: string; state: "ok" | "warn" | "error" }>;
-    return states;
-  }, [description, ogImage, primaryKeyword, readField, schemaMarkup, title]);
+  const canonicalUrl = String(readField("canonicalUrl", ""));
+  const noIndex = Boolean(readField("noIndex", false));
+
+  const auditItems: Array<{ label: string; state: "ok" | "warn" | "error" }> = [
+    {
+      label: title ? "Title hazır" : "Title eksik",
+      state: !title ? "error" : title.trim().length >= 45 && title.trim().length <= 60 ? "ok" : "warn",
+    },
+    {
+      label: description ? "Description hazır" : "Description eksik",
+      state:
+        !description
+          ? "error"
+          : description.trim().length >= 135 && description.trim().length <= 160
+            ? "ok"
+            : "warn",
+    },
+    {
+      label: primaryKeyword ? "Ana kelime tanımlı" : "Ana kelime eksik",
+      state: primaryKeyword ? "ok" : "warn",
+    },
+    {
+      label: ogImage ? "OG görsel hazır" : "OG görsel eksik",
+      state: ogImage ? "ok" : "warn",
+    },
+    {
+      label: schemaMarkup ? "Schema hazır" : "Schema eksik",
+      state: schemaMarkup ? "ok" : "warn",
+    },
+    {
+      label: canonicalUrl ? "Canonical hazır" : "Canonical eksik",
+      state: canonicalUrl ? "ok" : "warn",
+    },
+    {
+      label: noIndex ? "Noindex aktif" : "Index açık",
+      state: noIndex ? "warn" : "ok",
+    },
+  ];
 
   const coverage = useMemo(() => {
     const total = pages.length;
