@@ -260,16 +260,23 @@ export async function POST(request: Request) {
   const forwarded = request.headers.get("x-forwarded-for");
   const userIp = forwarded?.split(",")[0]?.trim() ?? "127.0.0.1";
 
-  const payment: PaytrCheckoutResult = await paytrCheckout({
-    planName: plan.name,
-    amount,
-    email: email.toLowerCase(),
-    phone: normalizedPhone,
-    userName: fullName.trim(),
-    userIp,
-    userId: session?.user?.id ?? email.toLowerCase(),
-    referenceId,
-  });
+  let payment: PaytrCheckoutResult;
+
+  try {
+    payment = await paytrCheckout({
+      planName: plan.name,
+      amount,
+      email: email.toLowerCase(),
+      phone: normalizedPhone,
+      userName: fullName.trim(),
+      userIp,
+      userId: session?.user?.id ?? email.toLowerCase(),
+      referenceId,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "PayTR odeme baslatilamadi.";
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
 
   return NextResponse.json({
     success: true,

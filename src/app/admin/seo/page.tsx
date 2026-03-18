@@ -28,9 +28,54 @@ export default async function AdminSeoPage() {
     redirect("/login");
   }
 
-  const configs = await prisma.seoConfig.findMany({
-    orderBy: { updatedAt: "desc" },
-  });
+  let dbError: string | null = null;
+  let configs: Array<{
+    id: string;
+    pageKey: string;
+    pageLabel: string;
+    pagePath: string | null;
+    title: string | null;
+    description: string | null;
+    primaryKeyword: string | null;
+    secondaryKeywords: string | null;
+    searchIntent: string | null;
+    keywords: string | null;
+    ogTitle: string | null;
+    ogDescription: string | null;
+    ogImage: string | null;
+    ogType: string | null;
+    twitterTitle: string | null;
+    twitterDescription: string | null;
+    twitterImage: string | null;
+    twitterCard: string | null;
+    canonicalUrl: string | null;
+    noIndex: boolean;
+    noFollow: boolean;
+    noArchive: boolean;
+    noSnippet: boolean;
+    maxSnippet: number | null;
+    maxVideoPreview: number | null;
+    maxImagePreview: string | null;
+    robotsDirectives: string | null;
+    breadcrumbTitle: string | null;
+    schemaType: string | null;
+    schemaMarkup: string | null;
+    sitemapPriority: number | null;
+    changeFrequency: string | null;
+    customHeadTags: string | null;
+    contentNotes: string | null;
+    updatedAt: Date;
+    createdAt: Date;
+  }> = [];
+
+  try {
+    configs = await prisma.seoConfig.findMany({
+      orderBy: { updatedAt: "desc" },
+    });
+  } catch (error) {
+    console.error("[admin/seo] Failed to load seo configs", error);
+    dbError = "SEO veritabani tablosu okunamadi. Migrasyon eksikse `prisma migrate deploy` veya gelistirme ortaminda `prisma db push` calistirin.";
+  }
 
   const siteUrl =
     process.env.NEXTAUTH_URL?.replace(/\/$/, "") ??
@@ -77,6 +122,12 @@ export default async function AdminSeoPage() {
             AI butonu ile otomatik SEO önerisi alın.
           </p>
         </div>
+
+        {dbError ? (
+          <div className="mx-6 mt-6 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-5 py-4 text-sm text-amber-100">
+            {dbError}
+          </div>
+        ) : null}
 
         {/* Coverage stats */}
         <div className="flex flex-wrap gap-4 px-6 py-4">

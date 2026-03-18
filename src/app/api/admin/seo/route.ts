@@ -51,8 +51,16 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   if (!adminGuard(session)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const configs = await prisma.seoConfig.findMany({ orderBy: { pageKey: "asc" } });
-  return NextResponse.json(configs);
+  try {
+    const configs = await prisma.seoConfig.findMany({ orderBy: { pageKey: "asc" } });
+    return NextResponse.json(configs);
+  } catch (error) {
+    console.error("[api/admin/seo][GET]", error);
+    return NextResponse.json(
+      { error: "SEO kayitlari okunamadi. Veritabani migrasyonlarini kontrol edin." },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(request: Request) {
@@ -75,28 +83,38 @@ export async function POST(request: Request) {
     ...rest
   } = parsed.data;
 
-  const config = await prisma.seoConfig.upsert({
-    where: { pageKey },
-    create: {
-      id: `seo_${pageKey.replace(/[^a-z0-9]/gi, "_")}`,
-      pageKey,
-      pageLabel,
-      pagePath: pagePath || null,
-      ogImage: ogImage || null,
-      twitterImage: twitterImage || null,
-      canonicalUrl: canonicalUrl || null,
-      ...rest,
-    },
-    update: {
-      pageLabel,
-      pagePath: pagePath || null,
-      ogImage: ogImage || null,
-      twitterImage: twitterImage || null,
-      canonicalUrl: canonicalUrl || null,
-      ...rest,
-      updatedAt: new Date(),
-    },
-  });
+  let config;
+
+  try {
+    config = await prisma.seoConfig.upsert({
+      where: { pageKey },
+      create: {
+        id: `seo_${pageKey.replace(/[^a-z0-9]/gi, "_")}`,
+        pageKey,
+        pageLabel,
+        pagePath: pagePath || null,
+        ogImage: ogImage || null,
+        twitterImage: twitterImage || null,
+        canonicalUrl: canonicalUrl || null,
+        ...rest,
+      },
+      update: {
+        pageLabel,
+        pagePath: pagePath || null,
+        ogImage: ogImage || null,
+        twitterImage: twitterImage || null,
+        canonicalUrl: canonicalUrl || null,
+        ...rest,
+        updatedAt: new Date(),
+      },
+    });
+  } catch (error) {
+    console.error("[api/admin/seo][POST]", error);
+    return NextResponse.json(
+      { error: "SEO kaydi olusturulamadi. Veritabani tablosu veya migrasyonlari eksik olabilir." },
+      { status: 500 },
+    );
+  }
 
   return NextResponse.json(config);
 }

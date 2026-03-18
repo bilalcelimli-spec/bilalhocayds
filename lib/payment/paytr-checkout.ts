@@ -17,7 +17,7 @@ function resolveAppBaseUrl() {
 }
 
 function resolveIframeBaseUrl() {
-  return process.env.PAYTR_IFRAME_BASE_URL ?? "";
+  return process.env.PAYTR_IFRAME_BASE_URL ?? "https://www.paytr.com/odeme/guvenli/";
 }
 
 type PaytrCheckoutInput = {

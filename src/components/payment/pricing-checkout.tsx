@@ -40,7 +40,7 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
   return (
     <>
       <div className="mt-8 flex items-center justify-center">
-        <div className="inline-flex rounded-2xl border border-white/10 bg-white/5 p-1">
+        <div className="inline-flex max-w-full flex-wrap rounded-2xl border border-white/10 bg-white/5 p-1">
           <button
             type="button"
             onClick={() => setBillingCycle("MONTHLY")}
@@ -101,30 +101,30 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
 
               <div className={`mb-5 h-px w-full bg-gradient-to-r ${accentLine}`} />
 
-              <div className="relative flex items-start justify-between gap-4">
-                <div>
+              <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
                   <p className={`text-[11px] font-semibold uppercase tracking-[0.24em] ${isHighlighted ? "text-amber-300" : "text-zinc-500"}`}>
                     {planTone}
                   </p>
-                  <h2 className={`mt-3 text-3xl font-black ${isHighlighted ? "text-amber-100" : "text-white"}`}>{plan.name}</h2>
+                  <h2 className={`mt-3 break-words text-3xl font-black ${isHighlighted ? "text-amber-100" : "text-white"}`}>{plan.name}</h2>
                   <p className="mt-3 max-w-[22rem] text-sm leading-7 text-zinc-400">
                     {plan.description ?? "Sınav hazırlığını düzenli ve ölçülebilir şekilde yönetmek için tasarlanan çalışma planı."}
                   </p>
                 </div>
                 {isHighlighted ? (
-                  <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-amber-300">
+                  <span className="w-fit rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-amber-300">
                     ★ Popüler
                   </span>
                 ) : null}
               </div>
 
               <div className="relative mt-8 rounded-[24px] border border-white/8 bg-black/20 p-5">
-                <div className="flex items-end justify-between gap-4">
-                  <div>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                  <div className="min-w-0">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-500">Fiyatlandırma</p>
-                    <p className={`mt-3 text-4xl font-black ${isHighlighted ? "text-amber-300" : "text-white"}`}>{formatPrice(displayPrice)}</p>
+                    <p className={`mt-3 break-words text-4xl font-black ${isHighlighted ? "text-amber-300" : "text-white"}`}>{formatPrice(displayPrice)}</p>
                   </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-right">
+                  <div className="w-fit rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-left sm:text-right">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Canlı Ders</p>
                     <p className="mt-1 text-sm font-semibold text-white">{plan.includesLiveClass ? "Dahil" : "Opsiyonel"}</p>
                   </div>
@@ -148,13 +148,13 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
               </div>
 
               <div className="mt-8 rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
-                <div className="flex items-center justify-between gap-3 text-xs text-zinc-400">
+                <div className="flex flex-col gap-2 text-xs text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
                   <span>Çalışma ritmi</span>
                   <span className={`font-semibold ${isHighlighted ? "text-amber-300" : "text-white"}`}>
                     {plan.includesAIPlanner ? "Yakından yönlendirmeli" : "Klasik akış"}
                   </span>
                 </div>
-                <div className="mt-2 flex items-center justify-between gap-3 text-xs text-zinc-400">
+                <div className="mt-2 flex flex-col gap-2 text-xs text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
                   <span>Esneklik</span>
                   <span className={`font-semibold ${isHighlighted ? "text-amber-300" : "text-white"}`}>
                     Tek ders satış desteği

@@ -20,7 +20,7 @@ export async function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#090b10]/78 backdrop-blur-2xl">
       <div className="mx-auto max-w-7xl px-4 py-3 md:px-6">
-        <div className="relative overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] px-4 py-3 shadow-[0_16px_50px_rgba(0,0,0,0.22)] backdrop-blur-xl md:px-5">
+        <div className="relative overflow-visible rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] px-4 py-3 shadow-[0_16px_50px_rgba(0,0,0,0.22)] backdrop-blur-xl md:px-5">
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.04),transparent)] opacity-40" />
           <div className="pointer-events-none absolute right-6 top-1/2 h-16 w-16 -translate-y-1/2 rounded-full bg-amber-400/8 blur-2xl" />
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { Button } from "@/src/components/common/button";
 
@@ -28,8 +27,19 @@ function formatPrice(price: number | null) {
   }).format(price);
 }
 
+function resolvePaytrRedirectUrl(payment?: { redirectUrl?: string; token?: string }) {
+  if (typeof payment?.redirectUrl === "string" && payment.redirectUrl.trim()) {
+    return payment.redirectUrl;
+  }
+
+  if (typeof payment?.token === "string" && payment.token.trim()) {
+    return `https://www.paytr.com/odeme/guvenli/${payment.token}`;
+  }
+
+  return null;
+}
+
 export default function PlanDetailPurchase({ plan, initialCycle }: PlanDetailPurchaseProps) {
-  const router = useRouter();
   const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "YEARLY">(initialCycle);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -81,19 +91,17 @@ export default function PlanDetailPurchase({ plan, initialCycle }: PlanDetailPur
       return;
     }
 
-    const redirectUrl = typeof data.payment?.redirectUrl === "string"
-      ? data.payment.redirectUrl
-      : null;
+    const redirectUrl = resolvePaytrRedirectUrl(data.payment);
 
     if (redirectUrl) {
-      router.push(redirectUrl);
+      window.location.href = redirectUrl;
       return;
     }
 
     if (data.payment?.token) {
       setSuccess(
         data.payment.message ??
-          "Ödeme oturumu oluşturuldu. Sağlayıcı token değeri hazır; canlı iframe/redirect tanımı ile bağlanabilir.",
+          "Ödeme oturumu oluşturuldu ama yönlendirme URL'i üretilemedi.",
       );
       return;
     }

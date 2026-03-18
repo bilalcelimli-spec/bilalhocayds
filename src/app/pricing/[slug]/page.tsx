@@ -119,16 +119,16 @@ export default async function PricingDetailPage({ params, searchParams }: PagePr
           <div className="pointer-events-none absolute right-16 top-16 h-24 w-24 rounded-full border border-white/10" />
 
           <div className="relative">
-            <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-5 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-amber-300 shadow-[0_0_24px_rgba(212,168,67,0.12)]">
+            <div className="inline-flex max-w-full flex-wrap items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-300 shadow-[0_0_24px_rgba(212,168,67,0.12)] sm:text-xs sm:tracking-[0.28em]">
               <span className="h-2 w-2 rounded-full bg-amber-400" />
               Plan Detayı
             </div>
-          <h1 className="mt-6 text-4xl font-black md:text-6xl">{plan.name}</h1>
+          <h1 className="mt-6 break-words text-3xl font-black sm:text-4xl md:text-6xl">{plan.name}</h1>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
             {plan.description ?? `${plan.name} paketi ile sınav hazırlığını daha düzenli ve ölçülebilir hale getir.`}
           </p>
 
-          <div className="mt-6 inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
+          <div className="mt-6 inline-flex max-w-full flex-wrap rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300 sm:text-xs sm:tracking-[0.18em]">
             {planLabel} paketi için detaylı satış ve bilgilendirme ekranı
           </div>
 
@@ -205,12 +205,12 @@ export default async function PricingDetailPage({ params, searchParams }: PagePr
               </div>
             </div>
             <div className="rounded-3xl border border-amber-400/20 bg-amber-400/10 p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
                   <p className="text-sm font-semibold text-amber-200">Canlı ders notu</p>
                   <p className="mt-2 text-sm leading-7 text-amber-100/85">{plan.includesLiveClass ? "Bu planda haftada 4 saat canlı ders programı ve soru çözüm desteği yer alır." : "Canlı dersleri istersen bu plan dışında tek tek satın alarak ekleyebilirsin."}</p>
                 </div>
-                <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
+                <div className="w-fit rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
                   <CalendarDays size={18} />
                 </div>
               </div>
@@ -257,12 +257,12 @@ export default async function PricingDetailPage({ params, searchParams }: PagePr
 
       <section className="mt-10 grid gap-8 lg:grid-cols-[1fr_1fr]">
         <div className="rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-8 shadow-[0_24px_70px_rgba(0,0,0,0.22)]">
-          <div className="flex items-center justify-between gap-3">
-            <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Öğrenci Yorumları</p>
-              <h2 className="mt-3 text-3xl font-black text-white">Bu planı neden tercih ediyorlar?</h2>
+              <h2 className="mt-3 break-words text-3xl font-black text-white">Bu planı neden tercih ediyorlar?</h2>
             </div>
-            <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
+            <div className="w-fit rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
               <Sparkles size={18} />
             </div>
           </div>
@@ -282,9 +282,9 @@ export default async function PricingDetailPage({ params, searchParams }: PagePr
 
         <div className="rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-8 shadow-[0_24px_70px_rgba(0,0,0,0.22)]">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Sık Sorulan Sorular</p>
-          <div className="mt-3 flex items-start justify-between gap-4">
-            <h2 className="text-3xl font-black text-white">Karar vermeden önce en çok sorulanlar</h2>
-            <Link href="/pricing" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-white transition hover:bg-white/14">
+          <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <h2 className="break-words text-3xl font-black text-white">Karar vermeden önce en çok sorulanlar</h2>
+            <Link href="/pricing" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-white transition hover:bg-white/14">
               <ArrowUpRight size={18} />
             </Link>
           </div>

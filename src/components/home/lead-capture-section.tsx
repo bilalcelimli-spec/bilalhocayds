@@ -54,11 +54,11 @@ export function LeadCaptureSection() {
 
         <div className="relative grid gap-8 xl:grid-cols-[0.95fr_1.05fr] xl:items-start">
           <div>
-            <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-5 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-amber-300 shadow-[0_0_24px_rgba(212,168,67,0.12)]">
+            <div className="inline-flex max-w-full flex-wrap items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-300 shadow-[0_0_24px_rgba(212,168,67,0.12)] sm:text-xs sm:tracking-[0.28em]">
               <span className="h-2 w-2 rounded-full bg-amber-400" />
               Danışmanlık Talebi
             </div>
-            <h2 className="mt-6 text-3xl font-black text-white md:text-5xl">
+            <h2 className="mt-6 break-words text-3xl font-black text-white md:text-5xl">
               Daha fazla bilgi almak ister misin?
             </h2>
             <p className="mt-5 max-w-xl text-lg leading-8 text-slate-300">
@@ -123,19 +123,19 @@ export function LeadCaptureSection() {
           </div>
         ) : (
           <>
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div>
+            <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Hızlı Başvuru</p>
-                <h3 className="mt-2 text-2xl font-black text-white">Seni arayalım, doğru planı birlikte netleştirelim</h3>
+                <h3 className="mt-2 break-words text-2xl font-black text-white">Seni arayalım, doğru planı birlikte netleştirelim</h3>
               </div>
-              <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
+              <div className="w-fit rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
                 <Sparkles size={18} />
               </div>
             </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <div>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+              <div className="xl:col-span-2">
                 <label className="mb-1.5 block text-sm font-medium text-slate-300">Ad</label>
                 <input
                   name="name"
@@ -146,7 +146,7 @@ export function LeadCaptureSection() {
                   className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-slate-500 outline-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/30"
                 />
               </div>
-              <div>
+              <div className="xl:col-span-2">
                 <label className="mb-1.5 block text-sm font-medium text-slate-300">Soyad</label>
                 <input
                   name="surname"
@@ -158,7 +158,7 @@ export function LeadCaptureSection() {
                 />
               </div>
 
-              <div>
+              <div className="xl:col-span-2">
                 <label className="mb-1.5 block text-sm font-medium text-slate-300">Telefon</label>
                 <input
                   name="phone"
@@ -171,7 +171,7 @@ export function LeadCaptureSection() {
                 />
               </div>
 
-              <div>
+              <div className="sm:col-span-2 xl:col-span-6">
                 <label className="mb-1.5 block text-sm font-medium text-slate-300">
                   E-posta <span className="text-slate-500">(isteğe bağlı)</span>
                 </label>
@@ -197,7 +197,7 @@ export function LeadCaptureSection() {
               <button
                 type="submit"
                 disabled={status === "loading"}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] px-6 py-3.5 text-sm font-bold text-zinc-950 shadow-[0_12px_30px_rgba(212,168,67,0.35)] transition hover:brightness-105 disabled:opacity-60 lg:min-w-[220px]"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] px-6 py-3.5 text-center text-sm font-bold text-zinc-950 shadow-[0_12px_30px_rgba(212,168,67,0.35)] transition hover:brightness-105 disabled:opacity-60 lg:w-auto lg:min-w-[220px]"
               >
                 {status === "loading" ? "Gönderiliyor..." : "Beni Arayın"}
                 <ArrowRight size={16} />

@@ -58,7 +58,7 @@ export default async function PricingPage() {
 
 				<div className="relative grid gap-10 xl:grid-cols-[minmax(0,1.12fr)_360px] xl:items-center">
 					<div>
-						<div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-5 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-amber-300 shadow-[0_0_24px_rgba(212,168,67,0.12)]">
+						<div className="inline-flex max-w-full flex-wrap items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-300 shadow-[0_0_24px_rgba(212,168,67,0.12)] sm:text-xs sm:tracking-[0.28em]">
 							<span className="h-2 w-2 rounded-full bg-amber-400" />
 							Üyelik Planları
 						</div>
@@ -69,7 +69,7 @@ export default async function PricingPage() {
 							<span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Esnek Paket Yapısı</span>
 						</div>
 
-						<h1 className="mt-8 max-w-4xl text-5xl font-black leading-[0.96] text-white md:text-6xl xl:text-7xl">
+						<h1 className="mt-8 max-w-4xl text-4xl font-black leading-[0.96] text-white sm:text-5xl md:text-6xl xl:text-7xl">
 							<span className="block">Hedefine uygun</span>
 							<span className="mt-2 block bg-gradient-to-r from-[#fff2b8] via-[#f7d96b] to-[#d4a843] bg-clip-text text-transparent">
 								premium planı seç
@@ -88,12 +88,12 @@ export default async function PricingPage() {
 					<div className="relative">
 						<div className="relative overflow-hidden rounded-[32px] border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-5 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl">
 							<div className="rounded-[26px] border border-white/10 bg-[#0d1017]/90 p-5">
-								<div className="flex items-start justify-between gap-4">
-									<div>
+								<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+									<div className="min-w-0">
 										<p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Plan Özeti</p>
-										<h2 className="mt-3 text-2xl font-black text-white">Hızlı karar için net çerçeve</h2>
+										<h2 className="mt-3 break-words text-2xl font-black text-white">Hızlı karar için net çerçeve</h2>
 									</div>
-									<div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
+									<div className="w-fit rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
 										<Sparkles size={18} />
 									</div>
 								</div>
@@ -128,12 +128,12 @@ export default async function PricingPage() {
 									</div>
 
 									<div className="rounded-2xl border border-amber-400/18 bg-[linear-gradient(135deg,rgba(212,168,67,0.14),rgba(255,255,255,0.03))] p-4">
-										<div className="flex items-center justify-between gap-3">
-											<div>
+										<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+											<div className="min-w-0">
 												<p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Detaylı İnceleme</p>
-												<p className="mt-2 text-base font-bold text-white">Paketleri tek tek aç, kapsamı karşılaştır, en doğru ritmi seç.</p>
+												<p className="mt-2 break-words text-base font-bold text-white">Paketleri tek tek aç, kapsamı karşılaştır, en doğru ritmi seç.</p>
 											</div>
-											<Link href="#pricing-cards" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-white transition hover:bg-white/14">
+											<Link href="#pricing-cards" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-white transition hover:bg-white/14">
 												<ArrowUpRight size={18} />
 											</Link>
 										</div>

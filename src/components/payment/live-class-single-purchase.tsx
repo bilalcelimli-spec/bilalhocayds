@@ -2,7 +2,6 @@
 
 import { CalendarDays, Mail, ShieldCheck, Sparkles } from "lucide-react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { Button } from "@/src/components/common/button";
 
@@ -28,6 +27,18 @@ function formatPrice(price: number | null) {
   }).format(price);
 }
 
+function resolvePaytrRedirectUrl(payment?: { redirectUrl?: string; token?: string }) {
+  if (typeof payment?.redirectUrl === "string" && payment.redirectUrl.trim()) {
+    return payment.redirectUrl;
+  }
+
+  if (typeof payment?.token === "string" && payment.token.trim()) {
+    return `https://www.paytr.com/odeme/guvenli/${payment.token}`;
+  }
+
+  return null;
+}
+
 export function LiveClassSinglePurchase({
   liveClassId,
   title,
@@ -37,7 +48,6 @@ export function LiveClassSinglePurchase({
   durationMinutes,
   singlePrice,
 }: LiveClassSinglePurchaseProps) {
-  const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -86,8 +96,10 @@ export function LiveClassSinglePurchase({
       return;
     }
 
-    if (data.payment?.redirectUrl) {
-      router.push(data.payment.redirectUrl);
+    const redirectUrl = resolvePaytrRedirectUrl(data.payment);
+
+    if (redirectUrl) {
+      window.location.href = redirectUrl;
       return;
     }
 

@@ -111,7 +111,7 @@ export default async function HomePage() {
 
             <div className="relative grid gap-10 xl:grid-cols-[minmax(0,1.15fr)_380px] xl:items-center">
               <div>
-                <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-5 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-amber-300 shadow-[0_0_24px_rgba(212,168,67,0.12)]">
+                <div className="inline-flex max-w-full flex-wrap items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-300 shadow-[0_0_24px_rgba(212,168,67,0.12)] sm:text-xs sm:tracking-[0.28em]">
                   <span className="h-2 w-2 rounded-full bg-amber-400" />
                   Premium YDS Hazırlık Deneyimi
                 </div>
@@ -122,7 +122,7 @@ export default async function HomePage() {
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Bilal Hoca Rehberliği</span>
                 </div>
 
-                <h1 className="mt-8 max-w-5xl text-5xl font-black leading-[0.95] text-white md:text-7xl xl:text-[7.1rem]">
+                <h1 className="mt-8 max-w-5xl text-4xl font-black leading-[0.95] text-white sm:text-5xl md:text-7xl xl:text-[7.1rem]">
                   <span className="block text-white/96">Bilal Hoca ile</span>
                   <span className="mt-2 block bg-gradient-to-r from-[#fff2b8] via-[#f7d96b] to-[#d4a843] bg-clip-text text-transparent">
                     Güçlü Bir
@@ -135,10 +135,10 @@ export default async function HomePage() {
                 </p>
 
                 <div className="mt-10 flex flex-wrap gap-4">
-                  <Button href="/register" size="lg" className="min-w-[180px] rounded-2xl bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] text-zinc-950 shadow-[0_20px_50px_rgba(212,168,67,0.28)] hover:brightness-105">
+                  <Button href="/register" size="lg" className="w-full sm:w-auto sm:min-w-[180px] rounded-2xl bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] text-zinc-950 shadow-[0_20px_50px_rgba(212,168,67,0.28)] hover:brightness-105">
                     Hemen Başla
                   </Button>
-                  <Button href="/pricing" variant="secondary" size="lg" className="min-w-[200px] rounded-2xl border-white/20 bg-white/6 backdrop-blur-sm hover:bg-white/10">
+                  <Button href="/pricing" variant="secondary" size="lg" className="w-full sm:w-auto sm:min-w-[200px] rounded-2xl border-white/20 bg-white/6 backdrop-blur-sm hover:bg-white/10">
                     Üyelik Planlarını Aç
                   </Button>
                 </div>
@@ -168,12 +168,12 @@ export default async function HomePage() {
                 <div className="absolute -left-6 top-10 hidden h-24 w-24 rounded-full bg-amber-400/10 blur-2xl xl:block" />
                 <div className="relative overflow-hidden rounded-[32px] border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-5 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl">
                   <div className="rounded-[26px] border border-white/10 bg-[#0d1017]/90 p-5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Private Academic System</p>
-                        <h2 className="mt-3 text-2xl font-black text-white">Sınava hazırlanırken kalite standardını yükselt</h2>
+                        <h2 className="mt-3 break-words text-2xl font-black text-white">Sınava hazırlanırken kalite standardını yükselt</h2>
                       </div>
-                      <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
+                      <div className="w-fit rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
                         <Sparkles size={18} />
                       </div>
                     </div>
@@ -204,10 +204,10 @@ export default async function HomePage() {
                       </div>
 
                       <div className="rounded-2xl border border-amber-400/18 bg-[linear-gradient(135deg,rgba(212,168,67,0.14),rgba(255,255,255,0.03))] p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Sıradaki Oturum</p>
-                            <p className="mt-2 text-base font-bold text-white">
+                            <p className="mt-2 break-words text-base font-bold text-white">
                               {nextLiveClass ? nextLiveClass.title : "Yeni premium oturum planlanıyor"}
                             </p>
                             <p className="mt-1 text-xs leading-6 text-amber-100/80">
@@ -216,17 +216,17 @@ export default async function HomePage() {
                                 : "Takvim çok yakında güncellenecek."}
                             </p>
                           </div>
-                          <Link href="/live-classes" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-white transition hover:bg-white/14">
+                          <Link href="/live-classes" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-white transition hover:bg-white/14">
                             <ArrowUpRight size={18} />
                           </Link>
                         </div>
                       </div>
                     </div>
 
-                    <div className="mt-6 flex items-center justify-between rounded-2xl border border-white/8 bg-black/25 px-4 py-3">
-                      <div>
+                    <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-white/8 bg-black/25 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Canlı Takvim</p>
-                        <p className="mt-1 text-sm font-semibold text-white">Tek ders satışına da açık premium program</p>
+                        <p className="mt-1 break-words text-sm font-semibold text-white">Tek ders satışına da açık premium program</p>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-slate-300">
                         <CalendarDays size={14} className="text-amber-300" />
@@ -382,19 +382,19 @@ export default async function HomePage() {
                 </div>
 
                 <div className="relative">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">{eyebrow}</p>
-                      <h3 className="mt-3 text-2xl font-black text-white">{item.title}</h3>
+                      <h3 className="mt-3 break-words text-2xl font-black text-white">{item.title}</h3>
                     </div>
-                    <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
+                    <div className="w-fit rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
                       <Icon size={18} />
                     </div>
                   </div>
 
                   <p className="mt-5 text-sm leading-7 text-slate-400">{item.text}</p>
 
-                  <div className="mt-6 flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3">
+                  <div className="mt-6 flex flex-col gap-2 rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Etki</span>
                     <span className="text-xs font-semibold text-white">Günlük aktif kullanım</span>
                   </div>
@@ -410,7 +410,7 @@ export default async function HomePage() {
           <div className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_34%),linear-gradient(135deg,rgba(18,20,28,0.98),rgba(10,11,15,0.95)_45%,rgba(31,24,12,0.92))] p-8 shadow-[0_30px_100px_rgba(0,0,0,0.28)] backdrop-blur-xl">
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.04),transparent)] opacity-40" />
             <div className="relative">
-            <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">
+            <div className="inline-flex max-w-full flex-wrap items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-300 sm:tracking-[0.24em]">
               <span className="h-2 w-2 rounded-full bg-amber-400" />
               Daily Retention Flow
             </div>
@@ -445,7 +445,7 @@ export default async function HomePage() {
           <div className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-8 shadow-[0_30px_100px_rgba(0,0,0,0.28)] backdrop-blur-xl">
             <div className="pointer-events-none absolute -right-10 top-10 h-40 w-40 rounded-full bg-amber-400/10 blur-3xl" />
             <div className="relative">
-            <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">
+            <div className="inline-flex max-w-full flex-wrap items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-300 sm:tracking-[0.24em]">
               <span className="h-2 w-2 rounded-full bg-amber-400" />
               Bilal Hoca + AI Modeli
             </div>
@@ -484,12 +484,12 @@ export default async function HomePage() {
             </div>
 
             <div className="mt-6 rounded-[24px] border border-amber-400/18 bg-[linear-gradient(135deg,rgba(212,168,67,0.14),rgba(255,255,255,0.03))] p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-300">Sistem Etkisi</p>
-                  <p className="mt-2 text-base font-bold text-white">İçerik, takip ve canlı ders ritmi tek omurgada çalışır.</p>
+                  <p className="mt-2 break-words text-base font-bold text-white">İçerik, takip ve canlı ders ritmi tek omurgada çalışır.</p>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-white/8 p-3 text-white">
+                <div className="w-fit rounded-2xl border border-white/10 bg-white/8 p-3 text-white">
                   <ArrowUpRight size={18} />
                 </div>
               </div>

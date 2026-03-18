@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { ArrowUpRight, Menu, X } from "lucide-react";
 
 import { Button } from "@/src/components/common/button";
@@ -22,11 +21,6 @@ const navItems = [
 
 export function MobileNavMenu({ dashboardHref, isAuthenticated }: MobileNavMenuProps) {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
-
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
 
   return (
     <div className="relative lg:hidden">
@@ -49,6 +43,7 @@ export function MobileNavMenu({ dashboardHref, isAuthenticated }: MobileNavMenuP
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setOpen(false)}
                 className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-sm font-medium text-zinc-200 transition hover:border-white/12 hover:bg-white/[0.06] hover:text-white"
               >
                 <span>{item.label}</span>
@@ -61,7 +56,7 @@ export function MobileNavMenu({ dashboardHref, isAuthenticated }: MobileNavMenuP
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-300">Hızlı Erişim</p>
 
             {isAuthenticated ? (
-              <div className="mt-4 flex flex-col gap-3">
+              <div className="mt-4 flex flex-col gap-3" onClick={() => setOpen(false)}>
                 <Button
                   href={dashboardHref}
                   className="w-full rounded-2xl bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] text-zinc-950 shadow-[0_12px_30px_rgba(212,168,67,0.28)] hover:brightness-105"
@@ -73,7 +68,7 @@ export function MobileNavMenu({ dashboardHref, isAuthenticated }: MobileNavMenuP
                 </div>
               </div>
             ) : (
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2" onClick={() => setOpen(false)}>
                 <Button href="/login" variant="outline" className="w-full rounded-2xl border-white/12 bg-white/[0.03] text-zinc-200 hover:bg-white/[0.08]">
                   Giriş Yap
                 </Button>

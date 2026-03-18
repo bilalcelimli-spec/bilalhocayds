@@ -83,7 +83,7 @@ export default async function LiveClassesPage() {
 
 				<div className="relative grid gap-10 xl:grid-cols-[minmax(0,1.12fr)_360px] xl:items-center">
 					<div>
-						<span className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-5 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-amber-300 shadow-[0_0_24px_rgba(212,168,67,0.12)]">
+						<span className="inline-flex max-w-full flex-wrap items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-300 shadow-[0_0_24px_rgba(212,168,67,0.12)] sm:text-xs sm:tracking-[0.28em]">
 							<span className="h-2 w-2 rounded-full bg-amber-400" />
 							Bilal Hoca Live Sessions
 						</span>
@@ -94,7 +94,7 @@ export default async function LiveClassesPage() {
 							<span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Tek Ders Satışı</span>
 						</div>
 
-						<h1 className="mt-8 max-w-4xl text-4xl font-black leading-[0.96] text-white md:text-6xl xl:text-7xl">
+						<h1 className="mt-8 max-w-4xl text-3xl font-black leading-[0.96] text-white sm:text-4xl md:text-6xl xl:text-7xl">
 							<span className="block">Canlı ders takvimiyle</span>
 							<span className="mt-2 block bg-gradient-to-r from-[#fff2b8] via-[#f7d96b] to-[#d4a843] bg-clip-text text-transparent">
 								haftalık ritmini yükselt
@@ -105,10 +105,10 @@ export default async function LiveClassesPage() {
 						</p>
 
 						<div className="mt-10 flex flex-wrap gap-4">
-							<Button href="/dashboard" variant="outline" size="lg" className="rounded-2xl border-white/20 bg-white/6 backdrop-blur-sm hover:bg-white/10">
+							<Button href="/dashboard" variant="outline" size="lg" className="w-full sm:w-auto rounded-2xl border-white/20 bg-white/6 backdrop-blur-sm hover:bg-white/10">
 								Dashboard&apos;a Dön
 							</Button>
-							<Button href="/pricing" size="lg" className="rounded-2xl bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] text-zinc-950 shadow-[0_20px_50px_rgba(212,168,67,0.28)] hover:brightness-105">
+							<Button href="/pricing" size="lg" className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] text-zinc-950 shadow-[0_20px_50px_rgba(212,168,67,0.28)] hover:brightness-105">
 								Canlı Ders Planını Aç
 							</Button>
 						</div>
@@ -116,12 +116,12 @@ export default async function LiveClassesPage() {
 
 					<div className="relative overflow-hidden rounded-[32px] border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-5 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl">
 						<div className="rounded-[26px] border border-white/10 bg-[#0d1017]/90 p-5">
-							<div className="flex items-start justify-between gap-4">
-								<div>
+							<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+								<div className="min-w-0">
 									<p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Canlı Program Özeti</p>
-									<h2 className="mt-3 text-2xl font-black text-white">Katılım, kayıt ve esneklik tek sistemde</h2>
+									<h2 className="mt-3 break-words text-2xl font-black text-white">Katılım, kayıt ve esneklik tek sistemde</h2>
 								</div>
-								<div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
+								<div className="w-fit rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
 									<Sparkles size={18} />
 								</div>
 							</div>
@@ -149,15 +149,15 @@ export default async function LiveClassesPage() {
 									</div>
 								</div>
 								<div className="rounded-2xl border border-amber-400/18 bg-[linear-gradient(135deg,rgba(212,168,67,0.14),rgba(255,255,255,0.03))] p-4">
-									<div className="flex items-center justify-between gap-3">
-										<div>
+									<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+										<div className="min-w-0">
 											<p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Sıradaki Oturum</p>
-											<p className="mt-2 text-base font-bold text-white">{nextClass ? nextClass.title : "Yeni oturum planlanıyor"}</p>
+											<p className="mt-2 break-words text-base font-bold text-white">{nextClass ? nextClass.title : "Yeni oturum planlanıyor"}</p>
 											<p className="mt-1 text-xs leading-6 text-amber-100/80">
 												{nextClass ? `${format(nextClass.scheduledAt, "d MMMM yyyy · HH:mm", { locale: tr })} · ${nextClass.durationMinutes} dk` : "Takvim çok yakında güncellenecek."}
 											</p>
 										</div>
-										<Link href="#live-class-list" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-white transition hover:bg-white/14">
+										<Link href="#live-class-list" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-white transition hover:bg-white/14">
 											<ArrowUpRight size={18} />
 										</Link>
 									</div>
@@ -229,11 +229,11 @@ export default async function LiveClassesPage() {
 					<div className="rounded-3xl border-2 border-amber-400/50 bg-gradient-to-br from-amber-400/10 via-zinc-900/80 to-zinc-900/60 p-6 shadow-[0_20px_60px_rgba(212,168,67,0.20)] backdrop-blur-xl lg:col-span-3">
 						<div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
 							<div className="flex-1">
-								<div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-amber-300">
+								<div className="mb-3 inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-amber-300 sm:text-xs sm:tracking-widest">
 									<span className="inline-block h-2 w-2 animate-pulse rounded-full bg-amber-400" />
 									Yaklaşan Ders
 								</div>
-								<h2 className="text-2xl font-black text-white md:text-3xl">{nextClass.title}</h2>
+								<h2 className="break-words text-2xl font-black text-white md:text-3xl">{nextClass.title}</h2>
 								<p className="mt-2 text-amber-200 font-medium">
 									{format(nextClass.scheduledAt, "d MMMM EEEE · HH:mm", { locale: tr })} · {nextClass.durationMinutes} dk
 								</p>
@@ -286,13 +286,13 @@ export default async function LiveClassesPage() {
 
 				<div className="rounded-3xl border border-white/15 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl lg:col-span-2">
 					<div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-						<div>
+						<div className="min-w-0">
 							<h2 className="text-xl font-bold text-white">Canli ders takibi</h2>
 							<p className="mt-1 text-sm text-slate-300">
 								Ders tarihi, sure, konu basliklari ve satin alim durumu tek ekranda takip edilir.
 							</p>
 						</div>
-						<Button variant="secondary" size="sm">
+						<Button variant="secondary" size="sm" className="w-full md:w-auto">
 							Takvimi Senkronize Et
 						</Button>
 					</div>
@@ -331,7 +331,7 @@ export default async function LiveClassesPage() {
 											) : null}
 										</div>
 									</div>
-									<span className="inline-flex rounded-full border border-amber-400/35 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-300">
+									<span className="inline-flex max-w-full break-words rounded-full border border-amber-400/35 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-300">
 										{hasLiveClassPlan
 											? "UYELIKTE DAHIL"
 											: alreadyPurchased
@@ -412,7 +412,7 @@ export default async function LiveClassesPage() {
 
 					<div className="rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-400/15 to-zinc-900/70 p-6 text-white shadow-[0_14px_40px_rgba(212,168,67,0.16)]">
 						<p className="text-sm font-semibold text-amber-200">Bilal Hoca notu</p>
-						<h3 className="mt-2 text-xl font-black">Haftada 4 saat + tek ders secenegi</h3>
+						<h3 className="mt-2 break-words text-xl font-black">Haftada 4 saat + tek ders secenegi</h3>
 						<p className="mt-3 text-sm leading-7 text-slate-200">
 							Canli ders paketleri haftada 4 saatlik duzenli programa gore planlanir.
 							Uyelik istemezsen ilgili oturumu tek tek satin alip Zoom uzerinden katilim saglayabilirsin.
