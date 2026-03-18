@@ -50,6 +50,14 @@ Detayli deployment notlari icin [docs/paytr-go-live-checklist.md](/Users/bilalce
 4. Lead, abonelik ve muhasebe baglantilari ayni akista olusur.
 5. Callback sonrasi abonelik durumu guncellenir.
 
+## App Mimarisi
+
+- Kanonik uygulama kaynaklari `src/app` altindadir.
+- Root `app` klasoru yalnizca Next.js route giris noktalarini barindirir ve mumkun olan yerlerde `src/app` altindaki kanonik dosyalara re-export yapar.
+- Kanonik API route kaynaklari `src/app/api` altindadir.
+- Root `app/api` klasoru yalnizca route delegasyon katmanidir.
+- Serbest kayit akisi `/api/register`, satin alma sonrasi hesap tamamlama akisi ise `/api/auth/register` uzerindedir.
+
 ## Tip Kontrolu
 
 ```bash

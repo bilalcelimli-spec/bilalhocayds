@@ -8,7 +8,7 @@ const registerSchema = z.object({
   name: z.string().min(2),
   email: z.email(),
   password: z.string().min(6),
-  interestTags: z.array(z.string().min(2)).min(1).max(8).optional().default([]),
+  interestTags: z.array(z.string().min(2)).max(8).optional().default([]),
   priorityTags: z.array(z.string().min(2)).max(2).optional().default([]),
 });
 
