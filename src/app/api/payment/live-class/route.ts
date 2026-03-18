@@ -1,143 +1,145 @@
-import { z } from "zod";
-import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { NextResponse } from "next/server";
+import { z } from "zod";
 
-import { prisma } from "@/src/lib/prisma";
-import { paytrCheckout } from "@/lib/payment/paytr-checkout";
 import { authOptions } from "@/src/auth";
-import { isRateLimited, getClientIp } from "@/src/lib/rate-limit";
+import { paytrCheckout } from "@/lib/payment/paytr-checkout";
+import { prisma } from "@/src/lib/prisma";
 
-const bodySchema = z.object({
+const requestSchema = z.object({
   liveClassId: z.string().min(1),
   fullName: z.string().min(2).max(120),
   email: z.email(),
   phone: z.string().min(10).max(20),
 });
 
-function createLivePurchaseReferenceId(liveClassId: string) {
-  return `livep${liveClassId}${Date.now()}`;
+const rateLimitStore = new Map<string, number[]>();
+
+function createLivePurchaseReferenceId() {
+  return `livep${Date.now()}${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function getClientKey(request: Request) {
+  const forwarded = request.headers.get("x-forwarded-for");
+  const ip = forwarded?.split(",")[0]?.trim() ?? "unknown";
+  return `live-pay:${ip}`;
+}
+
+function isRateLimited(key: string) {
+  const now = Date.now();
+  const windowMs = 60_000;
+  const maxRequests = 12;
+  const entries = (rateLimitStore.get(key) ?? []).filter((t) => now - t < windowMs);
+  entries.push(now);
+  rateLimitStore.set(key, entries);
+  return entries.length > maxRequests;
 }
 
 export async function POST(request: Request) {
-  const ip = getClientIp(request);
-  if (isRateLimited(`livepay:${ip}`, 8, 60_000)) {
+  const rateKey = getClientKey(request);
+  if (isRateLimited(rateKey)) {
     return NextResponse.json(
-      { error: "Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin." },
+      { error: "Cok fazla deneme. Lutfen bir dakika sonra tekrar deneyin." },
       { status: 429 },
     );
   }
 
-  const raw = await request.json().catch(() => null);
-  const parsed = bodySchema.safeParse(raw);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Geçersiz veri." }, { status: 400 });
+  const payload = requestSchema.safeParse(await request.json());
+  if (!payload.success) {
+    return NextResponse.json({ error: "Gecersiz istek." }, { status: 400 });
   }
 
-  const { liveClassId, fullName, email, phone } = parsed.data;
-  const normalizedEmail = email.toLowerCase().trim();
+  const { liveClassId, fullName, email, phone } = payload.data;
 
   const liveClass = await prisma.liveClass.findUnique({
     where: { id: liveClassId },
     select: {
       id: true,
       title: true,
-      singlePrice: true,
       scheduledAt: true,
+      singlePrice: true,
     },
   });
 
   if (!liveClass) {
-    return NextResponse.json({ error: "Ders bulunamadı." }, { status: 404 });
+    return NextResponse.json({ error: "Canli ders bulunamadi." }, { status: 404 });
   }
 
   if (!liveClass.singlePrice || liveClass.singlePrice <= 0) {
-    return NextResponse.json(
-      { error: "Bu ders için tekil satın alım aktif değil." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Bu ders icin tek ders satin alma aktif degil." }, { status: 400 });
   }
 
   if (liveClass.scheduledAt <= new Date()) {
-    return NextResponse.json(
-      { error: "Bu ders geçmiş tarihli, satın alım yapılamaz." },
-      { status: 400 },
-    );
-  }
-
-  const session = await getServerSession(authOptions);
-  const userId = session?.user?.id ?? null;
-
-  if (userId) {
-    const activeLiveClassSubscription = await prisma.subscription.findFirst({
-      where: {
-        userId,
-        status: { in: ["ACTIVE", "TRIALING"] },
-        startDate: { lte: new Date() },
-        OR: [{ endDate: null }, { endDate: { gte: new Date() } }],
-        plan: { includesLiveClass: true },
-      },
-      select: { id: true },
-    });
-
-    if (activeLiveClassSubscription) {
-      return NextResponse.json(
-        { error: "Canlı ders erişimin zaten aktif. Bu ders için ayrıca tekil satın alım gerekmiyor." },
-        { status: 409 },
-      );
-    }
-  }
-
-  // Check for duplicate purchase
-  const existing = await prisma.liveClassPurchase.findFirst({
-    where: {
-      liveClassId,
-      status: "PAID",
-      OR: userId ? [{ userId }, { email: normalizedEmail }] : [{ email: normalizedEmail }],
-    },
-    select: { id: true },
-  });
-
-  if (existing) {
-    return NextResponse.json(
-      { error: "Bu derse zaten satın alım yaptınız." },
-      { status: 409 },
-    );
+    return NextResponse.json({ error: "Gecmis ders icin satin alma yapilamaz." }, { status: 400 });
   }
 
   const normalizedPhone = phone.replace(/\D/g, "");
-  const referenceId = createLivePurchaseReferenceId(liveClassId);
+  if (normalizedPhone.length < 10 || normalizedPhone.length > 15) {
+    return NextResponse.json({ error: "Telefon numarasi gecersiz." }, { status: 400 });
+  }
+
+  const [firstName, ...rest] = fullName.trim().split(" ");
+  const surname = rest.join(" ") || "-";
+
+  await prisma.lead
+    .create({
+      data: {
+        name: firstName,
+        surname,
+        email: email.toLowerCase(),
+        phone: normalizedPhone,
+        plan: `Tek Ders: ${liveClass.title}`,
+      },
+    })
+    .catch(() => null);
+
+  const session = await getServerSession(authOptions);
 
   const purchase = await prisma.liveClassPurchase.create({
     data: {
-      liveClassId,
-      userId,
+      liveClassId: liveClass.id,
+      userId: session?.user?.id ?? null,
       amount: liveClass.singlePrice,
       fullName: fullName.trim(),
-      email: normalizedEmail,
+      email: email.toLowerCase(),
       phone: normalizedPhone,
-      referenceId,
-      status: "PENDING",
+      referenceId: createLivePurchaseReferenceId(),
     },
-    select: { id: true },
+    select: { id: true, referenceId: true },
   });
 
-  try {
-    const result = await paytrCheckout({
-      planName: liveClass.title,
-      amount: liveClass.singlePrice,
-      email: normalizedEmail,
-      phone: normalizedPhone,
-      userName: fullName.trim(),
-      userIp: ip,
-      userId: userId ?? `guest:${purchase.id}`,
-      referenceId,
-    });
+  const referenceId = purchase.referenceId;
+  const userIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "127.0.0.1";
 
-    return NextResponse.json({ payment: result });
-  } catch (err) {
-    // Clean up pending purchase on payment init failure
-    await prisma.liveClassPurchase.delete({ where: { id: purchase.id } }).catch(() => null);
-    const message = err instanceof Error ? err.message : "Ödeme başlatılamadı.";
-    return NextResponse.json({ error: message }, { status: 502 });
-  }
+  const payment = await paytrCheckout({
+    planName: `Tek Ders - ${liveClass.title}`,
+    amount: liveClass.singlePrice,
+    email: email.toLowerCase(),
+    phone: normalizedPhone,
+    userName: fullName.trim(),
+    userIp,
+    userId: session?.user?.id ?? email.toLowerCase(),
+    referenceId,
+  });
+
+  await prisma.liveClassPurchase
+    .update({
+      where: { id: purchase.id },
+      data: {
+        providerMessage: payment.message ?? null,
+      },
+    })
+    .catch(() => null);
+
+  return NextResponse.json({
+    success: true,
+    payment,
+    liveClass: {
+      id: liveClass.id,
+      title: liveClass.title,
+      scheduledAt: liveClass.scheduledAt,
+      singlePrice: liveClass.singlePrice,
+    },
+    purchaseId: purchase.id,
+  });
 }
