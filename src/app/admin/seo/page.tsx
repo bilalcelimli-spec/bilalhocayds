@@ -4,6 +4,7 @@ import Link from "next/link";
 import { authOptions } from "@/src/auth";
 import { prisma } from "@/src/lib/prisma";
 import { SEO_PAGE_PRESETS } from "@/src/lib/seo-presets";
+import { resolveSiteUrl } from "@/src/lib/site-url";
 import SeoEditor from "@/src/components/admin/seo-editor";
 
 const adminNavItems = [
@@ -77,9 +78,7 @@ export default async function AdminSeoPage() {
     dbError = "SEO veritabani tablosu okunamadi. Migrasyon eksikse `prisma migrate deploy` veya gelistirme ortaminda `prisma db push` calistirin.";
   }
 
-  const siteUrl =
-    process.env.NEXTAUTH_URL?.replace(/\/$/, "") ??
-    "https://bilalhocayds.com";
+  const siteUrl = resolveSiteUrl();
   const configuredCount = configs.filter((c) => c.title || c.description || c.schemaMarkup).length;
   const totalPages = SEO_PAGE_PRESETS.length;
 
