@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 
 // Herkese açık plan listesi (aktif planlar)
-export async function GET(_req: NextRequest) {
+export async function GET() {
   try {
     const plans = await prisma.plan.findMany({
       where: { isActive: true },
