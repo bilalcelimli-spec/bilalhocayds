@@ -179,22 +179,104 @@ const DEFAULT_AI_PROFILE: AiStudentProfile = {
   motivationStyle: "exam-coach style",
 };
 
-type GrammarQuestion = {
-  question: string;
-  options: string[];
-  answer: string;
-  explanation: string;
+type GrammarActivityType =
+  | "multiple-choice"
+  | "fill-in-the-blanks"
+  | "error-correction"
+  | "sentence-transformation"
+  | "rule-application"
+  | "mini-production";
+
+type GrammarErrorType =
+  | "tense confusion"
+  | "article misuse"
+  | "connector confusion"
+  | "clause structure weakness"
+  | "preposition error"
+  | "passive-active confusion"
+  | "modal meaning confusion"
+  | "relative clause error"
+  | "gerund/infinitive confusion"
+  | "word order problem";
+
+type GrammarExample = {
+  en: string;
+  tr: string;
+  note: string;
 };
 
-type GrammarModule = {
-  topic: string;
-  level: "B1" | "B2" | "C1";
-  objective: string;
+type GrammarActivity = {
+  id: string;
+  type: GrammarActivityType;
+  title: string;
+  prompt: string;
+  answer: string;
   explanation: string;
-  examples: Array<{ en: string; tr: string }>;
+  testedPoint: string;
+  errorType?: GrammarErrorType;
+  options?: string[];
+  whyOthersWrong?: string[];
+  sampleResponse?: string;
+};
+
+type GrammarPerformanceRubricItem = {
+  label:
+    | "Grammar Accuracy"
+    | "Rule Awareness"
+    | "Contextual Usage"
+    | "Sentence Control"
+    | "Error Recognition"
+    | "Exam Readiness Relative to Target Score";
+  score: number;
+  comment: string;
+  recommendation: string;
+};
+
+type GrammarPerformanceEvaluation = {
+  summary: string;
+  targetScoreComment: string;
+  strongAreas: string[];
+  focusAreas: string[];
+  nextFocus: string;
+  rubric: GrammarPerformanceRubricItem[];
+};
+
+type GrammarActivitySet = {
+  multipleChoice: GrammarActivity[];
+  fillInTheBlanks: GrammarActivity[];
+  errorCorrection: GrammarActivity[];
+  sentenceTransformation: GrammarActivity[];
+  ruleApplication: GrammarActivity[];
+  miniProduction: GrammarActivity[];
+};
+
+type GrammarModuleResponse = {
+  generatedAt: string;
+  model: string;
+  sessionTitle: string;
+  studentGoalSnapshot: string;
+  dailyGoal: string;
+  warmUp: string[];
+  focusTopic: string;
+  topicReason: string;
+  conceptExplanation: string;
+  modelExamples: GrammarExample[];
+  activitySet: GrammarActivitySet;
+  strategyNotes: string[];
+  performanceEvaluation: GrammarPerformanceEvaluation;
+  personalizedNextStep: string;
+};
+
+type GrammarBlueprint = {
+  id: string;
+  topic: string;
+  level: StudentLevel;
+  dailyGoalTemplate: string;
+  reasonTemplate: string;
+  explanation: string;
   commonMistakes: string[];
-  questions: GrammarQuestion[];
-  studyPlan: string[];
+  examples: GrammarExample[];
+  activitySet: GrammarActivitySet;
 };
 
 const vocabularyPool: VocabularySeed[] = [
@@ -283,114 +365,474 @@ const readingPool: Omit<ReadingPassage, "questions" | "studyPlan">[] = [
   },
 ];
 
-const grammarPool: GrammarModule[] = [
+const grammarBlueprints: GrammarBlueprint[] = [
   {
-    topic: "Relative Clauses",
-    level: "B2",
-    objective: "Defining ve non-defining relative clause yapılarını ayırt etmek",
+    id: "articles-prepositions",
+    topic: "Articles, Prepositions, and Sentence Accuracy",
+    level: "B1",
+    dailyGoalTemplate: "Bugunku oturumun amaci, {exam} hedefi icin article ve preposition secimindeki temel hatalari azaltmaktir.",
+    reasonTemplate:
+      "Ogrencinin mevcut seviyesi {level} ve hedefi {goal}. Bugun articles ve prepositions secildi cunku temel sentence accuracy zayif kalirsa hem YDS/YDT bosluk doldurma hem de IELTS accuracy puani sinirlanir.",
     explanation:
-      "Defining relative clauses, ismi tanımlar ve cümleden çıkarıldığında anlam bozulur. Non-defining clauses ise ek bilgi verir ve virgülle ayrılır. Which, who, that, whose ve where kullanımını cümledeki işleve göre seçmek gerekir.",
-    examples: [
-      { en: "The student who solved the problem won a prize.", tr: "Problemi çözen öğrenci ödül kazandı." },
-      { en: "My laptop, which I bought last year, is already slow.", tr: "Geçen yıl aldığım dizüstü bilgisayarım şimdiden yavaş." },
-    ],
+      "Article seciminde once isim belirli mi, ilk kez mi geciyor, tekil mi yoksa sayilamayan mi buna bakilir. Preposition sorularinda ise kelimenin yaninda gelen sabit kaliplar ve anlam iliskisi belirleyicidir. Sinavda en yaygin tuzak, Turkceden dogrudan ceviriyle article atlamak veya uygun preposition yerine genel bir secenek secmektir.",
     commonMistakes: [
-      "Non-defining clause içinde that kullanmak",
-      "Gerekli virgülleri unutmak",
-      "People ve things için zamiri karıştırmak",
+      "Belirli isimlerde article atlamak",
+      "in / on / at zaman ve mekan kullanimlarini karistirmak",
+      "fixed preposition kaliplarini baglam disi ezberlemek",
     ],
-    questions: [
+    examples: [
       {
-        question: "Choose the correct option: The book ___ I borrowed was very informative.",
-        options: ["who", "which", "where", "whose"],
-        answer: "which",
-        explanation: "Book bir nesnedir, bu nedenle which kullanılır.",
+        en: "The committee reached a decision after a long discussion.",
+        tr: "Komite uzun bir tartismanin ardindan bir karara ulasti.",
+        note: "Ilk mention ve specific mention farki article secimini belirler.",
       },
       {
-        question: "Choose the correct option: Mr. Lee, ___ teaches physics, won an award.",
-        options: ["that", "who", "where", "whose"],
-        answer: "who",
-        explanation: "Non-defining clause ve kişi olduğu için who kullanılır.",
+        en: "Students often struggle with the difference between in time and on time.",
+        tr: "Ogrenciler siklikla in time ve on time arasindaki farkta zorlanir.",
+        note: "Preposition sorularinda collocation ve anlam birlikte okunur.",
+      },
+      {
+        en: "She is interested in academic writing, but she is weak at punctuation.",
+        tr: "Akademik yazmaya ilgi duyuyor ama noktalamada zayif.",
+        note: "interested in, weak at gibi kaliplar sinavlarda dogrudan test edilir.",
+      },
+      {
+        en: "An effective study plan can make a noticeable difference in exam performance.",
+        tr: "Etkili bir calisma plani sinav performansinda belirgin bir fark yaratabilir.",
+        note: "Sayilabilir tekil isimlerde article kontrolu kritik noktadir.",
       },
     ],
-    studyPlan: [
-      "10 dk konu özeti",
-      "10 dk örnek cümle analizi",
-      "10 dk çoktan seçmeli pratik",
-      "5 dk yanlışların tekrar notu",
-    ],
+    activitySet: {
+      multipleChoice: [
+        {
+          id: "ap-mc-1",
+          type: "multiple-choice",
+          title: "Exam-style Gap Fill",
+          prompt: "The researcher argued that ___ reliable conclusion cannot be reached without data collected from ___ wider sample.",
+          options: ["a / a", "the / the", "a / the", "the / a"],
+          answer: "a / a",
+          explanation: "Her iki isim de ilk kez ve genel anlamda kullaniliyor; bu nedenle a / a gerekir.",
+          testedPoint: "Article choice with singular countable nouns",
+          errorType: "article misuse",
+          whyOthersWrong: [
+            "the kullanimi burada belirli, daha once bilinen bir nesne varsayardi.",
+            "a / the ikinci ismi gereksiz yere belirli hale getirir.",
+          ],
+        },
+      ],
+      fillInTheBlanks: [
+        {
+          id: "ap-fill-1",
+          type: "fill-in-the-blanks",
+          title: "Preposition Focus",
+          prompt: "Complete the sentence: Many candidates are good ___ grammar rules but weak ___ using them under time pressure.",
+          answer: "at / at",
+          explanation: "good at ve weak at kaliplari bu cumlede dogal ve dogrudur.",
+          testedPoint: "Fixed preposition patterns",
+          errorType: "preposition error",
+        },
+      ],
+      errorCorrection: [
+        {
+          id: "ap-err-1",
+          type: "error-correction",
+          title: "Find the Article Error",
+          prompt: "Correct the error: Teacher gave students useful feedback after exam.",
+          answer: "The teacher gave the students useful feedback after the exam.",
+          explanation: "Specific teacher, students ve exam oldugu icin the kullanimi gerekir.",
+          testedPoint: "Specific reference with definite article",
+          errorType: "article misuse",
+        },
+      ],
+      sentenceTransformation: [
+        {
+          id: "ap-tr-1",
+          type: "sentence-transformation",
+          title: "Rewrite for Accuracy",
+          prompt: "Rewrite using correct article and preposition use: Students usually improve when they work library and follow structured routine.",
+          answer: "Students usually improve when they work in the library and follow a structured routine.",
+          explanation: "in the library ve a structured routine yapilari accuracy icin gereklidir.",
+          testedPoint: "Article + preposition repair",
+          errorType: "article misuse",
+        },
+      ],
+      ruleApplication: [
+        {
+          id: "ap-rule-1",
+          type: "rule-application",
+          title: "Choose the Rule",
+          prompt: "Explain why the sentence uses 'the': The results were published after the review process.",
+          answer: "Because both results and review process are specific and understood in context.",
+          explanation: "Rule awareness burada belirli referansi tanimlamayi gerektirir.",
+          testedPoint: "Definite reference awareness",
+          errorType: "article misuse",
+          sampleResponse: "The kullanilir cunku konusulan sonuc ve surec baglam icinde belirli hale gelmistir.",
+        },
+      ],
+      miniProduction: [
+        {
+          id: "ap-prod-1",
+          type: "mini-production",
+          title: "Controlled Writing",
+          prompt: "Write 2 short sentences using one article contrast and one fixed preposition pattern.",
+          answer: "Example: A teacher can change a class quickly. Many students struggle with time management.",
+          explanation: "Bu gorev article secimini ve preposition kalibini aktif kullanima tasir.",
+          testedPoint: "Sentence accuracy in production",
+          sampleResponse: "A student needs a plan. She is good at following weekly targets.",
+        },
+      ],
+    },
   },
   {
-    topic: "Conditionals (0-1-2-3)",
+    id: "conditionals",
+    topic: "Conditionals and Unreal Meaning",
+    level: "B2",
+    dailyGoalTemplate: "Bugunku oturumun amaci, {exam} hedefi icin conditionals yapilarinda zaman ve anlam uyumunu guclendirmektir.",
+    reasonTemplate:
+      "Ogrencinin seviyesi {level} ve hedef puani {goal}. Conditionals bugun secildi cunku hedefe ulasmak icin sadece tense bilgisini degil, gerceklik derecesini de dogru okumasi gerekiyor.",
+    explanation:
+      "Conditionals sorularinda once cumlenin gercek mi, olasi mi, hayali mi yoksa gecmiste gerceklesmemis bir durum mu anlattigini belirlemek gerekir. If clause icinde will kullanmak, second ve third conditional yapilarini karistirmak ve anlami gormeden sadece tense kalibina bakmak en yaygin hatalardir. YDS, YDT ve IELTS sorularinda bu konu zaman uyumu ile anlam iliskisini birlikte olcer.",
+    commonMistakes: [
+      "if clause icinde will kullanmak",
+      "second ve third conditional ayrimini kacirmak",
+      "cumlenin gerceklik derecesini okumadan secenek isaretlemek",
+    ],
+    examples: [
+      {
+        en: "If students revise regularly, they usually perform better in grammar tests.",
+        tr: "Ogrenciler duzenli tekrar yaparsa grammar testlerinde genelde daha iyi performans gosterir.",
+        note: "Genel dogrular icin zero / first conditional mantigi ayrilmalidir.",
+      },
+      {
+        en: "If I were preparing for IELTS 7.0, I would focus more on sentence transformation.",
+        tr: "IELTS 7.0'a hazirlaniyor olsaydim sentence transformation'a daha fazla odaklanirdim.",
+        note: "Unreal present meaning second conditional ile kurulur.",
+      },
+      {
+        en: "If she had reviewed the clause types, she would not have missed that question.",
+        tr: "Clause turlerini gozden gecirseydi o soruyu kacirmazdi.",
+        note: "Gecmiste gerceklesmemis durumlar third conditional ister.",
+      },
+      {
+        en: "Should you need more practice, the extra worksheet is on the dashboard.",
+        tr: "Daha fazla pratiye ihtiyacin olursa ek calisma kagidi dashboard'da.",
+        note: "Formal inversion awareness ileri hedeflerde conditionals ile baglantilidir.",
+      },
+    ],
+    activitySet: {
+      multipleChoice: [
+        {
+          id: "cond-mc-1",
+          type: "multiple-choice",
+          title: "Meaning-sensitive Gap Fill",
+          prompt: "If the candidate ___ the connector contrast, she would not have chosen the literal option.",
+          options: ["understood", "had understood", "would understand", "has understood"],
+          answer: "had understood",
+          explanation: "Gecmiste tamamlanmamis bir firsat anlatiliyor; third conditional gerekir.",
+          testedPoint: "Third conditional form",
+          errorType: "tense confusion",
+          whyOthersWrong: [
+            "understood second conditional anlami uretmez.",
+            "would understand if clause icinde kullanilamaz.",
+          ],
+        },
+      ],
+      fillInTheBlanks: [
+        {
+          id: "cond-fill-1",
+          type: "fill-in-the-blanks",
+          title: "Complete the Pair",
+          prompt: "Complete the sentence: If the lesson starts on time, we ___ the full revision block.",
+          answer: "will complete",
+          explanation: "First conditional yapisinda if + present simple, main clause will + base verb olur.",
+          testedPoint: "First conditional form",
+          errorType: "tense confusion",
+        },
+      ],
+      errorCorrection: [
+        {
+          id: "cond-err-1",
+          type: "error-correction",
+          title: "Spot the Logic Error",
+          prompt: "Correct the sentence: If I would know the rule, I would explain it better.",
+          answer: "If I knew the rule, I would explain it better.",
+          explanation: "If clause icinde would kullanilmaz; unreal present durum second conditional ister.",
+          testedPoint: "If clause structure",
+          errorType: "tense confusion",
+        },
+      ],
+      sentenceTransformation: [
+        {
+          id: "cond-tr-1",
+          type: "sentence-transformation",
+          title: "Transform the Meaning",
+          prompt: "Rewrite with a third conditional: She missed the workshop, so she stayed weak in reduced clauses.",
+          answer: "If she had not missed the workshop, she would not have stayed weak in reduced clauses.",
+          explanation: "Past cause-result iliskisi third conditional ile donusturulur.",
+          testedPoint: "Past unreal transformation",
+          errorType: "tense confusion",
+        },
+      ],
+      ruleApplication: [
+        {
+          id: "cond-rule-1",
+          type: "rule-application",
+          title: "Apply the Rule",
+          prompt: "State whether this sentence is real, possible, or unreal: If he were more careful, he could avoid article errors.",
+          answer: "Unreal present situation.",
+          explanation: "were + could avoid yapisi mevcutta gercek olmayan durumu gosterir.",
+          testedPoint: "Meaning calibration",
+          errorType: "modal meaning confusion",
+          sampleResponse: "Bu cumle su anda gercek olmayan, varsayimsal bir durumu anlatir.",
+        },
+      ],
+      miniProduction: [
+        {
+          id: "cond-prod-1",
+          type: "mini-production",
+          title: "Exam-mode Output",
+          prompt: "Write 2 short sentences: one first conditional and one third conditional about exam preparation.",
+          answer: "Example: If I revise tonight, I will feel calmer tomorrow. If I had started earlier, I would have finished the unit.",
+          explanation: "Bir cumlede future possibility, digerinde missed opportunity kurulmalidir.",
+          testedPoint: "Controlled conditional production",
+          sampleResponse: "If I review the notes now, I will answer faster. If I had joined the live lesson, I would have understood inversion better.",
+        },
+      ],
+    },
+  },
+  {
+    id: "relative-reduced",
+    topic: "Relative Clauses, Reduced Clauses, and Clause Analysis",
     level: "C1",
-    objective: "Koşul türlerini anlam ilişkisine göre doğru kullanmak",
+    dailyGoalTemplate: "Bugunku oturumun amaci, {exam} hedefi icin relative clause ile reduced clause ayrimini guclendirerek clause analysis becerisini keskinlestirmektir.",
+    reasonTemplate:
+      "Ogrencinin mevcut seviyesi {level}, hedefi ise {goal}. Bu oturumda relative / reduced clauses secildi cunku yuksek skor hedeflerinde formal structure farklarini gormek belirleyici olur.",
     explanation:
-      "Zero conditional genel gerçeklerden bahseder. First conditional geleceğe dönük olası sonuçları ifade eder. Second ve third conditional, gerçek dışı veya geçmişte gerçekleşmemiş durumları anlatır. YDS sorularında zaman uyumu ve anlam uyumu birlikte test edilir.",
-    examples: [
-      { en: "If you heat water to 100°C, it boils.", tr: "Suyu 100 dereceye ısıtırsan kaynar." },
-      { en: "If I had known, I would have called you.", tr: "Bilseydim seni arardım." },
-    ],
+      "Relative clause tam bir clause yapisi sunar; reduced clause ise information'u daha ekonomik verir. Ozellikle YDS 75+ ve IELTS 7.0+ hedeflerinde hangi yapinin adjectival information verdigini, failin acik olup olmadigini ve cumnenin formal tonunu fark etmek gerekir. Ogrenciler genelde defining / non-defining farkini biliyor ama reduced structure gorunce fail ile fiil iliskisini kaciriyor.",
     commonMistakes: [
-      "If clause içinde will kullanmak",
-      "Second ve third conditional yapılarını karıştırmak",
-      "Gerçeklik durumuna uygun tense seçmemek",
+      "that ve which kullanimini virgulle birlikte yanlis eslemek",
+      "reduced clause'ta implied subject'i fark etmemek",
+      "participial yapilari zaman catisi gibi okumak",
     ],
-    questions: [
+    examples: [
       {
-        question: "If she ___ earlier, she would have caught the train.",
-        options: ["left", "had left", "would leave", "has left"],
-        answer: "had left",
-        explanation: "Third conditional yapısında if clause past perfect alır.",
+        en: "Students who analyse clause function carefully eliminate distractors faster.",
+        tr: "Clause fonksiyonunu dikkatle analiz eden ogrenciler celdiricileri daha hizli eler.",
+        note: "Tam relative clause kullanimi.",
       },
       {
-        question: "If it rains tomorrow, we ___ the event indoors.",
-        options: ["held", "would hold", "will hold", "hold"],
-        answer: "will hold",
-        explanation: "First conditional: if + present simple, will + base verb.",
+        en: "Students analysing clause function carefully eliminate distractors faster.",
+        tr: "Clause fonksiyonunu dikkatle analiz eden ogrenciler celdiricileri daha hizli eler.",
+        note: "Ayni anlamin reduced adjective clause ile kurulmus hali.",
+      },
+      {
+        en: "The worksheet, which was designed for YDS candidates, focuses on connector traps.",
+        tr: "YDS adaylari icin tasarlanan calisma kagidi connector tuzaklarina odaklanir.",
+        note: "Non-defining clause ek bilgi verir ve virgulle ayrilir.",
+      },
+      {
+        en: "Questions written in a formal tone often test structural awareness rather than memorized rules.",
+        tr: "Formal bir tonda yazilmis sorular siklikla ezber kurallardan cok yapisal farkindaligi test eder.",
+        note: "Past participle reduced clause testlerde sik gorulur.",
       },
     ],
-    studyPlan: [
-      "8 dk conditional türlerini tabloyla tekrar et",
-      "12 dk örnek cümle dönüşüm çalışması",
-      "10 dk test çözümü",
-      "5 dk yanlış analiz notu",
-    ],
+    activitySet: {
+      multipleChoice: [
+        {
+          id: "rel-mc-1",
+          type: "multiple-choice",
+          title: "Clause Selection",
+          prompt: "The candidates ___ in the advanced group will work on inversion and reduced clauses today.",
+          options: ["placing", "placed", "who placing", "whose placed"],
+          answer: "placed",
+          explanation: "Burada candidates'i niteleyen reduced passive structure gerekir: candidates placed in the advanced group.",
+          testedPoint: "Reduced passive clause recognition",
+          errorType: "clause structure weakness",
+          whyOthersWrong: [
+            "placing aktif anlam verir ve burada uygun degildir.",
+            "who placing gramatik olarak eksiktir.",
+          ],
+        },
+      ],
+      fillInTheBlanks: [
+        {
+          id: "rel-fill-1",
+          type: "fill-in-the-blanks",
+          title: "Relative Pronoun Accuracy",
+          prompt: "Complete the sentence: The article, ___ examines academic failure patterns, is useful for IELTS candidates.",
+          answer: "which",
+          explanation: "Virgul ile ayrilan non-defining clause oldugu icin which gerekir.",
+          testedPoint: "Non-defining relative clause",
+          errorType: "relative clause error",
+        },
+      ],
+      errorCorrection: [
+        {
+          id: "rel-err-1",
+          type: "error-correction",
+          title: "Fix the Structure",
+          prompt: "Correct the sentence: Students which join the live class regularly improve faster.",
+          answer: "Students who join the live class regularly improve faster.",
+          explanation: "People icin relative pronoun who kullanilir; which nesneler icindir.",
+          testedPoint: "Human vs non-human relative pronoun",
+          errorType: "relative clause error",
+        },
+      ],
+      sentenceTransformation: [
+        {
+          id: "rel-tr-1",
+          type: "sentence-transformation",
+          title: "Reduce the Clause",
+          prompt: "Rewrite with a reduced clause: Students who are exposed to formal structures early gain confidence faster.",
+          answer: "Students exposed to formal structures early gain confidence faster.",
+          explanation: "who are exposed to ifadesi reduced passive adjective clause'a indirgenebilir.",
+          testedPoint: "Reducing passive relative clauses",
+          errorType: "clause structure weakness",
+        },
+      ],
+      ruleApplication: [
+        {
+          id: "rel-rule-1",
+          type: "rule-application",
+          title: "Explain the Choice",
+          prompt: "Why is 'that' not appropriate in 'My plan, which I updated yesterday, now includes grammar drills'?",
+          answer: "Because the clause is non-defining and set off by commas; 'that' is not used in that pattern.",
+          explanation: "Virgullu ek bilgi clause'larinda which/who kullanilir, that kullanilmaz.",
+          testedPoint: "Defining vs non-defining awareness",
+          errorType: "relative clause error",
+          sampleResponse: "Bu clause ek bilgi veriyor ve virgulle ayriliyor; bu nedenle that uygun degil.",
+        },
+      ],
+      miniProduction: [
+        {
+          id: "rel-prod-1",
+          type: "mini-production",
+          title: "Dual Output",
+          prompt: "Write 2 short sentences: one with a relative clause and one with a reduced clause about exam study habits.",
+          answer: "Example: Students who review errors daily improve steadily. Students exposed to regular feedback become more accurate.",
+          explanation: "Iki farkli adjectival structure'in bilincli kullanimi hedeflenir.",
+          testedPoint: "Controlled clause production",
+          sampleResponse: "Learners who track mistakes weekly progress faster. Learners trained with timed drills adapt more quickly.",
+        },
+      ],
+    },
   },
   {
-    topic: "Conjunctions and Linkers",
+    id: "connectors-modals",
+    topic: "Connectors, Modals, Passive Forms, and Formal Structure Choice",
     level: "B2",
-    objective: "Bağlaçları anlam ilişkisine göre seçebilmek",
+    dailyGoalTemplate: "Bugunku oturumun amaci, {exam} hedefi icin connector secimi ile modal/passive anlam kontrolunu ayni oturumda guclendirmektir.",
+    reasonTemplate:
+      "Ogrencinin seviyesi {level} ve hedef puani {goal}. Connectors ile modals bugun secildi cunku sinavlarda mantik iliskisi ve yapisal tercih ayni anda test edilir.",
     explanation:
-      "Although, whereas, however, therefore ve moreover gibi bağlaçlar cümledeki mantıksal ilişkiyi belirler. YDS bağlaç sorularında ana strateji, cümleler arası neden-sonuç, zıtlık ve ekleme ilişkisinin net tespitidir.",
-    examples: [
-      { en: "Although the task was difficult, the team finished it on time.", tr: "Görev zor olmasına rağmen ekip onu zamanında bitirdi." },
-      { en: "The roads were closed; therefore, we postponed the trip.", tr: "Yollar kapalıydı; bu nedenle geziyi erteledik." },
-    ],
+      "Connector sorulari sadece baglac ezberi degil, iki fikir arasindaki mantik iliskisini okumayi gerektirir. Modals ve passive forms ise olasilik, zorunluluk, izin ya da resmi anlatim gibi anlam farklarini sinar. Ogrenciler genelde however / therefore gibi yuzeysel isaretlere odaklanir ama asıl karar cumlenin iliski turunden gelir.",
     commonMistakes: [
-      "Zıtlık ve neden-sonuç bağlaçlarını karıştırmak",
-      "Noktalama ve bağlaç ilişkisini ihmal etmek",
-      "Cümle başı ve cümle içi linker kullanımını ayıramamak",
+      "however ve therefore iliskisini cumle mantigina bakmadan secmek",
+      "must have / should have gibi modal anlam farklarini karistirmak",
+      "formal passive yapilari gereksiz aktif cumleyle degistirmek",
     ],
-    questions: [
+    examples: [
       {
-        question: "The data were limited; ___, the researchers drew cautious conclusions.",
-        options: ["however", "therefore", "because", "unless"],
-        answer: "therefore",
-        explanation: "İkinci bölüm sonuç bildiriyor, bu yüzden therefore uygun.",
+        en: "The trial was limited; however, the findings were still worth discussing.",
+        tr: "Deneme sinirliydi; ancak bulgular yine de tartismaya degerdi.",
+        note: "however zItlik iliskisi kurar.",
       },
       {
-        question: "___ the weather was poor, the match continued.",
-        options: ["Because", "Although", "Therefore", "Moreover"],
-        answer: "Although",
-        explanation: "Zıtlık ilişkisi kurulduğu için although gerekir.",
+        en: "The proposal must be reviewed before it is approved.",
+        tr: "Teklif onaylanmadan once incelenmelidir.",
+        note: "Formal passive ve zorunluluk ayni yapida birlesir.",
+      },
+      {
+        en: "Candidates may overlook the clue unless they read the final clause carefully.",
+        tr: "Adaylar son clause'u dikkatle okumazsa ipucunu gozden kacirabilir.",
+        note: "modal anlam + connector mantigi birlikte yorumlanir.",
+      },
+      {
+        en: "The report was revised so that the argument could be presented more clearly.",
+        tr: "Arguman daha net sunulabilsin diye rapor revize edildi.",
+        note: "purpose relation ve passive structure birlikte kurulmus.",
       },
     ],
-    studyPlan: [
-      "10 dk bağlaç-anlam eşleştirme",
-      "10 dk cümle tamamlama",
-      "10 dk mini test",
-      "5 dk yanlışların sınıflandırılması",
-    ],
+    activitySet: {
+      multipleChoice: [
+        {
+          id: "cm-mc-1",
+          type: "multiple-choice",
+          title: "Connector Trap",
+          prompt: "The evidence was incomplete; ___, the editors refused to make a definite claim.",
+          options: ["moreover", "therefore", "unless", "meanwhile"],
+          answer: "therefore",
+          explanation: "Ikinci kisim bir sonuc verdigi icin therefore gerekir.",
+          testedPoint: "Result connector",
+          errorType: "connector confusion",
+          whyOthersWrong: [
+            "moreover ek bilgi verir, sonuc degil.",
+            "unless subordinate clause baslatir; burada uygun degildir.",
+          ],
+        },
+      ],
+      fillInTheBlanks: [
+        {
+          id: "cm-fill-1",
+          type: "fill-in-the-blanks",
+          title: "Modal Meaning",
+          prompt: "Complete the sentence: The answer key is not here, so it ___ be in the teacher's folder.",
+          answer: "must",
+          explanation: "Must burada mantikli sonuctan cikan guclu tahmini verir.",
+          testedPoint: "Deduction with modals",
+          errorType: "modal meaning confusion",
+        },
+      ],
+      errorCorrection: [
+        {
+          id: "cm-err-1",
+          type: "error-correction",
+          title: "Formal Structure Repair",
+          prompt: "Correct the sentence: The new policy should implement before the exam season starts.",
+          answer: "The new policy should be implemented before the exam season starts.",
+          explanation: "Policy eylemi yapmaz; uygulanir. Bu nedenle passive form gerekir.",
+          testedPoint: "Modal + passive form",
+          errorType: "passive-active confusion",
+        },
+      ],
+      sentenceTransformation: [
+        {
+          id: "cm-tr-1",
+          type: "sentence-transformation",
+          title: "Active to Formal Passive",
+          prompt: "Rewrite more formally: Teachers will review the scripts tomorrow.",
+          answer: "The scripts will be reviewed tomorrow.",
+          explanation: "Formal academic tone icin passive tercih edilir.",
+          testedPoint: "Formal written grammar",
+          errorType: "passive-active confusion",
+        },
+      ],
+      ruleApplication: [
+        {
+          id: "cm-rule-1",
+          type: "rule-application",
+          title: "Why This Connector?",
+          prompt: "Explain why 'however' fits better than 'therefore': The rule seems simple; however, students still confuse it in timed tests.",
+          answer: "Because the second clause contrasts with the expectation created by the first clause.",
+          explanation: "Mantik iliskisi contrast oldugu icin however uygundur.",
+          testedPoint: "Contrast logic",
+          errorType: "connector confusion",
+          sampleResponse: "Ilk cumle basit gorunuyor diyor ama ikinci cumle beklentinin tersini veriyor.",
+        },
+      ],
+      miniProduction: [
+        {
+          id: "cm-prod-1",
+          type: "mini-production",
+          title: "Micro Writing",
+          prompt: "Write 2 short formal sentences: one using a connector of contrast and one using modal + passive.",
+          answer: "Example: The topic appears familiar; however, the distractors are severe. The response sheet must be checked carefully.",
+          explanation: "Bu gorev mantik iliskisi ile form secimini ayni anda kullandirir.",
+          testedPoint: "Formal grammar control",
+          sampleResponse: "The passage is short; however, the inference is subtle. The final draft should be reviewed twice.",
+        },
+      ],
+    },
   },
 ];
 
@@ -1044,6 +1486,189 @@ function createNextStep(profile: AiStudentProfile, skill: FocusSkill) {
   return `Yarin ayni seviyede bir metinde ${profile.weakAreas[0]} ve paraphrase recognition uzerine ikinci bir set cozmeyi hedefle.`;
 }
 
+function extractTargetScoreValue(goal: string) {
+  const match = goal.match(/(\d+(?:\.\d+)?)/);
+  return match ? Number(match[1]) : null;
+}
+
+function getLevelScore(level: StudentLevel) {
+  if (level === "A2") return 2;
+  if (level === "B1") return 4;
+  if (level === "B2") return 6;
+  return 8;
+}
+
+function inferTargetLevel(profile: AiStudentProfile): StudentLevel {
+  const target = extractTargetScoreValue(profile.studentGoalScore);
+
+  if (profile.examType === "IELTS Academic" || profile.examType === "IELTS General") {
+    if ((target ?? 0) >= 7) return "C1";
+    if ((target ?? 0) >= 6.5) return "B2";
+    return "B1";
+  }
+
+  if (profile.examType === "YDT") {
+    if ((target ?? 0) >= 75) return "C1";
+    if ((target ?? 0) >= 60) return "B2";
+    return "B1";
+  }
+
+  if ((target ?? 0) >= 75) return "C1";
+  if ((target ?? 0) >= 60) return "B2";
+  return "B1";
+}
+
+function inferGrammarPriorityIds(profile: AiStudentProfile) {
+  const target = extractTargetScoreValue(profile.studentGoalScore) ?? 70;
+
+  if (profile.examType === "IELTS Academic" || profile.examType === "IELTS General") {
+    if (target >= 7) return ["relative-reduced", "connectors-modals", "conditionals"];
+    if (target >= 6.5) return ["conditionals", "connectors-modals", "relative-reduced"];
+    return ["articles-prepositions", "conditionals", "connectors-modals"];
+  }
+
+  if (profile.examType === "YDT") {
+    if (target >= 75) return ["relative-reduced", "connectors-modals", "conditionals"];
+    return ["conditionals", "articles-prepositions", "connectors-modals"];
+  }
+
+  if (target >= 75) return ["relative-reduced", "connectors-modals", "conditionals"];
+  if (target >= 60) return ["conditionals", "relative-reduced", "connectors-modals"];
+  return ["articles-prepositions", "conditionals", "connectors-modals"];
+}
+
+function selectGrammarBlueprint(profile: AiStudentProfile, seed: number) {
+  const orderedIds = inferGrammarPriorityIds(profile);
+  const orderedBlueprints = orderedIds
+    .map((id) => grammarBlueprints.find((item) => item.id === id))
+    .filter((item): item is GrammarBlueprint => Boolean(item));
+
+  const fallbackBlueprints = grammarBlueprints.filter(
+    (item) => !orderedIds.includes(item.id),
+  );
+  const pool = [...orderedBlueprints, ...fallbackBlueprints];
+  return pool[seed % pool.length] ?? grammarBlueprints[0];
+}
+
+function createGrammarWarmUp(profile: AiStudentProfile, topic: string) {
+  return [
+    `${topic} konusunda seni zorlayan en kritik ayrimi tek cumleyle tanimla.`,
+    `${profile.examType} sorularinda bugun hangi grammar tuzagina dusmeme hedefin var?`,
+    `${profile.studentGoalScore} hedefine gore bugun hiz yerine hangi dogruluk noktasina odaklanman gerekiyor?`,
+  ];
+}
+
+function createGrammarSessionTitle(profile: AiStudentProfile, blueprint: GrammarBlueprint) {
+  return `${profile.examType} Grammar Focus - ${blueprint.topic} for ${profile.studentGoalScore}`;
+}
+
+function createGrammarGoalSnapshot(profile: AiStudentProfile, blueprint: GrammarBlueprint) {
+  const targetLevel = inferTargetLevel(profile);
+  return [
+    `${profile.examType} odakli bu ogrenci su anda ${profile.studentLevel} seviyesinde ve hedefi ${profile.studentGoalScore}.`,
+    blueprint.reasonTemplate
+      .replace("{level}", profile.studentLevel)
+      .replace("{goal}", profile.studentGoalScore),
+    `Bu oturumun hedefi, ogrenciyi mevcut seviyeden yaklasik ${targetLevel} ihtiyacina tasiyacak daha kontrollu ve stratejik grammar kararlarina yoneltmektir.`,
+  ].join(" ");
+}
+
+function createGrammarDailyGoal(profile: AiStudentProfile, blueprint: GrammarBlueprint) {
+  return blueprint.dailyGoalTemplate.replace("{exam}", profile.examType);
+}
+
+function createGrammarTopicReason(profile: AiStudentProfile, blueprint: GrammarBlueprint) {
+  return blueprint.reasonTemplate
+    .replace("{level}", profile.studentLevel)
+    .replace("{goal}", profile.studentGoalScore);
+}
+
+function createGrammarConceptExplanation(profile: AiStudentProfile, blueprint: GrammarBlueprint) {
+  const languageNote =
+    profile.languageOfExplanations === "English"
+      ? "Acilamada teknik terimler English korunabilir."
+      : profile.languageOfExplanations === "bilingual"
+        ? "Ana kural Turkish, teknik etiketler English destekli sunulmali."
+        : "Aciklamalar Turkish merkezli, sinav odakli ve net olmali.";
+
+  return [
+    blueprint.explanation,
+    `Sinav onemi: ${profile.examType} hedefinde bu konu, sadece kural bilgisi degil baglam icinde yapi secimi ve tuzak farkindaligi olcer.`,
+    `Sik hata alanlari: ${blueprint.commonMistakes.join(", ")}.`,
+    languageNote,
+  ].join(" ");
+}
+
+function createGrammarStrategyNotes(profile: AiStudentProfile, blueprint: GrammarBlueprint) {
+  return [
+    `Once anlam iliskisini bul, sonra grammar kalibini sec. ${profile.examType} sorularinda yuzeydeki kelimeye degil yapisal ipucuna bak.`,
+    `Bugun ozellikle ${blueprint.commonMistakes[0]?.toLowerCase() ?? "yapi secimi"} konusunda kendi hatani yakalamaya calis.`,
+    `${profile.dailyStudyTime} dakikalik blokta konu anlatimi, uygulama ve hata analizi sirasini bozma; hizdan once dogruluk kur.`,
+  ];
+}
+
+function createGrammarPerformanceEvaluation(
+  profile: AiStudentProfile,
+  blueprint: GrammarBlueprint,
+): GrammarPerformanceEvaluation {
+  const currentScore = getLevelScore(profile.studentLevel);
+  const targetScore = getLevelScore(inferTargetLevel(profile));
+  const gapPenalty = Math.max(0, targetScore - currentScore);
+  const accuracyBase = Math.max(4, 8 - gapPenalty);
+
+  const rubric: GrammarPerformanceRubricItem[] = [
+    {
+      label: "Grammar Accuracy",
+      score: clampRubricScore(accuracyBase),
+      comment: "Temel dogruluk seviyesi mevcut hedefe yaklasiyor ancak zorlu tuzaklarda karar kalitesi dalgalanabiliyor.",
+      recommendation: "Her yanlis soruda hangi kelimenin degil hangi yapinin secildigini not et.",
+    },
+    {
+      label: "Rule Awareness",
+      score: clampRubricScore(accuracyBase - 1),
+      comment: "Kural bilgisi var, fakat kurali baglamla eslestirme hizinin artmasi gerekiyor.",
+      recommendation: "Her aktiviteden sonra tek cumlelik kural ozeti yaz.",
+    },
+    {
+      label: "Contextual Usage",
+      score: clampRubricScore(accuracyBase - (blueprint.level === "C1" ? 2 : 1)),
+      comment: "Baglam icinde structure secimi, hedef puan ile mevcut seviye arasindaki farki en net gosteren alandir.",
+      recommendation: "Secenegi isaretlemeden once cumlenin mantik iliskisini isimlendir.",
+    },
+    {
+      label: "Sentence Control",
+      score: clampRubricScore(accuracyBase - 1),
+      comment: "Transformation ve mini production adimlarinda sentence control duzenli pratikle hizla guclenebilir.",
+      recommendation: "Bugunku mini production gorevini sesli okuyarak yapisal akisi kontrol et.",
+    },
+    {
+      label: "Error Recognition",
+      score: clampRubricScore(accuracyBase - 1),
+      comment: "Hata tespiti gelisiyor; ancak benzer gorunen iki structure arasinda karar verirken ikinci kontrol gerekli.",
+      recommendation: "Error correction sorularinda once hatali bolgeyi etiketle, sonra duzelt.",
+    },
+    {
+      label: "Exam Readiness Relative to Target Score",
+      score: clampRubricScore(accuracyBase - gapPenalty),
+      comment: `Mevcut performans ${profile.studentGoalScore} hedefi icin dogru yonde, ancak ${blueprint.topic} alaninda daha tutarli otomasyon gerekiyor.`,
+      recommendation: "Bu konuyu iki gun icinde ikinci kez, daha kisa ama daha hizli bir setle tekrar et.",
+    },
+  ];
+
+  return {
+    summary: `${blueprint.topic} oturumu, hedef puana giden grammar boslugunu dogrudan kapatmak icin secildi.`,
+    targetScoreComment: `${profile.studentLevel} seviyesinden ${profile.studentGoalScore} hedefine giderken bu topic'te karar hizi ve hata farkindaligi birlikte yukseltilmeli.`,
+    strongAreas: ["Calisma rutini", "Kural farkindaligi"],
+    focusAreas: blueprint.commonMistakes,
+    nextFocus: blueprint.id === "articles-prepositions" ? "Conditionals ve connector secimi" : blueprint.id === "conditionals" ? "Relative / reduced clause ayirimi" : "Formal grammar ve sentence transformation",
+    rubric,
+  };
+}
+
+function createGrammarPersonalizedNextStep(profile: AiStudentProfile, blueprint: GrammarBlueprint) {
+  return `Yarin ${blueprint.commonMistakes[0]?.toLowerCase() ?? "bu konu"} uzerine 10 dakikalik hizli tekrar yap, sonra ${createGrammarPerformanceEvaluation(profile, blueprint).nextFocus.toLowerCase()} basligina gec.`;
+}
+
 async function tryProviderRewrite(input: string | AiPromptOptions) {
   const apiKey = process.env.AI_API_KEY;
   if (!apiKey) {
@@ -1201,29 +1826,36 @@ export async function getDailyReadingModule(options?: {
   };
 }
 
-export async function getDailyGrammarModule(date = new Date()) {
+export async function getDailyGrammarModule(
+  input: Date | { date?: Date; profile?: Partial<AiStudentProfile> } = new Date(),
+): Promise<GrammarModuleResponse> {
+  const date = input instanceof Date ? input : input.date ?? new Date();
+  const profile = mergeAiProfile(input instanceof Date ? undefined : input.profile);
   const seed = getDaySeed(date);
-  const index = seed % grammarPool.length;
-  const selected = grammarPool[index];
-
-  const aiHint = await tryProviderRewrite(
-    `Give one short strategy note in Turkish for YDS grammar topic: ${selected.topic}. Keep it under 35 words.`
-  );
+  const blueprint = selectGrammarBlueprint(profile, seed);
 
   return {
     generatedAt: date.toISOString(),
     model: process.env.AI_API_KEY ? "hybrid-ai" : "local-ai",
-    module: selected,
-    aiCoachNote:
-      aiHint ??
-      "Yanlis yaptigin sorularda once zaman/bağlaç ilişkisini bul, sonra seçenekleri eleme yöntemiyle daralt.",
+    sessionTitle: createGrammarSessionTitle(profile, blueprint),
+    studentGoalSnapshot: createGrammarGoalSnapshot(profile, blueprint),
+    dailyGoal: createGrammarDailyGoal(profile, blueprint),
+    warmUp: createGrammarWarmUp(profile, blueprint.topic),
+    focusTopic: blueprint.topic,
+    topicReason: createGrammarTopicReason(profile, blueprint),
+    conceptExplanation: createGrammarConceptExplanation(profile, blueprint),
+    modelExamples: blueprint.examples,
+    activitySet: blueprint.activitySet,
+    strategyNotes: createGrammarStrategyNotes(profile, blueprint),
+    performanceEvaluation: createGrammarPerformanceEvaluation(profile, blueprint),
+    personalizedNextStep: createGrammarPersonalizedNextStep(profile, blueprint),
   };
 }
 
 export { createAiProfileOverridesFromStudentContext };
 export type {
   AiStudentProfile,
-  GrammarModule,
+  GrammarModuleResponse,
   PerformanceEvaluation,
   ReadingModuleResponse,
   ReadingPassage,

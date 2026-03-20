@@ -1,14 +1,35 @@
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
-import { getDailyGrammarModule } from "@/src/lib/ai-content";
+import { createAiProfileOverridesFromStudentContext, getDailyGrammarModule } from "@/src/lib/ai-content";
 import { authOptions } from "@/src/auth";
+import { prisma } from "@/src/lib/prisma";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const data = await getDailyGrammarModule();
+
+  const profile = await prisma.studentProfile.findUnique({
+    where: { userId: session.user.id },
+    select: {
+      interestTags: true,
+      targetExam: true,
+      targetScore: true,
+      currentLevel: true,
+      dailyGoalMinutes: true,
+    },
+  });
+
+  const data = await getDailyGrammarModule({
+    profile: createAiProfileOverridesFromStudentContext({
+      targetExam: profile?.targetExam,
+      currentLevel: profile?.currentLevel,
+      targetScore: profile?.targetScore,
+      dailyGoalMinutes: profile?.dailyGoalMinutes,
+      interestTags: profile?.interestTags,
+    }),
+  });
   return Response.json(data);
 }

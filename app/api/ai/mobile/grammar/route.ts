@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
-import { getDailyGrammarModule } from "@/src/lib/ai-content";
+import { createAiProfileOverridesFromStudentContext, getDailyGrammarModule } from "@/src/lib/ai-content";
+import { prisma } from "@/src/lib/prisma";
 
 function getJwtSecret(): Uint8Array {
   const secret = process.env.NEXTAUTH_SECRET;
@@ -25,7 +26,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
-    const data = await getDailyGrammarModule();
+    const profile = await prisma.studentProfile.findUnique({
+      where: { userId },
+      select: {
+        interestTags: true,
+        targetExam: true,
+        targetScore: true,
+        currentLevel: true,
+        dailyGoalMinutes: true,
+      },
+    });
+    const data = await getDailyGrammarModule({
+      profile: createAiProfileOverridesFromStudentContext({
+        targetExam: profile?.targetExam,
+        currentLevel: profile?.currentLevel,
+        targetScore: profile?.targetScore,
+        dailyGoalMinutes: profile?.dailyGoalMinutes,
+        interestTags: profile?.interestTags,
+      }),
+    });
     return NextResponse.json(data);
   } catch (err) {
     console.error("[mobile/grammar] error:", err);
