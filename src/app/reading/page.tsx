@@ -1,6 +1,6 @@
 import { Button } from "@/src/components/common/button";
 import { AiArticleReader } from "@/src/components/reading/ai-article-reader";
-import { getDailyReadingModule, getDailyVocabulary } from "@/src/lib/ai-content";
+import { createAiProfileOverridesFromStudentContext, getDailyReadingModule, getDailyVocabulary } from "@/src/lib/ai-content";
 import { authOptions } from "@/src/auth";
 import { prisma } from "@/src/lib/prisma";
 import { getServerSession } from "next-auth";
@@ -12,13 +12,27 @@ export default async function ReadingPage() {
 	const profile = session?.user?.id
 		? await prisma.studentProfile.findUnique({
 				where: { userId: session.user.id },
-				select: { interestTags: true },
+				select: {
+					interestTags: true,
+					targetExam: true,
+					targetScore: true,
+					currentLevel: true,
+					dailyGoalMinutes: true,
+				},
 		  })
 		: null;
+	const aiProfile = createAiProfileOverridesFromStudentContext({
+		targetExam: profile?.targetExam,
+		currentLevel: profile?.currentLevel,
+		targetScore: profile?.targetScore,
+		dailyGoalMinutes: profile?.dailyGoalMinutes,
+		interestTags: profile?.interestTags,
+		focusSkill: "reading",
+	});
 
 	const [reading, vocabulary] = await Promise.all([
-		getDailyReadingModule({ interestTags: profile?.interestTags ?? [] }),
-		getDailyVocabulary(),
+		getDailyReadingModule({ interestTags: profile?.interestTags ?? [], profile: aiProfile }),
+		getDailyVocabulary({ profile: { ...aiProfile, focusSkill: "vocabulary" } }),
 	]);
 	const mainPassage = reading.passages[0];
 	const supportingPassages = reading.passages.slice(1);
@@ -50,6 +64,24 @@ export default async function ReadingPage() {
 				</div>
 			</div>
 
+			<div className="mt-8 grid gap-6 lg:grid-cols-3">
+				<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl lg:col-span-2">
+					<p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-300">{reading.sessionTitle}</p>
+					<p className="mt-3 text-sm leading-7 text-slate-200">{reading.studentProfileSummary}</p>
+					<p className="mt-3 text-sm font-semibold text-white">Gunluk hedef: {reading.dailyGoal}</p>
+				</div>
+				<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+					<h2 className="text-lg font-bold text-white">Warm-Up</h2>
+					<div className="mt-4 space-y-3">
+						{reading.warmUp.map((item) => (
+							<div key={item} className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-200">
+								{item}
+							</div>
+						))}
+					</div>
+				</div>
+			</div>
+
 			<div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
 				<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl">
 					<p className="text-sm text-slate-400">Kaynak Sayısı</p>
@@ -71,7 +103,7 @@ export default async function ReadingPage() {
 					<p className="text-sm text-slate-400">Soru Tipi</p>
 					<h2 className="mt-2 text-3xl font-black text-white">5 tip</h2>
 					<p className="mt-2 text-sm text-slate-300">
-						Main idea, detail, inference, vocabulary ve tone.
+						Main idea, detail, inference, vocabulary ve tone + answer key.
 					</p>
 				</div>
 
@@ -104,9 +136,19 @@ export default async function ReadingPage() {
 										<div>
 											<h3 className="text-lg font-bold text-white">{task.type.toUpperCase()}</h3>
 											<p className="mt-2 text-sm text-slate-300">{task.question}</p>
+											<p className="mt-3 text-xs font-semibold uppercase tracking-wide text-blue-300">{task.skillMeasured}</p>
+											<p className="mt-2 text-sm text-emerald-300">Cevap: {task.answer}</p>
+											<p className="mt-2 text-sm text-slate-300">{task.explanation}</p>
+											{task.whyOthersWrong.length > 0 ? (
+												<ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-slate-400">
+													{task.whyOthersWrong.map((item) => (
+														<li key={item}>{item}</li>
+													))}
+												</ul>
+											) : null}
 										</div>
 										<span className="inline-flex rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-300">
-											Soru
+											Answer Key
 										</span>
 									</div>
 								</div>
@@ -154,13 +196,32 @@ export default async function ReadingPage() {
 					</div>
 
 					<div className="rounded-3xl bg-blue-600 p-6 text-white shadow-[0_12px_40px_rgba(0,0,0,0.25)]">
-						<p className="text-sm font-semibold text-blue-100">AI performans rehberi</p>
+						<p className="text-sm font-semibold text-blue-100">Strategy Notes</p>
 						<h3 className="mt-2 text-xl font-black">Okuma verimini sistemli artır</h3>
-						<p className="mt-3 text-sm leading-7 text-blue-100">
-							{reading.performanceGuide.skimFirst} {reading.performanceGuide.markSignals} {" "}
-							{reading.performanceGuide.answerOrder} {reading.performanceGuide.reviewWindow}
-						</p>
+						<div className="mt-3 space-y-2 text-sm leading-7 text-blue-100">
+							{reading.strategyNotes.map((item) => (
+								<p key={item}>{item}</p>
+							))}
+						</div>
 						<p className="mt-3 text-xs text-blue-100">Güncellendi: {new Date(reading.generatedAt).toLocaleDateString("tr-TR")}</p>
+					</div>
+
+					<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+						<h2 className="text-xl font-bold text-white">Performance Evaluation</h2>
+						<p className="mt-3 text-sm text-slate-300">{reading.performanceEvaluation.summary}</p>
+						<div className="mt-4 space-y-3">
+							{reading.performanceEvaluation.rubric.map((item) => (
+								<div key={item.label} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+									<div className="flex items-center justify-between gap-4">
+										<p className="text-sm font-semibold text-white">{item.label}</p>
+										<p className="text-sm font-black text-blue-300">{item.score}/10</p>
+									</div>
+									<p className="mt-2 text-xs text-slate-300">{item.comment}</p>
+									<p className="mt-2 text-xs text-slate-500">{item.recommendation}</p>
+								</div>
+							))}
+						</div>
+						<p className="mt-4 text-sm font-semibold text-emerald-300">Next Step: {reading.personalizedNextStep}</p>
 					</div>
 					</div>
 				</div>

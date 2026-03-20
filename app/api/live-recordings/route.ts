@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import { getLiveRecordingAccessSubscription } from "@/src/lib/live-recordings-access";
 import { prisma } from "@/src/lib/prisma";
 
 function getJwtSecret(): Uint8Array {
@@ -28,15 +29,7 @@ export async function GET(req: NextRequest) {
   try {
     const now = new Date();
 
-    const activeSubscription = await prisma.subscription.findFirst({
-      where: {
-        userId,
-        status: { in: ["ACTIVE", "TRIALING"] },
-        startDate: { lte: now },
-        OR: [{ endDate: null }, { endDate: { gte: now } }],
-        plan: { includesLiveClass: true },
-      },
-    });
+    const accessSubscription = await getLiveRecordingAccessSubscription(userId);
 
     const recordings = await prisma.liveClass.findMany({
       where: {
@@ -56,7 +49,7 @@ export async function GET(req: NextRequest) {
       take: 40,
     });
 
-    const hasAccess = Boolean(activeSubscription);
+    const hasAccess = Boolean(accessSubscription);
 
     return NextResponse.json({
       hasAccess,

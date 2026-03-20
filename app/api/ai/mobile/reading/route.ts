@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
-import { getDailyReadingModule } from "@/src/lib/ai-content";
+import { getDailyReadingModule, createAiProfileOverridesFromStudentContext } from "@/src/lib/ai-content";
+import { prisma } from "@/src/lib/prisma";
 
 function getJwtSecret(): Uint8Array {
   const secret = process.env.NEXTAUTH_SECRET;
@@ -25,7 +26,28 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
-    const data = await getDailyReadingModule();
+    const studentProfile = await prisma.studentProfile.findUnique({
+      where: { userId },
+      select: {
+        targetExam: true,
+        targetScore: true,
+        currentLevel: true,
+        dailyGoalMinutes: true,
+        interestTags: true,
+      },
+    });
+
+    const data = await getDailyReadingModule({
+      interestTags: studentProfile?.interestTags ?? [],
+      profile: createAiProfileOverridesFromStudentContext({
+        targetExam: studentProfile?.targetExam,
+        currentLevel: studentProfile?.currentLevel,
+        targetScore: studentProfile?.targetScore,
+        dailyGoalMinutes: studentProfile?.dailyGoalMinutes,
+        interestTags: studentProfile?.interestTags,
+        focusSkill: "reading",
+      }),
+    });
     return NextResponse.json(data);
   } catch (err) {
     console.error("[mobile/reading] error:", err);

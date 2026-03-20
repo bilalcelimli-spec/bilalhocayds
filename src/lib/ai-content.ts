@@ -1,15 +1,50 @@
 import { getDailyRssNews } from "@/src/lib/rss-news";
 
+type ExamType = "YDS" | "YDT" | "IELTS Academic" | "IELTS General";
+type StudentLevel = "A2" | "B1" | "B2" | "C1";
+type FocusSkill = "reading" | "vocabulary" | "mixed";
+type QuestionCountPreference = "kisa" | "orta" | "yogun";
+type ExplanationLanguage = "Turkish" | "English" | "bilingual";
+type MotivationStyle = "formal" | "supportive" | "energetic" | "exam-coach style";
+
+type AiStudentProfile = {
+  examType: ExamType;
+  studentLevel: StudentLevel;
+  studentGoalScore: string;
+  dailyStudyTime: 20 | 30 | 45 | 60;
+  focusSkill: FocusSkill;
+  topicPreferences: string[];
+  weakAreas: string[];
+  knownWordsLevel: "dusuk" | "orta" | "ileri";
+  questionCountPreference: QuestionCountPreference;
+  languageOfExplanations: ExplanationLanguage;
+  studentHistory: string[];
+  motivationStyle: MotivationStyle;
+};
+
 type VocabularyItem = {
   word: string;
   level: "B2" | "C1" | "C2";
   trMeaning: string;
+  englishDefinition: string;
+  synonym: string;
+  antonym: string | null;
+  collocation: string;
+  wordFamily: string[];
+  examNote: string;
+  commonMistake: string;
   examples: Array<{ en: string; tr: string }>;
 };
 
 type ReadingQuestion = {
+  id: string;
   type: "main-idea" | "detail" | "inference" | "vocabulary" | "tone";
   question: string;
+  skillMeasured: string;
+  answer: string;
+  explanation: string;
+  whyOthersWrong: string[];
+  options?: string[];
 };
 
 type ReadingPassage = {
@@ -22,6 +57,126 @@ type ReadingPassage = {
   keyVocabulary: string[];
   questions: ReadingQuestion[];
   studyPlan: string[];
+};
+
+type VocabularyActivity = {
+  type:
+    | "fill-in-the-blanks"
+    | "match-definition"
+    | "synonym-selection"
+    | "context-meaning"
+    | "collocation-completion"
+    | "rewrite"
+    | "word-formation"
+    | "multiple-choice"
+    | "mini-translation";
+  title: string;
+  prompt: string;
+  answer: string;
+  explanation: string;
+  options?: string[];
+};
+
+type PerformanceRubricItem = {
+  label:
+    | "Reading Accuracy"
+    | "Vocabulary Knowledge"
+    | "Contextual Meaning"
+    | "Inference Skill"
+    | "Attention to Detail"
+    | "Paraphrase Recognition"
+    | "Exam Readiness";
+  score: number;
+  comment: string;
+  recommendation: string;
+};
+
+type PerformanceEvaluation = {
+  mode: string;
+  summary: string;
+  strongAreas: string[];
+  focusAreas: string[];
+  rubric: PerformanceRubricItem[];
+};
+
+type ReadingAnswerKeyItem = {
+  questionId: string;
+  question: string;
+  answer: string;
+  explanation: string;
+};
+
+type ReadingModuleResponse = {
+  generatedAt: string;
+  model: string;
+  sessionTitle: string;
+  studentProfileSummary: string;
+  dailyGoal: string;
+  warmUp: string[];
+  passages: ReadingPassage[];
+  answerKey: ReadingAnswerKeyItem[];
+  strategyNotes: string[];
+  performanceGuide: {
+    skimFirst: string;
+    markSignals: string;
+    answerOrder: string;
+    reviewWindow: string;
+  };
+  performanceEvaluation: PerformanceEvaluation;
+  personalizedNextStep: string;
+};
+
+type VocabularyResponse = {
+  generatedAt: string;
+  model: string;
+  dailyTarget: number;
+  sessionTitle: string;
+  studentProfileSummary: string;
+  dailyGoal: string;
+  warmUp: string[];
+  items: VocabularyItem[];
+  reading?: { title: string; passage: string; words: string[] };
+  activities: VocabularyActivity[];
+  strategyNotes: string[];
+  performanceEvaluation: PerformanceEvaluation;
+  personalizedNextStep: string;
+};
+
+type VocabularySeed = Pick<VocabularyItem, "word" | "level" | "trMeaning">;
+
+type AiPromptOptions = {
+  systemPrompt?: string;
+  userPrompt: string;
+  temperature?: number;
+};
+
+const MASTER_READING_VOCAB_SYSTEM_PROMPT = `You are BilalHocaYDS Daily Reading and Vocabulary Engine.
+You are an expert academic English instructor, exam content editor, assessment designer, and pedagogical AI specialized in YDS, YDT, IELTS Academic, and IELTS General.
+
+Core rules:
+- Produce exam-aligned, natural, high-quality, original content.
+- Avoid robotic, repetitive, shallow, or generic wording.
+- Match difficulty to the student's level and target exam.
+- Reading tasks must measure main idea, detail, inference, vocabulary in context, reference, paraphrase recognition, and writer attitude when relevant.
+- Vocabulary tasks must go beyond word-meaning matching and emphasize context, synonym, antonym, collocation, word family, academic usage, common confusion, and exam traps.
+- Feedback and strategy notes must sound like a real teacher and exam coach, not a template generator.
+- Keep outputs structured, publication-ready, and easy to embed in a learning platform.
+- When Turkish is requested, explanations should be clear, accurate, and pedagogically strong.
+`;
+
+const DEFAULT_AI_PROFILE: AiStudentProfile = {
+  examType: "YDS",
+  studentLevel: "B2",
+  studentGoalScore: "YDS 70+",
+  dailyStudyTime: 30,
+  focusSkill: "mixed",
+  topicPreferences: ["education", "technology", "environment", "society", "science"],
+  weakAreas: ["inference", "vocabulary in context", "paraphrasing", "main idea"],
+  knownWordsLevel: "orta",
+  questionCountPreference: "orta",
+  languageOfExplanations: "Turkish",
+  studentHistory: ["Ana fikir yerine detay secme", "Baglam icinde kelime anlamini kacirma"],
+  motivationStyle: "exam-coach style",
 };
 
 type GrammarQuestion = {
@@ -42,7 +197,7 @@ type GrammarModule = {
   studyPlan: string[];
 };
 
-const vocabularyPool: Omit<VocabularyItem, "examples">[] = [
+const vocabularyPool: VocabularySeed[] = [
   { word: "mitigate", level: "C1", trMeaning: "azaltmak, hafifletmek" },
   { word: "subsequent", level: "B2", trMeaning: "sonraki" },
   { word: "coherent", level: "B2", trMeaning: "tutarlı" },
@@ -239,6 +394,186 @@ const grammarPool: GrammarModule[] = [
   },
 ];
 
+function normalizeExamType(raw?: string | null): ExamType | undefined {
+  if (!raw) return undefined;
+  const value = raw.trim().toLowerCase();
+  if (value.includes("ielts") && value.includes("general")) return "IELTS General";
+  if (value.includes("ielts")) return "IELTS Academic";
+  if (value.includes("ydt")) return "YDT";
+  if (value.includes("yds") || value.includes("yokdil") || value.includes("yokdil")) return "YDS";
+  return undefined;
+}
+
+function normalizeStudentLevel(raw?: string | null): StudentLevel | undefined {
+  if (!raw) return undefined;
+  const value = raw.trim().toUpperCase();
+  if (value === "A2" || value === "B1" || value === "B2" || value === "C1") {
+    return value;
+  }
+  return undefined;
+}
+
+function normalizeStudyTime(value?: number | null): 20 | 30 | 45 | 60 | undefined {
+  if (!value || Number.isNaN(value)) return undefined;
+  if (value <= 20) return 20;
+  if (value <= 30) return 30;
+  if (value <= 45) return 45;
+  return 60;
+}
+
+function clampRubricScore(base: number) {
+  return Math.min(10, Math.max(1, base));
+}
+
+function createAiProfileOverridesFromStudentContext(input?: {
+  targetExam?: string | null;
+  currentLevel?: string | null;
+  targetScore?: number | string | null;
+  dailyGoalMinutes?: number | null;
+  interestTags?: string[] | null;
+  focusSkill?: FocusSkill;
+}): Partial<AiStudentProfile> {
+  return {
+    examType: normalizeExamType(input?.targetExam),
+    studentLevel: normalizeStudentLevel(input?.currentLevel),
+    studentGoalScore:
+      input?.targetScore !== undefined && input?.targetScore !== null && String(input.targetScore).trim()
+        ? `${normalizeExamType(input?.targetExam) ?? DEFAULT_AI_PROFILE.examType} ${String(input.targetScore).trim()}+`
+        : undefined,
+    dailyStudyTime: normalizeStudyTime(input?.dailyGoalMinutes),
+    topicPreferences: input?.interestTags?.length ? input.interestTags : undefined,
+    focusSkill: input?.focusSkill,
+  };
+}
+
+function createStudentProfileSummary(profile: AiStudentProfile) {
+  return `${profile.examType} hedefli, ${profile.studentLevel} seviyesinde, gunde ${profile.dailyStudyTime} dakika ayiran ve ${profile.topicPreferences.slice(0, 3).join(", ")} temalarina ilgi duyan ogrenci profili.`;
+}
+
+function createDailyGoal(profile: AiStudentProfile, skill: FocusSkill) {
+  if (skill === "vocabulary") {
+    return `${profile.examType} icin baglam, synonym, collocation ve exam trap odakli kelime calismasi yap.`;
+  }
+  if (skill === "reading") {
+    return `${profile.examType} reading mantigina uygun olarak ana fikir, detail, inference ve vocabulary in context becerilerini gelistir.`;
+  }
+  return `${profile.examType} icin reading ve vocabulary becerilerini birlikte guclendir.`;
+}
+
+function createWarmUp(profile: AiStudentProfile, topic: string) {
+  return [
+    `${topic} temasinda hangi kavramlarin sinav metinlerinde one cikabilecegini tahmin et.`,
+    `${profile.examType} sorularinda bu konuda en cok hangi tuzaklara dusuyorsun?`,
+    `Metne gecmeden once ${profile.weakAreas[0]} becerine ozellikle dikkat etmeye hazirlan.`,
+  ];
+}
+
+function createDefaultRubric(profile: AiStudentProfile): PerformanceEvaluation {
+  const weakAreaPenalty = profile.weakAreas.length >= 3 ? 1 : 0;
+
+  const rubric: PerformanceRubricItem[] = [
+    {
+      label: "Reading Accuracy",
+      score: clampRubricScore(7 - weakAreaPenalty),
+      comment: "Ana fikir ve temel detaylari yakalama potansiyelin iyi, fakat tutarli kanit kullanimi izlenmeli.",
+      recommendation: "Her cevabi metindeki belirli bir ifade ile eslestir.",
+    },
+    {
+      label: "Vocabulary Knowledge",
+      score: clampRubricScore(profile.knownWordsLevel === "ileri" ? 8 : profile.knownWordsLevel === "orta" ? 7 : 5),
+      comment: "Kelime bilgisi sinav icin yeterli tabana sahip, ancak baglam ici ayrimlar kritik olmaya devam ediyor.",
+      recommendation: "Bugun ogrendigim her kelime icin bir collocation yaz.",
+    },
+    {
+      label: "Contextual Meaning",
+      score: clampRubricScore(profile.weakAreas.includes("vocabulary in context") ? 5 : 7),
+      comment: "Baglamdan anlam cikarma becerisi gelisiyor ama secenekler arasi ince farklar daha fazla dikkat istiyor.",
+      recommendation: "Kelimeyi tek basina degil, cumledeki goreviyle birlikte analiz et.",
+    },
+    {
+      label: "Inference Skill",
+      score: clampRubricScore(profile.weakAreas.includes("inference") ? 5 : 7),
+      comment: "Ima edilen bilgiyi yakalamada zaman zaman detaya takilma egilimi var.",
+      recommendation: "Metinde birebir yazilmayan ama zorunlu olarak cikan sonuca odaklan.",
+    },
+    {
+      label: "Attention to Detail",
+      score: clampRubricScore(7 - weakAreaPenalty),
+      comment: "Detay takibi genel olarak iyi, ancak zor sorularda anahtar kelime uyumu kontrol edilmeli.",
+      recommendation: "Soru kokundeki niteleyicileri ve zaman isaretlerini ciz.",
+    },
+    {
+      label: "Paraphrase Recognition",
+      score: clampRubricScore(profile.weakAreas.includes("paraphrasing") ? 5 : 7),
+      comment: "Paraphrase tuzaklarinda es anlam ve yeniden ifade kaliplarini daha bilincli takip etmelisin.",
+      recommendation: "Ayni fikrin farkli ifade edilislerini iki sutunda not et.",
+    },
+    {
+      label: "Exam Readiness",
+      score: clampRubricScore(7),
+      comment: "Sinav odakli rutin olusuyor; sure, strateji ve tutarlilik birlikte guclendikce skor da yukselecek.",
+      recommendation: `${profile.dailyStudyTime} dakikalik calismayi soru analizi + tekrar bloklariyla tamamla.`,
+    },
+  ];
+
+  return {
+    mode: "Responses can be scored question by question when the student submits answers.",
+    summary: `${profile.examType} odakli bugunku pakette ana takip alanlari: ${profile.weakAreas.join(", ")}.`,
+    strongAreas: ["Calisma disiplini", "Sinav odakli farkindalik"],
+    focusAreas: profile.weakAreas,
+    rubric,
+  };
+}
+
+function mergeAiProfile(profile?: Partial<AiStudentProfile>): AiStudentProfile {
+  return {
+    ...DEFAULT_AI_PROFILE,
+    ...profile,
+    topicPreferences: profile?.topicPreferences?.length
+      ? profile.topicPreferences
+      : DEFAULT_AI_PROFILE.topicPreferences,
+    weakAreas: profile?.weakAreas?.length
+      ? profile.weakAreas
+      : DEFAULT_AI_PROFILE.weakAreas,
+    studentHistory: profile?.studentHistory?.length
+      ? profile.studentHistory
+      : DEFAULT_AI_PROFILE.studentHistory,
+  };
+}
+
+function formatAiProfile(profile: AiStudentProfile) {
+  return [
+    `exam_type: ${profile.examType}`,
+    `student_level: ${profile.studentLevel}`,
+    `student_goal_score: ${profile.studentGoalScore}`,
+    `daily_study_time: ${profile.dailyStudyTime} dakika`,
+    `focus_skill: ${profile.focusSkill}`,
+    `topic_preferences: ${profile.topicPreferences.join(", ")}`,
+    `weak_areas: ${profile.weakAreas.join(", ")}`,
+    `known_words_level: ${profile.knownWordsLevel}`,
+    `question_count_preference: ${profile.questionCountPreference}`,
+    `language_of_explanations: ${profile.languageOfExplanations}`,
+    `student_history: ${profile.studentHistory.join(" | ")}`,
+    `motivation_style: ${profile.motivationStyle}`,
+  ].join("\n");
+}
+
+function extractJsonObject(text: string) {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) {
+    return null;
+  }
+
+  const chunk = text.slice(start, end + 1);
+  try {
+    const parsed = JSON.parse(chunk);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 function getDaySeed(date: Date) {
   const key = `${date.getUTCFullYear()}-${date.getUTCMonth() + 1}-${date.getUTCDate()}`;
   let hash = 0;
@@ -275,49 +610,180 @@ function createVocabularyExamples(word: string, trMeaning: string) {
   ];
 }
 
-async function createVocabularyReading(words: string[]) {
-  const aiText = await tryProviderRewrite(
-    [
-      "Write one English reading passage for Turkish YDS learners.",
-      "Length: 130-170 words.",
-      "Use all of these words naturally in the passage:",
-      words.join(", "),
-      "Return only the passage text without title or bullet points.",
-    ].join("\n")
-  );
-
-  const fallback = `Students preparing for YDS often need a coherent routine to improve academic reading speed. In our program, learners allocate short sessions for vocabulary and use each new term in context. They first review prevalent themes in recent exam texts, then identify any implicit assumption behind the writer's argument. This method helps them justify answers with evidence instead of intuition. Even when time constraints make revision difficult, a substantial improvement is still feasible if students follow a consistent plan. Teachers also encourage learners to mitigate stress by using a brief checklist before each practice test. As a subsequent step, students compare their mistakes and build a comprehensive notebook to track progress. Although setbacks are inevitable, this strategy supports resilient study habits and leads to more confident performance.`;
+function createVocabularyItemFallback(item: VocabularySeed): VocabularyItem {
+  const lower = item.word.toLowerCase();
 
   return {
-    title: "Daily Reading: Vocabulary in Context",
-    passage: aiText ?? fallback,
-    words,
+    ...item,
+    englishDefinition: `${item.word} is used in academic or exam-oriented English to express a precise idea in context.`,
+    synonym: lower === "mitigate" ? "alleviate" : lower === "coherent" ? "logical" : lower === "prevalent" ? "widespread" : `formal equivalent of ${item.word}`,
+    antonym: lower === "mitigate" ? "intensify" : lower === "coherent" ? "inconsistent" : lower === "prevalent" ? "rare" : null,
+    collocation: lower === "mitigate" ? "mitigate the risk" : lower === "coherent" ? "coherent argument" : lower === "prevalent" ? "prevalent view" : `${item.word} approach`,
+    wordFamily: [item.word, `${item.word}ly`, `${item.word}ness`].filter((value, index, array) => array.indexOf(value) === index),
+    examNote: `${item.word} kelimesi ${DEFAULT_AI_PROFILE.examType} reading sorularinda baglamdan anlam ve paraphrase odakli kullanima uygundur.`,
+    commonMistake: `${item.word} kelimesini yalnizca sozluk anlami ile degil, cumledeki goreviyle birlikte yorumla.`,
+    examples: createVocabularyExamples(item.word, item.trMeaning),
   };
 }
 
-function createReadingQuestions(passage: Omit<ReadingPassage, "questions" | "studyPlan">): ReadingQuestion[] {
+function createVocabularyActivities(items: VocabularyItem[]): VocabularyActivity[] {
+  const [first, second, third] = items;
+  if (!first || !second || !third) return [];
+
   return [
     {
-      type: "main-idea",
-      question: `What is the central claim of the passage titled "${passage.title}"?`,
+      type: "fill-in-the-blanks",
+      title: "Context Fill",
+      prompt: `Choose the best word to complete the sentence: Students should ______ exam stress by using a fixed revision routine.`,
+      answer: first.word,
+      explanation: `${first.word} cumlede stresi azaltma anlamiyla dogru baglam secimidir.`,
+      options: [first.word, second.word, third.word],
     },
     {
-      type: "detail",
-      question: "Which specific implementation challenge is highlighted by the author?",
+      type: "synonym-selection",
+      title: "Synonym Check",
+      prompt: `Which option is closest in meaning to ${second.word}?`,
+      answer: second.synonym,
+      explanation: `${second.synonym} bu kelimenin sinav baglaminda en yakin es anlamidir.`,
+      options: [second.synonym, first.word, third.word, second.antonym ?? "unrelated"],
     },
     {
-      type: "inference",
-      question: "What can be inferred about long-term outcomes if current recommendations are ignored?",
+      type: "collocation-completion",
+      title: "Collocation Builder",
+      prompt: `Complete the collocation with the target word: ${third.collocation.replace(third.word, "______")}`,
+      answer: third.word,
+      explanation: `${third.collocation} sinav reading metinlerinde dogal bir kullanimdir.`,
     },
     {
-      type: "vocabulary",
-      question: `In context, which meaning of "${passage.keyVocabulary[0]}" best fits the paragraph?`,
-    },
-    {
-      type: "tone",
-      question: "Is the author's tone primarily optimistic, cautious, or critical? Justify briefly.",
+      type: "mini-translation",
+      title: "Mini Translation",
+      prompt: `Translate naturally into English: "Bu gorus uzmanlar arasinda yaygin hale geldi."`,
+      answer: `This view has become prevalent among experts.`,
+      explanation: `prevalent kelimesi "yaygin" anlamini akademik baglamda dogal sekilde verir.`,
     },
   ];
+}
+
+function createReadingQuestionFallbacks(
+  passage: Omit<ReadingPassage, "questions" | "studyPlan">,
+): ReadingQuestion[] {
+  const keyword = passage.keyVocabulary[0] ?? "term";
+  return [
+    {
+      id: `${passage.title}-main-idea`,
+      type: "main-idea",
+      question: `Bu metnin temel savi nedir?`,
+      skillMeasured: "Main idea recognition",
+      answer: passage.summary,
+      explanation: `Dogru cevap, metindeki tum detaylari kapsayan ana dusunceyi verir: ${passage.summary}`,
+      whyOthersWrong: [
+        "Diger secenekler metindeki tekil detaylara indirgenir.",
+        "Bazi secenekler metnin tonunu yanlis genellestirir.",
+      ],
+    },
+    {
+      id: `${passage.title}-detail`,
+      type: "detail",
+      question: `Yazara gore uygulanabilirligi zorlastiran temel unsur hangisidir?`,
+      skillMeasured: "Detail tracking",
+      answer: `Metinde vurgulanan ana sinirlilik, uygulama ve destek kosullarinin dikkatle yonetilmesi gerektigidir.`,
+      explanation: `Detail sorularinda metindeki sinirlayici ifade ve caution tonu birlikte okunmalidir.`,
+      whyOthersWrong: ["Diger secenekler metinde gecse bile ana engel olarak sunulmaz."],
+    },
+    {
+      id: `${passage.title}-inference`,
+      type: "inference",
+      question: `Metinden hangi sonuc dolayli olarak cikarilabilir?`,
+      skillMeasured: "Inference skill",
+      answer: `Metindeki oneriler ihmal edilirse sonuclarin daha az istikrarli veya daha az etkili olmasi beklenir.`,
+      explanation: `Inference sorularinda metinde birebir yazilmayan ama mantiken cikan sonucu arariz.`,
+      whyOthersWrong: ["Yanlis secenekler ya cok kesin ya da metin disi varsayim icerir."],
+    },
+    {
+      id: `${passage.title}-vocabulary`,
+      type: "vocabulary",
+      question: `Bu metinde ${keyword} kelimesi en yakin hangi anlamda kullanilmistir?`,
+      skillMeasured: "Vocabulary in context",
+      answer: `${keyword} kelimesi baglamda metnin ana fikrini destekleyen islevsel bir akademik terim olarak kullanilmistir.`,
+      explanation: `Kelimeyi tek basina degil, bulundugu cumlenin anlamsal goreviyle okumak gerekir.`,
+      whyOthersWrong: ["Sozlukte var olabilecek diger anlamlar bu baglama uymaz."],
+    },
+    {
+      id: `${passage.title}-tone`,
+      type: "tone",
+      question: `Yazarin tonu en iyi nasil tanimlanir?`,
+      skillMeasured: "Writer attitude",
+      answer: `Temkinli ama yapici`,
+      explanation: `Metin avantajlari kabul ederken sinirlari da gosterdigi icin tamamen iyimser veya tamamen elestirel degildir.`,
+      whyOthersWrong: ["Asiri iyimser veya asiri olumsuz yorumlar metindeki dengeyi yansitmaz."],
+      options: ["Temkinli ama yapici", "Asiri elestirel", "Tamamen coskulu", "Alakasiz"],
+    },
+  ];
+}
+
+function createReadingAnswerKey(passages: ReadingPassage[]): ReadingAnswerKeyItem[] {
+  return passages.flatMap((passage) =>
+    passage.questions.map((question) => ({
+      questionId: question.id,
+      question: question.question,
+      answer: question.answer,
+      explanation: question.explanation,
+    }))
+  );
+}
+
+function createStrategyNotes(profile: AiStudentProfile, skill: FocusSkill) {
+  if (skill === "vocabulary") {
+    return [
+      `${profile.examType} kelime sorularinda once baglam, sonra synonym/collocation ipucunu kontrol et.`,
+      `Yeni kelimeyi ogrenince hemen bir exam trap notu yaz; benzer gorunen ama farkli anlamdaki kelimeleri ayir.`,
+      `Kelimeyi tek basina degil, ornek cumle ve collocation ile pekistir.`,
+    ];
+  }
+
+  return [
+    `${profile.examType} reading icin once paragrafin fonksiyonunu, sonra detayi bul.`,
+    `${profile.weakAreas[0]} sorularinda metinde ima edilen bilgiyi ara; birebir yazilani degil.`,
+    `However, therefore, despite gibi sinyal kelimeleri aktif isaretleyerek paragraf akisini takip et.`,
+  ];
+}
+
+async function createVocabularyReading(words: string[]) {
+  const profile = mergeAiProfile({ focusSkill: "vocabulary" });
+  const aiText = await tryProviderRewrite({
+    systemPrompt: MASTER_READING_VOCAB_SYSTEM_PROMPT,
+    userPrompt: [
+      "Use the master prompt principles and produce a JSON object only.",
+      formatAiProfile(profile),
+      "Task:",
+      "Create a daily exam-focused reading + vocabulary mini session for the selected words.",
+      "The reading passage must be original, natural, exam-oriented, and suitable for Turkish YDS learners at the specified level.",
+      "Keep the passage length around 160-220 words.",
+      "Use all target words naturally in context.",
+      `Target words: ${words.join(", ")}`,
+      "Return JSON with this exact shape:",
+      '{"title":"...","passage":"..."}',
+      "The title should sound professional and exam-oriented.",
+      "Do not return markdown.",
+    ].join("\n\n"),
+    temperature: 0.5,
+  });
+
+  const fallback = `Students preparing for YDS often need a coherent routine to improve academic reading speed. In our program, learners allocate short sessions for vocabulary and use each new term in context. They first review prevalent themes in recent exam texts, then identify any implicit assumption behind the writer's argument. This method helps them justify answers with evidence instead of intuition. Even when time constraints make revision difficult, a substantial improvement is still feasible if students follow a consistent plan. Teachers also encourage learners to mitigate stress by using a brief checklist before each practice test. As a subsequent step, students compare their mistakes and build a comprehensive notebook to track progress. Although setbacks are inevitable, this strategy supports resilient study habits and leads to more confident performance.`;
+
+  const parsed = aiText ? extractJsonObject(aiText) : null;
+  const title = typeof parsed?.title === "string" && parsed.title.trim().length >= 8
+    ? parsed.title.trim()
+    : "Daily Reading: Vocabulary in Context";
+  const passage = typeof parsed?.passage === "string" && parsed.passage.trim().length >= 120
+    ? parsed.passage.trim()
+    : fallback;
+
+  return {
+    title,
+    passage,
+    words,
+  };
 }
 
 function extractJsonArray(text: string) {
@@ -339,16 +805,164 @@ function extractJsonArray(text: string) {
   }
 }
 
-async function createAiReadingQuestions(passage: Omit<ReadingPassage, "questions" | "studyPlan">) {
-  const aiText = await tryProviderRewrite(
-    [
-      "Create 5 comprehension questions in Turkish for the passage.",
+async function createAiVocabularyExamples(items: VocabularySeed[], profile: AiStudentProfile) {
+  const aiText = await tryProviderRewrite({
+    systemPrompt: MASTER_READING_VOCAB_SYSTEM_PROMPT,
+    userPrompt: [
+      "Use the master prompt principles and produce JSON only.",
+      formatAiProfile(profile),
+      "Task:",
+      "For each target vocabulary item, create a full exam-focused vocabulary card.",
       "Return a JSON array only.",
-      "Each item must be: {\"type\":\"main-idea|detail|inference|vocabulary|tone\",\"question\":\"...\"}",
+      "Each item must follow this exact schema:",
+      '{"word":"...","englishDefinition":"...","synonym":"...","antonym":"... or null","collocation":"...","wordFamily":["..."],"examNote":"...","commonMistake":"...","examples":[{"en":"...","tr":"..."},{"en":"...","tr":"..."}]}' ,
+      `Target vocabulary: ${items.map((item) => `${item.word} (${item.trMeaning})`).join(", ")}`,
+      "Use Turkish translations that are natural and clear.",
+      "Do not return markdown.",
+    ].join("\n\n"),
+    temperature: 0.5,
+  });
+
+  const parsed = aiText ? extractJsonArray(aiText) : null;
+  if (!parsed) {
+    return items.map((item) => createVocabularyItemFallback(item)) satisfies VocabularyItem[];
+  }
+
+  const byWord = new Map(
+    parsed
+      .map((entry) => {
+        const word = typeof entry?.word === "string" ? entry.word.trim().toLowerCase() : "";
+        const examples = Array.isArray(entry?.examples)
+          ? entry.examples
+              .map((example) => {
+                const en = typeof example?.en === "string" ? example.en.trim() : "";
+                const tr = typeof example?.tr === "string" ? example.tr.trim() : "";
+                return en && tr ? { en, tr } : null;
+              })
+              .filter((example): example is { en: string; tr: string } => Boolean(example))
+          : [];
+        const englishDefinition = typeof entry?.englishDefinition === "string" ? entry.englishDefinition.trim() : "";
+        const synonym = typeof entry?.synonym === "string" ? entry.synonym.trim() : "";
+        const antonym = typeof entry?.antonym === "string" ? entry.antonym.trim() : null;
+        const collocation = typeof entry?.collocation === "string" ? entry.collocation.trim() : "";
+        const wordFamily = Array.isArray(entry?.wordFamily)
+          ? entry.wordFamily
+              .map((value) => (typeof value === "string" ? value.trim() : ""))
+              .filter((value) => value.length > 0)
+              .slice(0, 4)
+          : [];
+        const examNote = typeof entry?.examNote === "string" ? entry.examNote.trim() : "";
+        const commonMistake = typeof entry?.commonMistake === "string" ? entry.commonMistake.trim() : "";
+
+        return word && examples.length > 0
+          ? [word, { englishDefinition, synonym, antonym, collocation, wordFamily, examNote, commonMistake, examples: examples.slice(0, 2) }]
+          : null;
+      })
+      .filter(
+        (
+          entry,
+        ): entry is [
+          string,
+          {
+            englishDefinition: string;
+            synonym: string;
+            antonym: string | null;
+            collocation: string;
+            wordFamily: string[];
+            examNote: string;
+            commonMistake: string;
+            examples: Array<{ en: string; tr: string }>;
+          },
+        ] => Boolean(entry)
+      )
+  );
+
+  return items.map((item) => {
+    const fallback = createVocabularyItemFallback(item);
+    const aiEntry = byWord.get(item.word.toLowerCase());
+
+    return aiEntry
+      ? {
+          ...fallback,
+          ...aiEntry,
+        }
+      : fallback;
+  }) satisfies VocabularyItem[];
+}
+
+async function createAiReadingPassage(
+  passage: Omit<ReadingPassage, "questions" | "studyPlan">,
+  profile: AiStudentProfile,
+) {
+  const aiText = await tryProviderRewrite({
+    systemPrompt: MASTER_READING_VOCAB_SYSTEM_PROMPT,
+    userPrompt: [
+      "Use the master prompt principles and produce a JSON object only.",
+      formatAiProfile({ ...profile, focusSkill: "reading" }),
+      "Task:",
+      "Rewrite the source material into an original, exam-focused reading passage.",
+      "Preserve the core meaning, but produce a more coherent, pedagogically stronger, exam-style text.",
+      "The output must remain suitable for a daily reading module in a Turkish exam-prep platform.",
+      `Source: ${passage.source}`,
+      `Category: ${passage.category}`,
+      `Original title: ${passage.title}`,
+      `Base material: ${passage.passage}`,
+      "Return JSON with this exact shape:",
+      '{"title":"...","passage":"...","summary":"...","keyVocabulary":["word1","word2","word3","word4","word5"]}',
+      "keyVocabulary must contain 5 useful exam-oriented words drawn from the passage.",
+      "Do not return markdown.",
+    ].join("\n\n"),
+    temperature: 0.45,
+  });
+
+  const parsed = aiText ? extractJsonObject(aiText) : null;
+  if (!parsed) {
+    return passage;
+  }
+
+  const keyVocabulary = Array.isArray(parsed.keyVocabulary)
+    ? parsed.keyVocabulary
+        .map((word) => (typeof word === "string" ? word.trim().toLowerCase() : ""))
+        .filter((word) => word.length >= 4)
+        .slice(0, 5)
+    : [];
+
+  return {
+    ...passage,
+    title: typeof parsed.title === "string" && parsed.title.trim().length >= 8 ? parsed.title.trim() : passage.title,
+    passage:
+      typeof parsed.passage === "string" && parsed.passage.trim().length >= 140
+        ? parsed.passage.trim()
+        : passage.passage,
+    summary:
+      typeof parsed.summary === "string" && parsed.summary.trim().length >= 30
+        ? parsed.summary.trim()
+        : passage.summary,
+    keyVocabulary: keyVocabulary.length >= 3 ? keyVocabulary : passage.keyVocabulary,
+  };
+}
+
+async function createAiReadingQuestions(
+  passage: Omit<ReadingPassage, "questions" | "studyPlan">,
+  profile: AiStudentProfile,
+) {
+  const aiText = await tryProviderRewrite({
+    systemPrompt: MASTER_READING_VOCAB_SYSTEM_PROMPT,
+    userPrompt: [
+      "Use the master prompt principles and produce JSON only.",
+      formatAiProfile({ ...profile, focusSkill: "reading" }),
+      "Task:",
+      "Create 5 high-quality Turkish reading questions for the passage.",
+      "Question set must cover a balanced mix of main idea, detail, inference, vocabulary in context, and tone/attitude.",
+      "Return a JSON array only.",
+      'Each item must be: {"type":"main-idea|detail|inference|vocabulary|tone","question":"...","skillMeasured":"...","answer":"...","explanation":"...","whyOthersWrong":["..."],"options":["..."]}',
       `Title: ${passage.title}`,
       `Passage: ${passage.passage}`,
-    ].join("\n")
-  );
+      `Key vocabulary: ${passage.keyVocabulary.join(", ")}`,
+      "Questions must feel like a serious YDS/YDT/IELTS exam-prep editor wrote them.",
+    ].join("\n\n"),
+    temperature: 0.45,
+  });
 
   if (!aiText) {
     return createReadingQuestions(passage);
@@ -356,7 +970,7 @@ async function createAiReadingQuestions(passage: Omit<ReadingPassage, "questions
 
   const parsed = extractJsonArray(aiText);
   if (!parsed) {
-    return createReadingQuestions(passage);
+    return createReadingQuestionFallbacks(passage);
   }
 
   const allowedTypes = new Set(["main-idea", "detail", "inference", "vocabulary", "tone"]);
@@ -364,31 +978,79 @@ async function createAiReadingQuestions(passage: Omit<ReadingPassage, "questions
     .map((item) => {
       const type = typeof item?.type === "string" ? item.type : "detail";
       const question = typeof item?.question === "string" ? item.question.trim() : "";
-      if (!allowedTypes.has(type) || question.length < 8) {
+      const answer = typeof item?.answer === "string" ? item.answer.trim() : "";
+      const explanation = typeof item?.explanation === "string" ? item.explanation.trim() : "";
+      const skillMeasured = typeof item?.skillMeasured === "string" ? item.skillMeasured.trim() : type;
+      const whyOthersWrong = Array.isArray(item?.whyOthersWrong)
+        ? item.whyOthersWrong
+            .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+            .filter((entry) => entry.length > 0)
+        : [];
+      const options = Array.isArray(item?.options)
+        ? item.options
+            .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+            .filter((entry) => entry.length > 0)
+        : undefined;
+
+      if (!allowedTypes.has(type) || question.length < 8 || answer.length < 4 || explanation.length < 8) {
         return null;
       }
-      return { type: type as ReadingQuestion["type"], question };
+
+      return {
+        id: `${passage.title}-${type}-${question.slice(0, 20)}`,
+        type: type as ReadingQuestion["type"],
+        question,
+        skillMeasured,
+        answer,
+        explanation,
+        whyOthersWrong,
+        options,
+      };
     })
     .filter((item): item is ReadingQuestion => Boolean(item));
 
-  return normalized.length >= 3 ? normalized.slice(0, 5) : createReadingQuestions(passage);
+  return normalized.length >= 3 ? normalized.slice(0, 5) : createReadingQuestionFallbacks(passage);
 }
 
-function createReadingPlan(source: string) {
+function createReadingPlan(source: string, profile: AiStudentProfile) {
+  const examHint =
+    profile.examType === "IELTS Academic" || profile.examType === "IELTS General"
+      ? "Skimming ve scanning adimini zaman baskisi altinda uygula."
+      : "Ana fikir ve paragraf gecislerini once bularak sinav hizini koru.";
+
   return [
     `3 dk: Baslik ve kaynak (${source}) uzerinden konu tahmini yap.`,
     "8 dk: Metni aktif not alarak oku, gecis ifadelerini isaretle.",
     "6 dk: Ana fikir + destekleyici fikirleri 3 maddede ozetle.",
     "8 dk: Comprehension sorularini coz ve yanitlarini kanitla.",
-    "5 dk: Yeni kelimelerle iki ornek cumle yaz.",
+    `5 dk: Yeni kelimelerle iki ornek cumle yaz. ${examHint}`,
   ];
 }
 
-async function tryProviderRewrite(prompt: string) {
+function createSessionTitle(profile: AiStudentProfile, skill: FocusSkill, topic: string) {
+  if (skill === "vocabulary") {
+    return `${profile.examType} Vocabulary Drill - ${topic}`;
+  }
+  if (skill === "reading") {
+    return `${profile.examType} Reading Pack - ${topic}`;
+  }
+  return `Daily Reading & Vocabulary Drill - ${topic}`;
+}
+
+function createNextStep(profile: AiStudentProfile, skill: FocusSkill) {
+  if (skill === "vocabulary") {
+    return `Yarin ${profile.weakAreas[0]} odagini koruyarak bugunku kelimelerle 5 yeni exam-style cumle kur ve collocation tekrarina gec.`;
+  }
+  return `Yarin ayni seviyede bir metinde ${profile.weakAreas[0]} ve paraphrase recognition uzerine ikinci bir set cozmeyi hedefle.`;
+}
+
+async function tryProviderRewrite(input: string | AiPromptOptions) {
   const apiKey = process.env.AI_API_KEY;
   if (!apiKey) {
     return null;
   }
+
+  const prompt = typeof input === "string" ? { userPrompt: input } : input;
 
   const baseUrl = process.env.AI_BASE_URL ?? "https://api.openai.com/v1";
   const model = process.env.AI_MODEL ?? "gpt-4o-mini";
@@ -402,10 +1064,10 @@ async function tryProviderRewrite(prompt: string) {
       },
       body: JSON.stringify({
         model,
-        temperature: 0.4,
+        temperature: prompt.temperature ?? 0.4,
         messages: [
-          { role: "system", content: "You are an academic English tutor." },
-          { role: "user", content: prompt },
+          { role: "system", content: prompt.systemPrompt ?? "You are an academic English tutor." },
+          { role: "user", content: prompt.userPrompt },
         ],
       }),
       cache: "no-store",
@@ -423,33 +1085,48 @@ async function tryProviderRewrite(prompt: string) {
   }
 }
 
-export async function getDailyVocabulary(date = new Date()) {
+export async function getDailyVocabulary(
+  input: Date | { date?: Date; profile?: Partial<AiStudentProfile> } = new Date(),
+): Promise<VocabularyResponse> {
+  const date = input instanceof Date ? input : input.date ?? new Date();
+  const profile = mergeAiProfile(input instanceof Date ? undefined : input.profile);
   const seed = getDaySeed(date);
-  const selected = pickUnique(vocabularyPool, 10, seed).map(
-    (item) =>
-      ({
-        ...item,
-        examples: createVocabularyExamples(item.word, item.trMeaning),
-      }) satisfies VocabularyItem
-  );
+  const selectedBase = pickUnique(vocabularyPool, 10, seed);
+  const selected = await createAiVocabularyExamples(selectedBase, profile);
   const reading = await createVocabularyReading(selected.map((item) => item.word));
+  const topicLabel = profile.topicPreferences[0] ?? "Academic English";
+  const performanceEvaluation = createDefaultRubric({ ...profile, focusSkill: "vocabulary" });
 
   return {
     generatedAt: date.toISOString(),
     model: process.env.AI_API_KEY ? "hybrid-ai" : "local-ai",
     dailyTarget: 10,
+    sessionTitle: createSessionTitle(profile, "vocabulary", topicLabel),
+    studentProfileSummary: createStudentProfileSummary(profile),
+    dailyGoal: createDailyGoal(profile, "vocabulary"),
+    warmUp: createWarmUp(profile, topicLabel),
     items: selected,
     reading,
+    activities: createVocabularyActivities(selected),
+    strategyNotes: createStrategyNotes(profile, "vocabulary"),
+    performanceEvaluation,
+    personalizedNextStep: createNextStep(profile, "vocabulary"),
   };
 }
 
 export async function getDailyReadingModule(options?: {
   date?: Date;
   interestTags?: string[];
-}) {
+  profile?: Partial<AiStudentProfile>;
+}): Promise<ReadingModuleResponse> {
   const date = options?.date ?? new Date();
   const seed = getDaySeed(date);
   const interestTags = options?.interestTags ?? [];
+  const profile = mergeAiProfile({
+    focusSkill: "reading",
+    topicPreferences: interestTags.length ? interestTags : undefined,
+    ...options?.profile,
+  });
 
   const rssNews = await getDailyRssNews({
     interestTags,
@@ -462,7 +1139,7 @@ export async function getDailyReadingModule(options?: {
   if (rssNews.length > 0) {
     passages = await Promise.all(
       rssNews.map(async (item) => {
-        const basePassage = {
+        const rawPassage = {
           source: item.source,
           sourceUrl: item.url,
           category: item.category,
@@ -476,33 +1153,51 @@ export async function getDailyReadingModule(options?: {
             .slice(0, 5),
         };
 
-        const questions = await createAiReadingQuestions(basePassage);
+        const basePassage = await createAiReadingPassage(rawPassage, profile);
+
+        const questions = await createAiReadingQuestions(basePassage, profile);
         return {
           ...basePassage,
           questions,
-          studyPlan: createReadingPlan(item.source),
+          studyPlan: createReadingPlan(item.source, profile),
         } satisfies ReadingPassage;
       })
     );
   } else {
     const selected = pickUnique(readingPool, 3, seed);
-    passages = selected.map((item) => ({
-      ...item,
-      questions: createReadingQuestions(item),
-      studyPlan: createReadingPlan(item.source),
-    }));
+    passages = await Promise.all(
+      selected.map(async (item) => {
+        const rewritten = await createAiReadingPassage(item, profile);
+        return {
+          ...rewritten,
+          questions: await createAiReadingQuestions(rewritten, profile),
+          studyPlan: createReadingPlan(rewritten.source, profile),
+        } satisfies ReadingPassage;
+      })
+    );
   }
+
+  const topicLabel = passages[0]?.category ?? profile.topicPreferences[0] ?? "Academic Reading";
+  const performanceEvaluation = createDefaultRubric({ ...profile, focusSkill: "reading" });
 
   return {
     generatedAt: date.toISOString(),
     model: process.env.AI_API_KEY ? "hybrid-ai-rss" : "local-rss",
+    sessionTitle: createSessionTitle(profile, "reading", topicLabel),
+    studentProfileSummary: createStudentProfileSummary(profile),
+    dailyGoal: createDailyGoal(profile, "reading"),
+    warmUp: createWarmUp(profile, topicLabel),
     passages,
+    answerKey: createReadingAnswerKey(passages),
+    strategyNotes: createStrategyNotes(profile, "reading"),
     performanceGuide: {
       skimFirst: "Ilk okumada detay yerine paragraf fonksiyonunu bul.",
       markSignals: "However, therefore, despite gibi sinyal kelimeleri isaretle.",
       answerOrder: "Detay sorularinda metin sirasina gore ilerle.",
       reviewWindow: "Yanlis sorulari 24 saat icinde tekrar coz.",
     },
+    performanceEvaluation,
+    personalizedNextStep: createNextStep(profile, "reading"),
   };
 }
 
@@ -525,4 +1220,15 @@ export async function getDailyGrammarModule(date = new Date()) {
   };
 }
 
-export type { GrammarModule, ReadingPassage, VocabularyItem };
+export { createAiProfileOverridesFromStudentContext };
+export type {
+  AiStudentProfile,
+  GrammarModule,
+  PerformanceEvaluation,
+  ReadingModuleResponse,
+  ReadingPassage,
+  ReadingQuestion,
+  VocabularyActivity,
+  VocabularyItem,
+  VocabularyResponse,
+};

@@ -1,5 +1,8 @@
 import { Button } from "@/src/components/common/button";
-import { getDailyVocabulary } from "@/src/lib/ai-content";
+import { authOptions } from "@/src/auth";
+import { createAiProfileOverridesFromStudentContext, getDailyVocabulary } from "@/src/lib/ai-content";
+import { prisma } from "@/src/lib/prisma";
+import { getServerSession } from "next-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +14,29 @@ const studySteps = [
 ];
 
 export default async function VocabularyPage() {
-	const vocab = await getDailyVocabulary();
+	const session = await getServerSession(authOptions);
+	const profile = session?.user?.id
+		? await prisma.studentProfile.findUnique({
+				where: { userId: session.user.id },
+				select: {
+					interestTags: true,
+					targetExam: true,
+					targetScore: true,
+					currentLevel: true,
+					dailyGoalMinutes: true,
+				},
+		  })
+		: null;
+	const vocab = await getDailyVocabulary({
+		profile: createAiProfileOverridesFromStudentContext({
+			targetExam: profile?.targetExam,
+			currentLevel: profile?.currentLevel,
+			targetScore: profile?.targetScore,
+			dailyGoalMinutes: profile?.dailyGoalMinutes,
+			interestTags: profile?.interestTags,
+			focusSkill: "vocabulary",
+		}),
+	});
 	const todayWords = vocab.items;
 
 	return (
@@ -35,6 +60,24 @@ export default async function VocabularyPage() {
 						Dashboard&apos;a Dön
 					</Button>
 					<Button href="/pricing">Premium Kelime Setleri</Button>
+				</div>
+			</div>
+
+			<div className="mt-8 grid gap-6 lg:grid-cols-3">
+				<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl lg:col-span-2">
+					<p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-300">{vocab.sessionTitle}</p>
+					<p className="mt-3 text-sm leading-7 text-slate-200">{vocab.studentProfileSummary}</p>
+					<p className="mt-3 text-sm font-semibold text-white">Gunluk hedef: {vocab.dailyGoal}</p>
+				</div>
+				<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+					<h2 className="text-lg font-bold text-white">Warm-Up</h2>
+					<div className="mt-4 space-y-3">
+						{vocab.warmUp.map((item) => (
+							<div key={item} className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-200">
+								{item}
+							</div>
+						))}
+					</div>
 				</div>
 			</div>
 
@@ -101,6 +144,15 @@ export default async function VocabularyPage() {
 											</span>
 										</div>
 										<p className="mt-2 text-sm text-slate-300">Anlam: {item.trMeaning}</p>
+										<p className="mt-2 text-sm text-slate-400">Definition: {item.englishDefinition}</p>
+										<div className="mt-3 grid gap-2 text-xs text-slate-300 md:grid-cols-2">
+											<p><span className="font-semibold text-white">Synonym:</span> {item.synonym}</p>
+											<p><span className="font-semibold text-white">Antonym:</span> {item.antonym ?? "-"}</p>
+											<p><span className="font-semibold text-white">Collocation:</span> {item.collocation}</p>
+											<p><span className="font-semibold text-white">Word Family:</span> {item.wordFamily.join(", ")}</p>
+										</div>
+										<p className="mt-3 text-xs text-amber-300">Exam Note: {item.examNote}</p>
+										<p className="mt-2 text-xs text-rose-300/90">Common Mistake: {item.commonMistake}</p>
 										<div className="mt-3 space-y-2">
 											{item.examples.map((example, index) => (
 												<div key={`${item.word}-${index}`} className="rounded-xl border border-white/10 bg-white/5 p-3">
@@ -135,12 +187,13 @@ export default async function VocabularyPage() {
 					</div>
 
 					<div className="rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-400/15 to-zinc-900/70 p-6 text-white shadow-[0_12px_40px_rgba(212,168,67,0.12)]">
-						<p className="text-sm font-semibold text-amber-200">Bilal Hoca önerisi</p>
-						<h3 className="mt-2 text-xl font-black">Academic word list tekrar günü</h3>
-						<p className="mt-3 text-sm leading-7 text-slate-200">
-							Bugün özellikle academic ve bağlaç temelli kelimelere odaklan. YDS
-							reading sorularında bu grup sana hız kazandırır.
-						</p>
+						<p className="text-sm font-semibold text-amber-200">Strategy Notes</p>
+						<h3 className="mt-2 text-xl font-black">Kelimeyi sinav refleksine donustur</h3>
+						<div className="mt-3 space-y-2 text-sm leading-7 text-slate-200">
+							{vocab.strategyNotes.map((item) => (
+								<p key={item}>{item}</p>
+							))}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -163,6 +216,47 @@ export default async function VocabularyPage() {
 							{word}
 						</span>
 					))}
+				</div>
+			</div>
+
+			<div className="mt-8 grid gap-6 lg:grid-cols-2">
+				<div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.12)]">
+					<h2 className="text-xl font-bold text-white">Vocabulary Activities</h2>
+					<div className="mt-5 space-y-4">
+						{vocab.activities.map((activity) => (
+							<div key={`${activity.type}-${activity.prompt}`} className="rounded-2xl border border-white/10 bg-zinc-900/40 p-4">
+								<p className="text-xs font-semibold uppercase tracking-wide text-amber-300">{activity.title}</p>
+								<p className="mt-2 text-sm text-slate-200">{activity.prompt}</p>
+								{activity.options?.length ? (
+									<div className="mt-3 flex flex-wrap gap-2">
+										{activity.options.map((option) => (
+											<span key={option} className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-slate-300">{option}</span>
+										))}
+									</div>
+								) : null}
+								<p className="mt-3 text-sm text-emerald-300">Cevap: {activity.answer}</p>
+								<p className="mt-2 text-xs text-slate-400">{activity.explanation}</p>
+							</div>
+						))}
+					</div>
+				</div>
+
+				<div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.12)]">
+					<h2 className="text-xl font-bold text-white">Performance Evaluation</h2>
+					<p className="mt-3 text-sm text-slate-300">{vocab.performanceEvaluation.summary}</p>
+					<div className="mt-5 space-y-3">
+						{vocab.performanceEvaluation.rubric.map((item) => (
+							<div key={item.label} className="rounded-2xl border border-white/10 bg-zinc-900/40 p-4">
+								<div className="flex items-center justify-between gap-4">
+									<p className="text-sm font-semibold text-white">{item.label}</p>
+									<p className="text-sm font-black text-amber-300">{item.score}/10</p>
+								</div>
+								<p className="mt-2 text-xs text-slate-300">{item.comment}</p>
+								<p className="mt-2 text-xs text-slate-500">{item.recommendation}</p>
+							</div>
+						))}
+					</div>
+					<p className="mt-4 text-sm font-semibold text-emerald-300">Next Step: {vocab.personalizedNextStep}</p>
 				</div>
 			</div>
 		</div>

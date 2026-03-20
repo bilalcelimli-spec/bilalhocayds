@@ -7,6 +7,7 @@ import { CalendarDays, Clock3, ExternalLink, ShieldCheck, Video } from "lucide-r
 
 import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
+import { getLiveRecordingAccessSubscription } from "@/src/lib/live-recordings-access";
 import { getMeetingPlatformLabel } from "@/src/lib/meeting-platform";
 import { prisma } from "@/src/lib/prisma";
 
@@ -29,24 +30,8 @@ export default async function DashboardLiveRecordingsPage() {
 
   const now = new Date();
 
-  const [activeSubscription, recordingCount, recordings] = await Promise.all([
-    prisma.subscription.findFirst({
-      where: {
-        userId: session.user.id,
-        status: { in: ["ACTIVE", "TRIALING"] },
-        startDate: { lte: now },
-        OR: [{ endDate: null }, { endDate: { gte: now } }],
-        plan: { includesLiveClass: true },
-      },
-      orderBy: { createdAt: "desc" },
-      include: {
-        plan: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    }),
+  const [accessSubscription, recordingCount, recordings] = await Promise.all([
+    getLiveRecordingAccessSubscription(session.user.id),
     prisma.liveClass.count({
       where: {
         scheduledAt: { lt: now },
@@ -73,14 +58,14 @@ export default async function DashboardLiveRecordingsPage() {
     }),
   ]);
 
-  const hasLiveRecordingsAccess = Boolean(activeSubscription);
+  const hasLiveRecordingsAccess = Boolean(accessSubscription);
 
   return (
     <DashboardShell
       navItems={studentNavItems}
       roleLabel="Öğrenci Paneli"
       title="Canlı Ders Kayıtları"
-      subtitle="Zoom/Meet oturum kayıtlarına üyeliğin süresince erişebilirsin."
+      subtitle="Canlı ders içeren bir program satın aldıysan geçmiş ders kayıtlarını istediğin zaman izleyebilirsin."
       userName={session.user.name ?? undefined}
       userRole={session.user.role}
     >
@@ -95,17 +80,17 @@ export default async function DashboardLiveRecordingsPage() {
             {hasLiveRecordingsAccess ? "Aktif" : "Pasif"}
           </p>
           <p className="mt-1 text-xs text-zinc-300">
-            {activeSubscription
-              ? `${activeSubscription.plan.name} planı ile erişim açık`
-              : "Canlı ders erişimi olan aktif bir üyelik gerekiyor."}
+            {accessSubscription
+              ? `${accessSubscription.plan.name} programı satın alındığı için erişim açık`
+              : "Canlı ders içeren bir program satın aldığında kayıt arşivi açılır."}
           </p>
         </div>
         <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
           <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Üyelik Bitişi</p>
           <p className="mt-2 text-sm font-semibold text-white">
-            {activeSubscription?.endDate
-              ? format(activeSubscription.endDate, "d MMMM yyyy", { locale: tr })
-              : activeSubscription
+            {accessSubscription?.endDate
+              ? format(accessSubscription.endDate, "d MMMM yyyy", { locale: tr })
+              : accessSubscription
                 ? "Süre sınırı yok"
                 : "Üyelik bulunamadı"}
           </p>
@@ -117,9 +102,9 @@ export default async function DashboardLiveRecordingsPage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-amber-200">Erişim Kilitli</p>
-              <h2 className="mt-1 text-lg font-bold text-white">Canlı ders kayıtları üyelik süresince izlenir</h2>
+              <h2 className="mt-1 text-lg font-bold text-white">Canlı ders kayıtları program satın alımıyla açılır</h2>
               <p className="mt-2 text-sm text-zinc-200">
-                Aktif/deneme durumunda ve canlı ders içeren bir planın olduğunda tüm kayıtları izleyebilirsin.
+                Canlı ders içeren bir program satın aldığında derse katılamasan bile tüm geçmiş kayıtları sistemden izleyebilirsin.
               </p>
             </div>
             <Link
@@ -185,7 +170,7 @@ export default async function DashboardLiveRecordingsPage() {
           <div>
             <p className="text-sm font-semibold text-white">Erişim Politikası</p>
             <p className="mt-1 text-xs text-zinc-400">
-              Kayıtlar sadece aktif üyelikte görüntülenir. Üyelik sona erdiğinde kayıt erişimi otomatik kapanır.
+              Canlı ders içeren bir programı satın alan öğrenciler, katılamadıkları derslerin kayıtlarını da sonradan izleyebilir.
             </p>
           </div>
         </div>
