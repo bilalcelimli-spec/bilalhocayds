@@ -17,6 +17,12 @@ type PricingPlan = {
   includesGrammar: boolean;
   includesVocab: boolean;
   includesExam: boolean;
+  includedExamCount: number;
+  includedExams: Array<{
+    title: string;
+    examType: string;
+    price: number | null;
+  }>;
 };
 
 type PricingCheckoutProps = {
@@ -75,6 +81,7 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
             plan.includesGrammar && "Grammar modülü",
             plan.includesAIPlanner && "AI çalışma planı",
             plan.includesExam && "Sınav modülü",
+            plan.includedExamCount > 0 && `${plan.includedExamCount} seçili marketplace sınavı`,
             plan.includesLiveClass && "Haftada 4 saat canlı ders erişimi",
           ].filter((feature): feature is string => Boolean(feature));
 
@@ -148,6 +155,32 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
                   </div>
                 ))}
               </div>
+
+              {plan.includedExams.length > 0 ? (
+                <div className="mt-6 rounded-[24px] border border-emerald-500/15 bg-emerald-500/8 p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-300">Dahil Sınavlar</p>
+                  <div className="mt-3 space-y-2">
+                    {plan.includedExams.slice(0, 3).map((exam) => (
+                      <div key={`${exam.title}-${exam.examType}`} className="flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-400/15 bg-black/20 px-3 py-2 text-xs text-emerald-100">
+                        <span className="font-semibold text-white">{exam.title}</span>
+                        <span className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-cyan-200">
+                          {exam.examType}
+                        </span>
+                        {exam.price && exam.price > 0 ? (
+                          <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-amber-200">
+                            {formatPrice(exam.price)}
+                          </span>
+                        ) : null}
+                      </div>
+                    ))}
+                    {plan.includedExams.length > 3 ? (
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300">
+                        +{plan.includedExams.length - 3} sınav
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
 
               <div className="mt-8 rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
                 <div className="flex flex-col gap-2 text-xs text-zinc-400 sm:flex-row sm:items-center sm:justify-between">

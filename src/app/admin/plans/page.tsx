@@ -28,7 +28,7 @@ export default async function AdminPlansPage() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") redirect("/dashboard");
 
-  const [plans, subscriptions] = await Promise.all([
+  const [plans, subscriptions, examOptions] = await Promise.all([
     prisma.plan.findMany({
       orderBy: { createdAt: "desc" },
       select: {
@@ -46,8 +46,24 @@ export default async function AdminPlansPage() {
         includesExam: true,
         isStandaloneExamProduct: true,
         isActive: true,
+        examModules: {
+          select: {
+            examModule: {
+              select: {
+                id: true,
+                title: true,
+                marketplaceTitle: true,
+                examType: true,
+                price: true,
+                isForSale: true,
+                isPublished: true,
+                isActive: true,
+              },
+            },
+          },
+        },
       },
-    }),
+    } as never),
     prisma.subscription.findMany({
       include: {
         plan: {
@@ -55,11 +71,54 @@ export default async function AdminPlansPage() {
         },
       },
     }),
+    prisma.examModule.findMany({
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        marketplaceTitle: true,
+        examType: true,
+        price: true,
+        isForSale: true,
+        isPublished: true,
+        isActive: true,
+      },
+    }),
   ]);
 
-  const activePlansCount = plans.filter((plan) => plan.isActive).length;
+  const normalizedPlans = (plans as unknown as Array<{
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    monthlyPrice: number | null;
+    yearlyPrice: number | null;
+    includesLiveClass: boolean;
+    includesAIPlanner: boolean;
+    includesReading: boolean;
+    includesGrammar: boolean;
+    includesVocab: boolean;
+    includesExam: boolean;
+    isStandaloneExamProduct: boolean;
+    isActive: boolean;
+    examModules: Array<{ examModule: {
+      id: string;
+      title: string;
+      marketplaceTitle: string | null;
+      examType: string;
+      price: number | null;
+      isForSale: boolean;
+      isPublished: boolean;
+      isActive: boolean;
+    } }>;
+  }>).map((plan) => ({
+    ...plan,
+    examModules: plan.examModules.map(({ examModule }) => examModule),
+  }));
 
-  const planStats = plans.map((plan) => {
+  const activePlansCount = normalizedPlans.filter((plan) => plan.isActive).length;
+
+  const planStats = normalizedPlans.map((plan) => {
     const related = subscriptions.filter((sub) => sub.planId === plan.id);
     const activeCount = related.filter(
       (sub) => sub.status === "ACTIVE" || sub.status === "TRIALING",
@@ -160,7 +219,7 @@ export default async function AdminPlansPage() {
           Bu alandaki değişiklikler pricing, ödeme ve muhasebe ekranlarında aynı plan verisiyle çalışır.
         </p>
         <div className="mt-4">
-          <AdminPlans initialPlans={plans} />
+          <AdminPlans initialPlans={normalizedPlans} initialExamOptions={examOptions} />
         </div>
       </div>
 

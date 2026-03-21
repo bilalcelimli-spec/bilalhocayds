@@ -22,6 +22,14 @@ type ExamModuleRecord = {
 	isActive: boolean;
 	createdAt: Date;
 	updatedAt: Date;
+	plans?: Array<{
+		plan: {
+			id: string;
+			name: string;
+			slug: string;
+			isActive: boolean;
+		};
+	}>;
 };
 
 type ExamModuleWriteInput = {
@@ -88,8 +96,31 @@ type ExamModuleDelegate = {
 	findMany(args?: {
 		where?: { isPublished?: boolean; isActive?: boolean; isForSale?: boolean; id?: { in?: string[] } };
 		orderBy?: { updatedAt?: "asc" | "desc" };
+		include?: {
+			plans?: {
+				select?: {
+					plan?: {
+						select?: {
+							id?: boolean;
+							name?: boolean;
+							slug?: boolean;
+							isActive?: boolean;
+						};
+					};
+				};
+			};
+		};
 	}): Promise<ExamModuleRecord[]>;
 	findUnique(args: { where: { id?: string; slug?: string } }): Promise<ExamModuleRecord | null>;
+};
+
+type PlanExamModuleDelegate = {
+	upsert(args: {
+		where: { planId_examModuleId: { planId: string; examModuleId: string } };
+		update: Record<string, never>;
+		create: { planId: string; examModuleId: string };
+	}): Promise<{ id: string; planId: string; examModuleId: string }>;
+	deleteMany(args: { where: { planId: string; examModuleId: string } }): Promise<{ count: number }>;
 };
 
 type ExamPurchaseDelegate = {
@@ -119,6 +150,7 @@ type ExamPurchaseDelegate = {
 export const prisma = basePrisma as typeof basePrisma & {
 	examModule: ExamModuleDelegate;
 	examPurchase: ExamPurchaseDelegate;
+	planExamModule: PlanExamModuleDelegate;
 };
 
 export const examModule = (basePrisma as unknown as {

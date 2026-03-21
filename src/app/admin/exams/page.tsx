@@ -9,7 +9,7 @@ import type { Prisma } from "@prisma/client";
 
 import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
-import { examModule } from "@/src/lib/prisma";
+import { examModule, prisma } from "@/src/lib/prisma";
 
 const adminNavItems = [
   { label: "Admin Dashboard", href: "/admin" },
@@ -155,16 +155,126 @@ async function deleteExamAction(formData: FormData) {
   revalidatePath("/exam");
 }
 
+async function revalidatePlanRelations(planId: string) {
+  const plan = await prisma.plan.findUnique({
+    where: { id: planId },
+    select: { slug: true },
+  });
+
+  revalidatePath("/admin/exams");
+  revalidatePath("/admin/plans");
+  revalidatePath("/admin");
+  revalidatePath("/pricing");
+  if (plan?.slug) {
+    revalidatePath(`/pricing/${plan.slug}`);
+  }
+}
+
+async function attachExamToPlanAction(formData: FormData) {
+  "use server";
+  await assertAdmin();
+
+  const examModuleId = String(formData.get("examModuleId") ?? formData.get("id") ?? "").trim();
+  const planId = String(formData.get("attachPlanId") ?? "").trim();
+
+  if (!examModuleId || !planId) {
+    return;
+  }
+
+  await prisma.planExamModule.upsert({
+    where: {
+      planId_examModuleId: {
+        planId,
+        examModuleId,
+      },
+    },
+    update: {},
+    create: {
+      planId,
+      examModuleId,
+    },
+  });
+
+  await revalidatePlanRelations(planId);
+}
+
+async function detachExamFromPlanAction(formData: FormData) {
+  "use server";
+  await assertAdmin();
+
+  const examModuleId = String(formData.get("examModuleId") ?? formData.get("id") ?? "").trim();
+  const planId = String(formData.get("detachPlanId") ?? "").trim();
+
+  if (!examModuleId || !planId) {
+    return;
+  }
+
+  await prisma.planExamModule.deleteMany({
+    where: {
+      planId,
+      examModuleId,
+    },
+  });
+
+  await revalidatePlanRelations(planId);
+}
+
 export default async function AdminExamsPage() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") redirect("/dashboard");
 
-  const [exams, publishedCount] = await Promise.all([
-    examModule.findMany({
+  const [exams, publishedCount, plans] = await Promise.all([
+    prisma.examModule.findMany({
       orderBy: { updatedAt: "desc" },
+      include: {
+        plans: {
+          select: {
+            plan: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                isActive: true,
+              },
+            },
+          },
+        },
+      },
     }),
-    examModule.count({ where: { isPublished: true, isActive: true } }),
+    prisma.examModule.count({ where: { isPublished: true, isActive: true } }),
+    prisma.plan.findMany({
+      orderBy: [{ isActive: "desc" }, { name: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        isActive: true,
+      },
+    }),
   ]);
+
+  const typedExams = exams as Array<{
+    id: string;
+    title: string;
+    slug: string;
+    examType: string;
+    cefrLevel: string | null;
+    durationMinutes: number;
+    questionCount: number;
+    description: string | null;
+    instructions: string | null;
+    marketplaceTitle: string | null;
+    marketplaceDescription: string | null;
+    coverImageUrl: string | null;
+    price: number | null;
+    isForSale: boolean;
+    contentJson: Prisma.JsonValue;
+    isPublished: boolean;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+    plans: Array<{ plan: { id: string; name: string; slug: string; isActive: boolean } }>;
+  }>;
 
   return (
     <DashboardShell
@@ -207,7 +317,7 @@ export default async function AdminExamsPage() {
           <input name="coverImageUrl" placeholder="Kapak görseli URL" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <label className="flex items-center gap-2 text-sm text-zinc-300"><input type="checkbox" name="isPublished" /> Yayınla</label>
           <label className="flex items-center gap-2 text-sm text-zinc-300"><input type="checkbox" name="isActive" defaultChecked /> Aktif</label>
-          <label className="flex items-center gap-2 text-sm text-zinc-300"><input type="checkbox" name="isForSale" /> Marketplace'te sat</label>
+          <label className="flex items-center gap-2 text-sm text-zinc-300"><input type="checkbox" name="isForSale" /> Marketplace&apos;te sat</label>
           <textarea name="description" placeholder="Açıklama" rows={3} className="md:col-span-2 xl:col-span-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <textarea name="marketplaceTitle" placeholder="Marketplace başlığı (opsiyonel)" rows={3} className="md:col-span-2 xl:col-span-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <textarea name="instructions" placeholder="Talimatlar" rows={3} className="md:col-span-2 xl:col-span-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
@@ -229,10 +339,11 @@ export default async function AdminExamsPage() {
           </p>
         </div>
         <div className="divide-y divide-white/5">
-          {exams.map((exam) => (
+          {typedExams.map((exam) => (
             <div key={exam.id} className="px-5 py-4 transition hover:bg-white/[0.03]">
               <form action={updateExamAction} className="space-y-3">
                 <input type="hidden" name="id" value={exam.id} />
+                <input type="hidden" name="examModuleId" value={exam.id} />
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15">
@@ -280,6 +391,61 @@ export default async function AdminExamsPage() {
                   rows={10}
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-mono text-xs text-zinc-300"
                 />
+
+                <div className="rounded-2xl border border-white/8 bg-black/20 px-4 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Bağlı Planlar</p>
+                    <span className="text-xs text-zinc-500">{exam.plans.length} plan</span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {exam.plans.map(({ plan }) => (
+                        <button
+                          key={plan.id}
+                          type="submit"
+                          name="detachPlanId"
+                          value={plan.id}
+                          formAction={detachExamFromPlanAction}
+                          className={`rounded-full border px-3 py-1 text-xs transition ${
+                            plan.isActive
+                              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/15"
+                              : "border-zinc-500/20 bg-zinc-500/10 text-zinc-300 hover:bg-zinc-500/15"
+                          }`}
+                          title="Plandan çıkar"
+                        >
+                          {plan.name} · Çıkar
+                        </button>
+                    ))}
+                    {exam.plans.length === 0 ? (
+                      <span className="rounded-full border border-dashed border-white/10 px-3 py-1 text-xs text-zinc-500">
+                        Henüz hiçbir plana eklenmemiş
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <select
+                      name="attachPlanId"
+                      defaultValue=""
+                      className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-200"
+                    >
+                      <option value="" disabled>Plana ekle...</option>
+                      {plans.map((plan) => {
+                        const alreadyLinked = exam.plans.some(({ plan: linkedPlan }) => linkedPlan.id === plan.id);
+                        return (
+                          <option key={plan.id} value={plan.id}>
+                            {plan.name}{alreadyLinked ? " (zaten ekli)" : ""}{plan.isActive ? "" : " - pasif"}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <button type="submit" formAction={attachExamToPlanAction} className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-sm font-semibold text-cyan-300 hover:bg-cyan-500/20">
+                      Plana ekle
+                    </button>
+                    <Link href="/admin/plans" className="rounded-xl border border-white/10 px-3 py-2 text-sm text-zinc-300 hover:bg-white/10">
+                      Planları aç
+                    </Link>
+                  </div>
+                </div>
 
                 <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500">
                   <span className="inline-flex items-center gap-1"><TimerReset size={12} /> {exam.durationMinutes} dk</span>

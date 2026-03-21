@@ -77,7 +77,7 @@ export default async function DashboardOrdersPage() {
 						<h2 className="mt-2 text-2xl font-black text-white">Satın aldığın sınavlar ve işlem durumları</h2>
 						<p className="mt-2 max-w-2xl text-sm leading-7 text-zinc-400">Ödeme tamamlanan sınavlar doğrudan exam modülünde görünür. Bekleyen veya başarısız denemeler de burada izlenir.</p>
 					</div>
-					<Link href="/exam" className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-zinc-200">Exam marketplace'e dön <ArrowRight size={14} /></Link>
+					<Link href="/exam" className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-zinc-200">Exam marketplace&apos;e dön <ArrowRight size={14} /></Link>
 				</div>
 			</div>
 

@@ -59,6 +59,7 @@ export default async function AdminPage() {
     upcomingLiveClasses,
     recentUsers,
     initialPlans,
+    examOptions,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({ where: { role: "STUDENT" } }),
@@ -91,9 +92,68 @@ export default async function AdminPage() {
         includesExam: true,
         isStandaloneExamProduct: true,
         isActive: true,
+        examModules: {
+          select: {
+            examModule: {
+              select: {
+                id: true,
+                title: true,
+                marketplaceTitle: true,
+                examType: true,
+                price: true,
+                isForSale: true,
+                isPublished: true,
+                isActive: true,
+              },
+            },
+          },
+        },
+      },
+    } as never),
+    prisma.examModule.findMany({
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        marketplaceTitle: true,
+        examType: true,
+        price: true,
+        isForSale: true,
+        isPublished: true,
+        isActive: true,
       },
     }),
   ]);
+
+  const normalizedPlans = (initialPlans as unknown as Array<{
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    monthlyPrice: number | null;
+    yearlyPrice: number | null;
+    includesLiveClass: boolean;
+    includesAIPlanner: boolean;
+    includesReading: boolean;
+    includesGrammar: boolean;
+    includesVocab: boolean;
+    includesExam: boolean;
+    isStandaloneExamProduct: boolean;
+    isActive: boolean;
+    examModules: Array<{ examModule: {
+      id: string;
+      title: string;
+      marketplaceTitle: string | null;
+      examType: string;
+      price: number | null;
+      isForSale: boolean;
+      isPublished: boolean;
+      isActive: boolean;
+    } }>;
+  }>).map((plan) => ({
+    ...plan,
+    examModules: plan.examModules.map(({ examModule }) => examModule),
+  }));
 
   const roleBadge: Record<string, string> = {
     STUDENT: "bg-blue-500/15 text-blue-300",
@@ -380,7 +440,7 @@ export default async function AdminPage() {
 
       {/* Plan & Lead management */}
       <div className="space-y-5">
-        <AdminPlans initialPlans={initialPlans} />
+        <AdminPlans initialPlans={normalizedPlans} initialExamOptions={examOptions} />
         <AdminLeads />
       </div>
     </DashboardShell>

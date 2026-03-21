@@ -95,10 +95,25 @@ export const authOptions: NextAuthOptions = {
                   includesGrammar: true,
                   includesVocab: true,
                   includesExam: true,
+                  examModules: {
+                    select: {
+                      examModuleId: true,
+                    },
+                  },
                 },
               },
             },
-          });
+          } as never) as {
+            id: string;
+            endDate: Date | null;
+            plan: {
+              includesReading: boolean;
+              includesGrammar: boolean;
+              includesVocab: boolean;
+              includesExam: boolean;
+              examModules: Array<{ examModuleId: string }>;
+            };
+          } | null;
 
           token.hasActiveSubscription = Boolean(activeSubscription);
           token.subscriptionEndsAt = activeSubscription?.endDate?.toISOString() ?? null;
@@ -106,6 +121,7 @@ export const authOptions: NextAuthOptions = {
           token.hasGrammarAccess = Boolean(activeSubscription?.plan.includesGrammar);
           token.hasVocabAccess = Boolean(activeSubscription?.plan.includesVocab);
           token.hasExamAccess = Boolean(activeSubscription?.plan.includesExam);
+          token.accessibleExamIds = activeSubscription?.plan.examModules.map((item: { examModuleId: string }) => item.examModuleId) ?? [];
         } else {
           token.hasActiveSubscription = true;
           token.subscriptionEndsAt = null;
@@ -113,7 +129,10 @@ export const authOptions: NextAuthOptions = {
           token.hasGrammarAccess = true;
           token.hasVocabAccess = true;
           token.hasExamAccess = true;
+          token.accessibleExamIds = [];
         }
+      } else {
+        token.accessibleExamIds = [];
       }
 
       return token;
@@ -129,6 +148,9 @@ export const authOptions: NextAuthOptions = {
         session.user.hasGrammarAccess = Boolean(token.hasGrammarAccess);
         session.user.hasVocabAccess = Boolean(token.hasVocabAccess);
         session.user.hasExamAccess = Boolean(token.hasExamAccess);
+        session.user.accessibleExamIds = Array.isArray(token.accessibleExamIds)
+          ? token.accessibleExamIds.filter((value): value is string => typeof value === "string")
+          : [];
       }
 
       return session;

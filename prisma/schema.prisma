@@ -111,6 +111,21 @@ model Plan {
   updatedAt         DateTime @updatedAt
 
   subscriptions Subscription[]
+  examModules   PlanExamModule[]
+}
+
+model PlanExamModule {
+  id           String     @id @default(cuid())
+  planId       String
+  examModuleId String
+  createdAt    DateTime   @default(now())
+
+  plan       Plan       @relation(fields: [planId], references: [id], onDelete: Cascade)
+  examModule ExamModule @relation(fields: [examModuleId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, examModuleId])
+  @@index([planId])
+  @@index([examModuleId])
 }
 
 model Lead {
@@ -366,6 +381,7 @@ model ExamModule {
   updatedAt       DateTime @updatedAt
 
   purchases       ExamPurchase[]
+  plans           PlanExamModule[]
 }
 
 model ExamPurchase {

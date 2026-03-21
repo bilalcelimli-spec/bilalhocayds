@@ -11,6 +11,7 @@ declare module "next-auth" {
       hasGrammarAccess?: boolean;
       hasVocabAccess?: boolean;
       hasExamAccess?: boolean;
+      accessibleExamIds?: string[];
       name?: string | null;
       email?: string | null;
       image?: string | null;
@@ -27,5 +28,6 @@ declare module "next-auth/jwt" {
     hasGrammarAccess?: boolean;
     hasVocabAccess?: boolean;
     hasExamAccess?: boolean;
+    accessibleExamIds?: string[];
   }
 }

@@ -90,6 +90,8 @@ export default async function DashboardPage() {
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Günaydın" : hour < 17 ? "İyi günler" : "İyi akşamlar";
+  const hasBundledExamAccess = (session.user.accessibleExamIds?.length ?? 0) > 0;
+  const hasAnyExamAccess = session.user.hasExamAccess || hasBundledExamAccess;
 
   return (
     <DashboardShell
@@ -105,7 +107,7 @@ export default async function DashboardPage() {
           { label: "Bugünkü Kelimeler", value: "20", Icon: Languages, color: "text-blue-300", tone: "border-blue-500/20 bg-blue-500/8" },
           { label: "Reading Görevi", value: "1", Icon: BookOpen, color: "text-indigo-300", tone: "border-indigo-500/20 bg-indigo-500/8" },
           { label: "Grammar Alıştırması", value: "1", Icon: GraduationCap, color: "text-violet-300", tone: "border-violet-500/20 bg-violet-500/8" },
-          { label: "Sınav Hedefi", value: session.user.hasExamAccess ? "Açık" : "Kilitli", Icon: FileText, color: "text-emerald-300", tone: "border-emerald-500/20 bg-emerald-500/8" },
+          { label: "Sınav Hedefi", value: hasAnyExamAccess ? hasBundledExamAccess && !session.user.hasExamAccess ? `${session.user.accessibleExamIds?.length ?? 0} set açık` : "Açık" : "Kilitli", Icon: FileText, color: "text-emerald-300", tone: "border-emerald-500/20 bg-emerald-500/8" },
         ].map((s) => (
           <div
             key={s.label}
@@ -208,7 +210,7 @@ export default async function DashboardPage() {
         <h2 className="mb-4 text-lg font-bold text-white">Modüllere Git</h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {moduleCards
-            .filter((m) => m.href !== "/exam" || session.user.hasExamAccess)
+            .filter((m) => m.href !== "/exam" || hasAnyExamAccess)
             .map((m) => (
             <Link
               key={m.href}
@@ -235,7 +237,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {!session.user.hasExamAccess ? (
+      {!hasAnyExamAccess ? (
         <div className="rounded-[30px] border border-emerald-500/20 bg-gradient-to-r from-emerald-900/25 via-teal-900/15 to-cyan-900/15 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.18)] sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-4">

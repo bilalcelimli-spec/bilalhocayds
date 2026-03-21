@@ -16,10 +16,23 @@ type Plan = {
   includesExam?: boolean;
   isStandaloneExamProduct?: boolean;
   isActive?: boolean;
+  examModules: ExamOption[];
+};
+
+type ExamOption = {
+  id: string;
+  title: string;
+  marketplaceTitle?: string | null;
+  examType: string;
+  price?: number | null;
+  isForSale: boolean;
+  isPublished: boolean;
+  isActive: boolean;
 };
 
 type AdminPlansProps = {
   initialPlans: Plan[];
+  initialExamOptions: ExamOption[];
 };
 
 type PlanFormState = {
@@ -36,6 +49,7 @@ type PlanFormState = {
   includesExam: boolean;
   isStandaloneExamProduct: boolean;
   isActive: boolean;
+  examModuleIds: string[];
 };
 
 const emptyForm = (): PlanFormState => ({
@@ -52,6 +66,7 @@ const emptyForm = (): PlanFormState => ({
   includesExam: false,
   isStandaloneExamProduct: false,
   isActive: true,
+  examModuleIds: [],
 });
 
 function formatPrice(price: number | null | undefined) {
@@ -66,8 +81,9 @@ function formatPrice(price: number | null | undefined) {
   }).format(price);
 }
 
-export default function AdminPlans({ initialPlans }: AdminPlansProps) {
+export default function AdminPlans({ initialPlans, initialExamOptions }: AdminPlansProps) {
   const [plans, setPlans] = useState<Plan[]>(initialPlans);
+  const [examOptions] = useState<ExamOption[]>(initialExamOptions);
   const [form, setForm] = useState<PlanFormState>(emptyForm());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
@@ -76,6 +92,15 @@ export default function AdminPlans({ initialPlans }: AdminPlansProps) {
     fetch("/api/admin/plans")
       .then((res) => res.json())
       .then((data: Plan[]) => setPlans(data));
+  }
+
+  function handleExamToggle(examId: string) {
+    setForm((prev) => ({
+      ...prev,
+      examModuleIds: prev.examModuleIds.includes(examId)
+        ? prev.examModuleIds.filter((id) => id !== examId)
+        : [...prev.examModuleIds, examId],
+    }));
   }
 
   function handleChange(e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
@@ -127,6 +152,7 @@ export default function AdminPlans({ initialPlans }: AdminPlansProps) {
       includesExam: plan.includesExam ?? false,
       isStandaloneExamProduct: plan.isStandaloneExamProduct ?? false,
       isActive: plan.isActive ?? true,
+      examModuleIds: plan.examModules.map((exam) => exam.id),
     });
   }
 
@@ -138,6 +164,7 @@ export default function AdminPlans({ initialPlans }: AdminPlansProps) {
       body: JSON.stringify({
         ...plan,
         isActive: !(plan.isActive ?? true),
+        examModuleIds: plan.examModules.map((exam) => exam.id),
       }),
     });
     await refreshPlans();
@@ -229,10 +256,73 @@ export default function AdminPlans({ initialPlans }: AdminPlansProps) {
               <label><input className="mr-2" name="includesReading" type="checkbox" checked={form.includesReading} onChange={handleChange} />Reading modülü</label>
               <label><input className="mr-2" name="includesGrammar" type="checkbox" checked={form.includesGrammar} onChange={handleChange} />Grammar modülü</label>
               <label><input className="mr-2" name="includesAIPlanner" type="checkbox" checked={form.includesAIPlanner} onChange={handleChange} />AI çalışma planı</label>
-              <label><input className="mr-2" name="includesExam" type="checkbox" checked={form.includesExam} onChange={handleChange} />Sınav modülü</label>
+              <label><input className="mr-2" name="includesExam" type="checkbox" checked={form.includesExam} onChange={handleChange} />Tüm sınav modülü erişimi</label>
               <label><input className="mr-2" name="includesLiveClass" type="checkbox" checked={form.includesLiveClass} onChange={handleChange} />Canlı ders erişimi</label>
               <label><input className="mr-2" name="isStandaloneExamProduct" type="checkbox" checked={form.isStandaloneExamProduct} onChange={handleChange} />Ana sayfada ayrı sınav ürünü olarak sat</label>
               <label><input className="mr-2" name="isActive" type="checkbox" checked={form.isActive} onChange={handleChange} />Paket aktif</label>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-white">Marketplace sınavları</p>
+                  <p className="mt-1 text-xs leading-6 text-zinc-400">
+                    Bu plana özel açılacak sınavları seç. Tüm modül erişimi kapalı olsa bile seçtiğin sınavlar öğrenciye açılır.
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white/5 px-3 py-2 text-xs font-semibold text-zinc-300">
+                  {form.examModuleIds.length} sınav seçili
+                </div>
+              </div>
+
+              <div className="mt-4 max-h-72 space-y-2 overflow-y-auto pr-1">
+                {examOptions.map((exam) => {
+                  const checked = form.examModuleIds.includes(exam.id);
+                  const displayTitle = exam.marketplaceTitle ?? exam.title;
+
+                  return (
+                    <label
+                      key={exam.id}
+                      className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-3 py-3 transition ${
+                        checked
+                          ? "border-emerald-400/30 bg-emerald-500/10"
+                          : "border-white/10 bg-white/[0.03] hover:bg-white/[0.05]"
+                      }`}
+                    >
+                      <input
+                        className="mt-1"
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => handleExamToggle(exam.id)}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold text-white">{displayTitle}</p>
+                          <span className="rounded-lg bg-white/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-300">
+                            {exam.examType}
+                          </span>
+                          {exam.price && exam.price > 0 ? (
+                            <span className="rounded-lg bg-cyan-500/15 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-cyan-300">
+                              {formatPrice(exam.price)}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-zinc-400">
+                          <span className={exam.isForSale ? "text-emerald-300" : "text-zinc-500"}>{exam.isForSale ? "Marketplace açık" : "Marketplace kapalı"}</span>
+                          <span className={exam.isPublished ? "text-blue-300" : "text-zinc-500"}>{exam.isPublished ? "Yayınlı" : "Taslak"}</span>
+                          <span className={exam.isActive ? "text-amber-300" : "text-zinc-500"}>{exam.isActive ? "Aktif" : "Pasif"}</span>
+                        </div>
+                      </div>
+                    </label>
+                  );
+                })}
+
+                {examOptions.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-white/10 px-4 py-5 text-sm text-zinc-500">
+                    Henüz eklenmiş sınav yok. Önce sınav yönetiminden marketplace sınavı oluştur.
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
@@ -264,9 +354,10 @@ export default function AdminPlans({ initialPlans }: AdminPlansProps) {
             plan.includesReading && "Reading",
             plan.includesGrammar && "Grammar",
             plan.includesAIPlanner && "AI planı",
-            plan.includesExam && "Sınav",
+            plan.includesExam && "Tam sınav modülü",
             plan.includesLiveClass && "Canlı ders",
             plan.isStandaloneExamProduct && "Ayrı sınav ürünü",
+            plan.examModules.length > 0 && `${plan.examModules.length} marketplace sınavı`,
           ].filter((item): item is string => Boolean(item));
 
           return (
@@ -314,6 +405,19 @@ export default function AdminPlans({ initialPlans }: AdminPlansProps) {
                   </span>
                 ) : null}
               </div>
+
+              {plan.examModules.length > 0 ? (
+                <div className="mt-4 rounded-2xl border border-white/8 bg-black/20 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Plana bağlı sınavlar</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {plan.examModules.map((exam) => (
+                      <span key={exam.id} className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">
+                        {exam.marketplaceTitle ?? exam.title}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
 
               <div className="mt-5 flex flex-wrap gap-2">
                 <button

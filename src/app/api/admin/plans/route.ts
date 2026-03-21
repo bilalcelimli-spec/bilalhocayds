@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 
 import { authOptions } from "@/src/auth";
 import { prisma } from "@/src/lib/prisma";
@@ -19,7 +20,43 @@ type PlanPayload = {
   includesExam: boolean;
   isStandaloneExamProduct: boolean;
   isActive: boolean;
+  examModuleIds: string[];
 };
+
+const planSelect = {
+  id: true,
+  name: true,
+  slug: true,
+  description: true,
+  monthlyPrice: true,
+  yearlyPrice: true,
+  includesLiveClass: true,
+  includesAIPlanner: true,
+  includesReading: true,
+  includesGrammar: true,
+  includesVocab: true,
+  includesExam: true,
+  isStandaloneExamProduct: true,
+  isActive: true,
+  examModules: {
+    select: {
+      examModule: {
+        select: {
+          id: true,
+          title: true,
+          marketplaceTitle: true,
+          examType: true,
+          price: true,
+          isForSale: true,
+          isPublished: true,
+          isActive: true,
+        },
+      },
+    },
+  },
+} as const;
+
+type PlanWithExamModules = Prisma.PlanGetPayload<{ select: typeof planSelect }>;
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
@@ -33,6 +70,17 @@ async function requireAdmin() {
 
 function parsePlanPayload(data: unknown): PlanPayload {
   const input = (data ?? {}) as Record<string, unknown>;
+  const examModuleIds = Array.isArray(input.examModuleIds)
+    ? Array.from(
+        new Set(
+          input.examModuleIds
+            .filter((value): value is string => typeof value === "string")
+            .map((value) => value.trim())
+            .filter((value) => value.length > 0),
+        ),
+      )
+    : [];
+
   const toNumber = (value: unknown) => {
     if (typeof value === "number") {
       return Number.isFinite(value) ? value : null;
@@ -61,6 +109,27 @@ function parsePlanPayload(data: unknown): PlanPayload {
     includesExam: Boolean(input.includesExam),
     isStandaloneExamProduct: Boolean(input.isStandaloneExamProduct),
     isActive: input.isActive !== false,
+    examModuleIds,
+  };
+}
+
+async function resolveValidExamIds(examModuleIds: string[]) {
+  if (examModuleIds.length === 0) {
+    return [];
+  }
+
+  const exams = await prisma.examModule.findMany({
+    where: { id: { in: examModuleIds } },
+    select: { id: true },
+  });
+
+  return exams.map((exam) => exam.id);
+}
+
+function serializePlan(plan: PlanWithExamModules) {
+  return {
+    ...plan,
+    examModules: plan.examModules.map(({ examModule }) => examModule),
   };
 }
 
@@ -70,8 +139,11 @@ export async function GET() {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  const plans = await prisma.plan.findMany();
-  return NextResponse.json(plans);
+  const plans = await prisma.plan.findMany({
+    orderBy: { createdAt: "desc" },
+    select: planSelect,
+  });
+  return NextResponse.json(plans.map(serializePlan));
 }
 
 export async function POST(request: Request) {
@@ -88,6 +160,8 @@ export async function POST(request: Request) {
     );
   }
 
+  const validExamIds = await resolveValidExamIds(data.examModuleIds);
+
   const plan = await prisma.plan.create({
     data: {
       name: data.name,
@@ -103,9 +177,15 @@ export async function POST(request: Request) {
       includesExam: data.includesExam,
       isStandaloneExamProduct: data.isStandaloneExamProduct,
       isActive: data.isActive,
+      examModules: validExamIds.length > 0
+        ? {
+            create: validExamIds.map((examModuleId) => ({ examModuleId })),
+          }
+        : undefined,
     },
+    select: planSelect,
   });
-  return NextResponse.json(plan);
+  return NextResponse.json(serializePlan(plan));
 }
 
 export async function PUT(request: Request) {
@@ -121,6 +201,8 @@ export async function PUT(request: Request) {
       { status: 400 }
     );
   }
+
+  const validExamIds = await resolveValidExamIds(data.examModuleIds);
 
   const plan = await prisma.plan.update({
     where: { id: data.id },
@@ -138,9 +220,18 @@ export async function PUT(request: Request) {
       includesExam: data.includesExam,
       isStandaloneExamProduct: data.isStandaloneExamProduct,
       isActive: data.isActive,
+      examModules: {
+        deleteMany: {},
+        ...(validExamIds.length > 0
+          ? {
+              create: validExamIds.map((examModuleId) => ({ examModuleId })),
+            }
+          : {}),
+      },
     },
+    select: planSelect,
   });
-  return NextResponse.json(plan);
+  return NextResponse.json(serializePlan(plan));
 }
 
 export async function DELETE(request: Request) {

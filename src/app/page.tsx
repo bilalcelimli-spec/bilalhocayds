@@ -76,10 +76,38 @@ export default async function HomePage() {
       includesVocab: true,
       includesExam: true,
       isStandaloneExamProduct: true,
+      examModules: {
+        select: {
+          examModule: {
+            select: {
+              title: true,
+              marketplaceTitle: true,
+            },
+          },
+        },
+      },
     },
-  });
+  } as never) as unknown as Array<{
+    id: string;
+    name: string;
+    slug: string;
+    monthlyPrice: number | null;
+    includesLiveClass: boolean;
+    includesAIPlanner: boolean;
+    includesReading: boolean;
+    includesGrammar: boolean;
+    includesVocab: boolean;
+    includesExam: boolean;
+    isStandaloneExamProduct: boolean;
+    examModules: Array<{ examModule: { title: string; marketplaceTitle: string | null } }>;
+  }>;
 
-  const plans = reorderPopularToMiddle(rawPlans);
+  const plans = reorderPopularToMiddle(
+    rawPlans.map((plan) => ({
+      ...plan,
+      includedExamTitles: plan.examModules.map(({ examModule }: { examModule: { title: string; marketplaceTitle: string | null } }) => examModule.marketplaceTitle ?? examModule.title),
+    })),
+  );
   const premiumPlan = plans.find((plan) => plan.slug === "premium") ?? plans[0] ?? null;
   const liveClassEnabledPlanCount = plans.filter((plan) => plan.includesLiveClass).length;
   const standaloneExamPlan = plans.find((plan) => plan.isStandaloneExamProduct && plan.includesExam) ?? null;
@@ -269,6 +297,7 @@ export default async function HomePage() {
               plan.includesGrammar && "Grammar modülü",
               plan.includesAIPlanner && "AI çalışma planı",
               plan.includesExam && "Sınav modülü",
+              plan.includedExamTitles.length > 0 && `${plan.includedExamTitles.length} seçili sınav erişimi`,
               plan.includesLiveClass && "Haftada 4 saat canlı ders erişimi",
             ].filter((item): item is string => Boolean(item));
 
@@ -300,6 +329,23 @@ export default async function HomePage() {
                     </li>
                   ))}
                 </ul>
+                {plan.includedExamTitles.length > 0 ? (
+                  <div className="mt-5 rounded-2xl border border-emerald-500/15 bg-emerald-500/8 p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-300">Öne Çıkan Sınavlar</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {plan.includedExamTitles.slice(0, 2).map((title) => (
+                        <span key={title} className="rounded-full border border-emerald-400/20 bg-black/20 px-3 py-1 text-xs text-emerald-100">
+                          {title}
+                        </span>
+                      ))}
+                      {plan.includedExamTitles.length > 2 ? (
+                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300">
+                          +{plan.includedExamTitles.length - 2} sınav
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
                 <p className="mt-4 text-xs leading-5 text-zinc-500">
                   Tek tek canlı ders satın alma seçeneği de ayrıca açıktır.
                 </p>

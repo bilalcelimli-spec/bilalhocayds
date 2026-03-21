@@ -122,8 +122,11 @@ export default async function ExamPage() {
       })
     : [];
   const purchasedExamIds = new Set(paidPurchases.map((purchase) => purchase.examModuleId));
+  const bundledExamIds = new Set(session.user.accessibleExamIds ?? []);
   const fullExamAccess = session.user.hasExamAccess || session.user.role === "TEACHER";
-  const accessibleExamCount = fullExamAccess ? exams.length : exams.filter((exam) => purchasedExamIds.has(exam.id)).length;
+  const accessibleExamCount = fullExamAccess
+    ? exams.length
+    : exams.filter((exam) => bundledExamIds.has(exam.id) || purchasedExamIds.has(exam.id)).length;
 
   return (
     <DashboardShell
@@ -148,7 +151,7 @@ export default async function ExamPage() {
           { label: "Yayınlı Sınav", value: exams.length, Icon: FileText, tone: "border-emerald-500/20 bg-emerald-500/8", color: "text-emerald-300" },
           { label: "Toplam Soru", value: exams.reduce((sum, exam) => sum + exam.questionCount, 0), Icon: LibraryBig, tone: "border-blue-500/20 bg-blue-500/8", color: "text-blue-300" },
           { label: "En Uzun Oturum", value: `${Math.max(...exams.map((exam) => exam.durationMinutes), 0)} dk`, Icon: Clock3, tone: "border-violet-500/20 bg-violet-500/8", color: "text-violet-300" },
-          { label: "Erişim", value: fullExamAccess ? "Tam" : accessibleExamCount > 0 ? `${accessibleExamCount} satın alındı` : "Kilitli", Icon: CheckCircle2, tone: "border-amber-500/20 bg-amber-500/8", color: "text-amber-300" },
+          { label: "Erişim", value: fullExamAccess ? "Tam" : accessibleExamCount > 0 ? `${accessibleExamCount} sınav açık` : "Kilitli", Icon: CheckCircle2, tone: "border-amber-500/20 bg-amber-500/8", color: "text-amber-300" },
         ].map((item) => (
           <div key={item.label} className={`rounded-[28px] border p-5 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur-xl ${item.tone}`}>
             <div className="flex items-center justify-between">
@@ -186,7 +189,7 @@ export default async function ExamPage() {
           const previewQuestions = content.questions.length > 0
             ? content.questions.slice(0, 3)
             : content.sections.flatMap((section) => section.questions).slice(0, 3);
-          const hasAccess = fullExamAccess || purchasedExamIds.has(exam.id);
+          const hasAccess = fullExamAccess || bundledExamIds.has(exam.id) || purchasedExamIds.has(exam.id);
 
           return (
             <article key={exam.id} className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.22)]">

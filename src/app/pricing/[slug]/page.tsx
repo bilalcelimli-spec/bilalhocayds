@@ -79,8 +79,34 @@ export default async function PricingDetailPage({ params, searchParams }: PagePr
       includesGrammar: true,
       includesVocab: true,
       includesExam: true,
+      examModules: {
+        select: {
+          examModule: {
+            select: {
+              id: true,
+              title: true,
+              marketplaceTitle: true,
+              examType: true,
+            },
+          },
+        },
+      },
     },
-  });
+  } as never) as {
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    monthlyPrice: number | null;
+    yearlyPrice: number | null;
+    includesLiveClass: boolean;
+    includesAIPlanner: boolean;
+    includesReading: boolean;
+    includesGrammar: boolean;
+    includesVocab: boolean;
+    includesExam: boolean;
+    examModules: Array<{ examModule: { id: string; title: string; marketplaceTitle: string | null; examType: string } }>;
+  } | null;
 
   if (!plan) {
     notFound();
@@ -91,9 +117,12 @@ export default async function PricingDetailPage({ params, searchParams }: PagePr
     plan.includesReading && "Reading modülü ile metin ve analiz çalışması",
     plan.includesGrammar && "Grammar modülü ile konu ve soru takibi",
     plan.includesAIPlanner && "AI çalışma planı ile günlük yönlendirme",
-    plan.includesExam && "Sınav modülü ile süreli deneme ve cevap anahtarı erişimi",
+    plan.includesExam && "Sınav modülü ile tüm yayınlı denemelere erişim",
+    plan.examModules.length > 0 && `${plan.examModules.length} adet marketplace sınavı plan içinde açık`,
     plan.includesLiveClass && "Haftada 4 saat canlı ders erişimi ve soru çözüm desteği",
   ].filter((item): item is string => Boolean(item));
+
+  const bundledExams = plan.examModules.map(({ examModule }) => examModule);
 
   const planLabel = plan.name.toLowerCase();
   const monthlyLabel = plan.monthlyPrice
@@ -178,6 +207,20 @@ export default async function PricingDetailPage({ params, searchParams }: PagePr
               ) : null}
             </div>
           </div>
+
+          {bundledExams.length > 0 ? (
+            <div className="mt-10 rounded-3xl border border-emerald-400/20 bg-emerald-400/10 p-6">
+              <h2 className="text-xl font-bold text-white">Plana dahil marketplace sınavları</h2>
+              <div className="mt-5 grid gap-3 md:grid-cols-2">
+                {bundledExams.map((exam) => (
+                  <div key={exam.id} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-200">
+                    <p className="font-semibold text-white">{exam.marketplaceTitle ?? exam.title}</p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.18em] text-emerald-300">{exam.examType}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div className="mt-10 grid gap-4 md:grid-cols-3">
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">

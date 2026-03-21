@@ -36,11 +36,49 @@ export default async function PricingPage() {
 				includesVocab: true,
 				includesExam: true,
 				isStandaloneExamProduct: true,
+				examModules: {
+					select: {
+						examModuleId: true,
+						examModule: {
+							select: {
+								title: true,
+								marketplaceTitle: true,
+								examType: true,
+								price: true,
+							},
+						},
+					},
+				},
 			},
-		}),
+		} as never),
 	]);
 
-	const plans = reorderPopularToMiddle(rawPlans);
+	const plans = reorderPopularToMiddle(
+		(rawPlans as unknown as Array<{
+			id: string;
+			name: string;
+			slug: string;
+			description: string | null;
+			monthlyPrice: number | null;
+			yearlyPrice: number | null;
+			includesLiveClass: boolean;
+			includesAIPlanner: boolean;
+			includesReading: boolean;
+			includesGrammar: boolean;
+			includesVocab: boolean;
+			includesExam: boolean;
+			isStandaloneExamProduct: boolean;
+			examModules: Array<{ examModule: { title: string; marketplaceTitle: string | null; examType: string; price: number | null } }>;
+		}>).map((plan) => ({
+			...plan,
+			includedExamCount: plan.examModules.length,
+			includedExams: plan.examModules.map(({ examModule }) => ({
+				title: examModule.marketplaceTitle ?? examModule.title,
+				examType: examModule.examType,
+				price: examModule.price,
+			})),
+		})),
+	);
 	const isLoggedInStudent = session?.user?.role === "STUDENT";
 	const premiumPlan = plans.find((plan) => plan.slug === "premium") ?? plans[0] ?? null;
 	const liveClassPlanCount = plans.filter((plan) => plan.includesLiveClass).length;
