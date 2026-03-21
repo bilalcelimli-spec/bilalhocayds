@@ -9,7 +9,7 @@ import type { Prisma } from "@prisma/client";
 
 import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
-import { prisma } from "@/src/lib/prisma";
+import { examModule } from "@/src/lib/prisma";
 
 const adminNavItems = [
   { label: "Admin Dashboard", href: "/admin" },
@@ -18,6 +18,7 @@ const adminNavItems = [
   { label: "Grammar Yönetimi", href: "/admin/grammar" },
   { label: "Vocabulary Yönetimi", href: "/admin/vocabulary" },
   { label: "Sınav Yönetimi", href: "/admin/exams" },
+  { label: "Sınav Satışları", href: "/admin/exam-sales" },
   { label: "Canlı Ders Yönetimi", href: "/admin/live-classes" },
   { label: "Canlı Ders Kayıtları", href: "/admin/live-recordings" },
   { label: "Plan Yönetimi", href: "/admin/plans" },
@@ -75,7 +76,7 @@ async function createExamAction(formData: FormData) {
     return;
   }
 
-  await prisma.examModule.create({
+  await examModule.create({
     data: {
       title,
       slug: toSlug(slugInput || title),
@@ -85,6 +86,11 @@ async function createExamAction(formData: FormData) {
       questionCount: parseNumber(formData.get("questionCount"), 20),
       description: String(formData.get("description") ?? "").trim() || null,
       instructions: String(formData.get("instructions") ?? "").trim() || null,
+      marketplaceTitle: String(formData.get("marketplaceTitle") ?? "").trim() || null,
+      marketplaceDescription: String(formData.get("marketplaceDescription") ?? "").trim() || null,
+      coverImageUrl: String(formData.get("coverImageUrl") ?? "").trim() || null,
+      price: parseNumber(formData.get("price"), 0),
+      isForSale: formData.get("isForSale") === "on",
       contentJson: parseContentJson(formData.get("contentJson")),
       isPublished: formData.get("isPublished") === "on",
       isActive: formData.get("isActive") === "on",
@@ -107,7 +113,7 @@ async function updateExamAction(formData: FormData) {
     return;
   }
 
-  await prisma.examModule.update({
+  await examModule.update({
     where: { id },
     data: {
       title,
@@ -118,6 +124,11 @@ async function updateExamAction(formData: FormData) {
       questionCount: parseNumber(formData.get("questionCount"), 20),
       description: String(formData.get("description") ?? "").trim() || null,
       instructions: String(formData.get("instructions") ?? "").trim() || null,
+      marketplaceTitle: String(formData.get("marketplaceTitle") ?? "").trim() || null,
+      marketplaceDescription: String(formData.get("marketplaceDescription") ?? "").trim() || null,
+      coverImageUrl: String(formData.get("coverImageUrl") ?? "").trim() || null,
+      price: parseNumber(formData.get("price"), 0),
+      isForSale: formData.get("isForSale") === "on",
       contentJson: parseContentJson(formData.get("contentJson")),
       isPublished: formData.get("isPublished") === "on",
       isActive: formData.get("isActive") === "on",
@@ -138,7 +149,7 @@ async function deleteExamAction(formData: FormData) {
     return;
   }
 
-  await prisma.examModule.delete({ where: { id } });
+  await examModule.delete({ where: { id } });
   revalidatePath("/admin/exams");
   revalidatePath("/admin");
   revalidatePath("/exam");
@@ -149,10 +160,10 @@ export default async function AdminExamsPage() {
   if (!session || session.user.role !== "ADMIN") redirect("/dashboard");
 
   const [exams, publishedCount] = await Promise.all([
-    prisma.examModule.findMany({
+    examModule.findMany({
       orderBy: { updatedAt: "desc" },
     }),
-    prisma.examModule.count({ where: { isPublished: true, isActive: true } }),
+    examModule.count({ where: { isPublished: true, isActive: true } }),
   ]);
 
   return (
@@ -182,6 +193,9 @@ export default async function AdminExamsPage() {
         <p className="mt-1 text-xs text-zinc-400">
           JSON içeriğini doğrudan yapıştırabilir veya aynı alanı admin API&apos;sine gönderebilirsin.
         </p>
+        <p className="mt-2 text-xs text-emerald-300">
+          Marketplace&apos;te görünmesi için fiyat gir, satış kutusunu işaretle, ardından sınavı yayınlı ve aktif hale getir.
+        </p>
         <form action={createExamAction} className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <input name="title" required placeholder="Başlık" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <input name="slug" placeholder="Slug (opsiyonel)" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
@@ -189,10 +203,15 @@ export default async function AdminExamsPage() {
           <input name="cefrLevel" placeholder="Seviye (B1/B2/C1/C2)" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <input name="durationMinutes" type="number" min="1" defaultValue="45" placeholder="Süre" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <input name="questionCount" type="number" min="1" defaultValue="20" placeholder="Soru sayısı" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
+          <input name="price" type="number" min="0" step="0.01" defaultValue="0" placeholder="Satış fiyatı" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
+          <input name="coverImageUrl" placeholder="Kapak görseli URL" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <label className="flex items-center gap-2 text-sm text-zinc-300"><input type="checkbox" name="isPublished" /> Yayınla</label>
           <label className="flex items-center gap-2 text-sm text-zinc-300"><input type="checkbox" name="isActive" defaultChecked /> Aktif</label>
+          <label className="flex items-center gap-2 text-sm text-zinc-300"><input type="checkbox" name="isForSale" /> Marketplace'te sat</label>
           <textarea name="description" placeholder="Açıklama" rows={3} className="md:col-span-2 xl:col-span-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
+          <textarea name="marketplaceTitle" placeholder="Marketplace başlığı (opsiyonel)" rows={3} className="md:col-span-2 xl:col-span-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <textarea name="instructions" placeholder="Talimatlar" rows={3} className="md:col-span-2 xl:col-span-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
+          <textarea name="marketplaceDescription" placeholder="Marketplace açıklaması" rows={3} className="md:col-span-2 xl:col-span-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <textarea
             name="contentJson"
             placeholder='{"questions":[{"prompt":"...","choices":["A","B","C","D"],"answer":"A"}]}'
@@ -232,6 +251,9 @@ export default async function AdminExamsPage() {
                     <span className={`rounded-lg px-2 py-1 text-xs font-medium ${exam.isPublished ? "bg-emerald-500/15 text-emerald-300" : "bg-amber-500/15 text-amber-300"}`}>
                       {exam.isPublished ? "Yayınlı" : "Taslak"}
                     </span>
+                    <span className={`rounded-lg px-2 py-1 text-xs font-medium ${exam.isForSale ? "bg-cyan-500/15 text-cyan-300" : "bg-zinc-500/15 text-zinc-400"}`}>
+                      {exam.isForSale ? "Satışta" : "Kapalı"}
+                    </span>
                     <span className={`rounded-lg px-2 py-1 text-xs font-medium ${exam.isActive ? "bg-blue-500/15 text-blue-300" : "bg-zinc-500/15 text-zinc-400"}`}>
                       {exam.isActive ? "Aktif" : "Pasif"}
                     </span>
@@ -241,12 +263,17 @@ export default async function AdminExamsPage() {
                 <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
                   <input name="durationMinutes" type="number" min="1" defaultValue={exam.durationMinutes} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
                   <input name="questionCount" type="number" min="1" defaultValue={exam.questionCount} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
+                  <input name="price" type="number" min="0" step="0.01" defaultValue={exam.price ?? 0} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
+                  <input name="coverImageUrl" defaultValue={exam.coverImageUrl ?? ""} placeholder="Kapak görseli URL" className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
                   <label className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300"><input type="checkbox" name="isPublished" defaultChecked={exam.isPublished} /> Yayınlı</label>
                   <label className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300"><input type="checkbox" name="isActive" defaultChecked={exam.isActive} /> Aktif</label>
+                  <label className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300"><input type="checkbox" name="isForSale" defaultChecked={exam.isForSale} /> Satışta</label>
                 </div>
 
                 <textarea name="description" defaultValue={exam.description ?? ""} rows={2} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-zinc-300" />
+                <textarea name="marketplaceTitle" defaultValue={exam.marketplaceTitle ?? ""} rows={2} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-zinc-300" />
                 <textarea name="instructions" defaultValue={exam.instructions ?? ""} rows={2} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-zinc-300" />
+                <textarea name="marketplaceDescription" defaultValue={exam.marketplaceDescription ?? ""} rows={2} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-zinc-300" />
                 <textarea
                   name="contentJson"
                   defaultValue={JSON.stringify(exam.contentJson, null, 2)}

@@ -19,6 +19,7 @@ import { DashboardShell } from "@/src/components/dashboard/shell";
 
 const studentNavItems = [
   { label: "Dashboard", href: "/dashboard" },
+  { label: "Siparişlerim", href: "/dashboard/orders" },
   { label: "Canlı Ders Kayıtları", href: "/dashboard/live-recordings" },
   { label: "Paylaşılan İçerikler", href: "/dashboard/content-library" },
   { label: "Vocabulary", href: "/vocabulary" },

@@ -28,6 +28,7 @@ const adminNavItems = [
   { label: "Grammar Yönetimi", href: "/admin/grammar" },
   { label: "Vocabulary Yönetimi", href: "/admin/vocabulary" },
   { label: "Sınav Yönetimi", href: "/admin/exams" },
+  { label: "Sınav Satışları", href: "/admin/exam-sales" },
   { label: "Canlı Ders Yönetimi", href: "/admin/live-classes" },
   { label: "Canlı Ders Kayıtları", href: "/admin/live-recordings" },
   { label: "Plan Yönetimi", href: "/admin/plans" },
@@ -211,6 +212,14 @@ export default async function AdminPage() {
                 Icon: FileText,
                 color: "text-emerald-400",
                 bg: "border-emerald-500/20 bg-emerald-500/8",
+              },
+              {
+                title: "Sınav Satışları",
+                desc: "Marketplace sipariş ve gelir takibi",
+                href: "/admin/exam-sales",
+                Icon: TrendingUp,
+                color: "text-cyan-400",
+                bg: "border-cyan-500/20 bg-cyan-500/8",
               },
               {
                 title: "Canlı Dersler",

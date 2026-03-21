@@ -55,7 +55,7 @@ export default async function VocabularyPage() {
 						Her gün 10 akademik kelime ile AI destekli çalışma
 					</h1>
 					<p className="mt-3 max-w-2xl text-slate-300">
-						Bugün için seçilen 10 akademik kelime; İngilizce örnek cümle, Türkçe
+						Bugün için seçilen 10 akademik kelime; Ingilizce örnek cümle, Türkçe
 						anlam ve çeviri ile birlikte hazırlandı.
 					</p>
 				</div>

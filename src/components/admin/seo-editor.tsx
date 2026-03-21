@@ -888,7 +888,7 @@ export default function SeoEditor({
                   value={keywords}
                   onChange={(event) => setField("keywords", event.target.value)}
                   rows={2}
-                  placeholder="YDS hazırlık, yökdil, ydt, online İngilizce, canlı ders, AI çalışma planı"
+                  placeholder="YDS hazırlık, yökdil, ydt, online Ingilizce, canlı ders, AI çalışma planı"
                   className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-amber-400/40"
                 />
               </div>

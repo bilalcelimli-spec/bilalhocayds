@@ -159,7 +159,7 @@ export default async function AdminVocabularyPage() {
           <input name="partOfSpeech" placeholder="Part of speech" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <input name="cefrLevel" placeholder="Seviye (A1-C2)" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <input name="meaningTr" placeholder="Türkçe anlam" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
-          <input name="meaningEn" placeholder="İngilizce anlam" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
+          <input name="meaningEn" placeholder="Ingilizce anlam" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <input name="exampleSentence" placeholder="Örnek cümle" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <button type="submit" className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200">Ekle</button>
         </form>
@@ -194,7 +194,7 @@ export default async function AdminVocabularyPage() {
               <input name="partOfSpeech" defaultValue={w.partOfSpeech ?? ""} placeholder="Part of speech" className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
               <input name="cefrLevel" defaultValue={w.cefrLevel ?? ""} placeholder="Seviye" className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
               <input name="meaningTr" defaultValue={w.meaningTr ?? ""} placeholder="Türkçe anlam" className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
-              <input name="meaningEn" defaultValue={w.meaningEn ?? ""} placeholder="İngilizce anlam" className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
+              <input name="meaningEn" defaultValue={w.meaningEn ?? ""} placeholder="Ingilizce anlam" className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
               <input name="exampleSentence" defaultValue={w.exampleSentence ?? ""} placeholder="Örnek cümle" className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
               <div className="flex gap-2">
                 <button type="submit" className="rounded-lg border border-white/10 px-2 py-1 text-xs text-zinc-300 hover:bg-white/10">Kaydet</button>

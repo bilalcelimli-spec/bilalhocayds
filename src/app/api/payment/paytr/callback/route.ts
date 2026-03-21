@@ -2,8 +2,8 @@ import crypto from "node:crypto";
 
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/src/lib/prisma";
-import { sendLiveClassPurchaseEmail } from "@/src/lib/mail";
+import { examPurchase, prisma } from "@/src/lib/prisma";
+import { sendExamPurchaseEmail, sendLiveClassPurchaseEmail } from "@/src/lib/mail";
 
 function createCallbackHash(merchantOid: string, status: string, totalAmount: string): string {
   const merchantKey = process.env.PAYTR_MERCHANT_KEY;
@@ -119,6 +119,42 @@ export async function POST(request: Request) {
           meetingLink: purchase.liveClass.meetingLink,
           topicOutline: purchase.liveClass.topicOutline,
         }).catch((err) => console.error("[mail] Failed to send live class email:", err));
+      }
+    }
+  }
+
+  if (merchantOid.startsWith("examp")) {
+    const nextStatus = status === "success" ? "PAID" : "FAILED";
+    await examPurchase
+      .updateMany({
+        where: { referenceId: merchantOid },
+        data: {
+          status: nextStatus,
+          providerMessage: status === "success" ? "PayTR callback success" : failedReasonMsg || failedReasonCode || "PayTR callback failed",
+          ...(status === "success" ? { paidAt: new Date() } : {}),
+        },
+      })
+      .catch(() => null);
+
+    if (status === "success") {
+      const purchase = await examPurchase
+        .findFirst({
+          where: { referenceId: merchantOid },
+          include: { examModule: true },
+        })
+        .catch(() => null);
+
+      if (purchase?.examModule) {
+        await sendExamPurchaseEmail({
+          to: purchase.email,
+          fullName: purchase.fullName,
+          examTitle: purchase.examModule.title,
+          examType: purchase.examModule.examType,
+          questionCount: purchase.examModule.questionCount,
+          durationMinutes: purchase.examModule.durationMinutes,
+          price: purchase.amount,
+          loginUrl: `${process.env.APP_URL ?? process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/exam`,
+        }).catch((err) => console.error("[mail] Failed to send exam email:", err));
       }
     }
   }

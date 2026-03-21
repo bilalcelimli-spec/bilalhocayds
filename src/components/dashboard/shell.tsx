@@ -16,6 +16,7 @@ import {
   Library,
   LogOut,
   Menu,
+  Receipt,
   Search,
   Settings,
   Shield,
@@ -46,6 +47,7 @@ type DashboardShellProps = {
 
 const hrefIconMap: Record<string, React.ComponentType<{ className?: string; size?: number }>> = {
   "/dashboard": LayoutDashboard,
+  "/dashboard/orders": Receipt,
   "/vocabulary": Languages,
   "/reading": BookOpen,
   "/grammar": GraduationCap,
@@ -61,6 +63,7 @@ const hrefIconMap: Record<string, React.ComponentType<{ className?: string; size
   "/admin/grammar": GraduationCap,
   "/admin/vocabulary": Languages,
   "/admin/exams": FileText,
+  "/admin/exam-sales": CreditCard,
   "/admin/live-classes": CalendarDays,
   "/admin/live-recordings": Video,
   "/admin/plans": CreditCard,

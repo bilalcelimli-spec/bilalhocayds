@@ -62,6 +62,7 @@ model User {
   sessions       Session[]
   subscriptions  Subscription[]
   liveClassPurchases LiveClassPurchase[]
+  examPurchases  ExamPurchase[]
 }
 
 model StudentProfile {
@@ -353,9 +354,36 @@ model ExamModule {
   questionCount   Int      @default(20)
   description     String?  @db.Text
   instructions    String?  @db.Text
+  marketplaceTitle String?
+  marketplaceDescription String? @db.Text
+  coverImageUrl   String?
+  price           Float?
+  isForSale       Boolean  @default(false)
   contentJson     Json
   isPublished     Boolean  @default(false)
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  purchases       ExamPurchase[]
+}
+
+model ExamPurchase {
+  id              String                  @id @default(cuid())
+  examModuleId    String
+  userId          String?
+  status          LiveClassPurchaseStatus @default(PENDING)
+  amount          Float
+  fullName        String
+  email           String
+  phone           String
+  referenceId     String                  @unique
+  provider        String                  @default("paytr")
+  providerMessage String?
+  paidAt          DateTime?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  examModule ExamModule @relation(fields: [examModuleId], references: [id], onDelete: Cascade)
+  user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
 }

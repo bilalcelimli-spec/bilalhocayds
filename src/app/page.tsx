@@ -1,7 +1,10 @@
+import { getServerSession } from "next-auth";
 import Link from "next/link";
 import { ArrowUpRight, BarChart3, BookOpenText, BrainCircuit, CalendarDays, Clock3, ShieldCheck, Sparkles } from "lucide-react";
+import { authOptions } from "@/src/auth";
 import { Button } from "@/src/components/common/button";
-import { prisma } from "@/src/lib/prisma";
+import { ExamMarketplacePurchase } from "@/src/components/payment/exam-marketplace-purchase";
+import { examModule, prisma } from "@/src/lib/prisma";
 import { LiveClassSinglePurchase } from "@/src/components/payment/live-class-single-purchase";
 import { LeadCaptureSection } from "@/src/components/home/lead-capture-section";
 import { format } from "date-fns";
@@ -56,6 +59,7 @@ function reorderPopularToMiddle<T extends { slug: string }>(items: T[]): T[] {
 }
 
 export default async function HomePage() {
+  const session = await getServerSession(authOptions);
   const rawPlans = await prisma.plan.findMany({
     where: { isActive: true },
     orderBy: { monthlyPrice: "asc" },
@@ -79,6 +83,10 @@ export default async function HomePage() {
   const premiumPlan = plans.find((plan) => plan.slug === "premium") ?? plans[0] ?? null;
   const liveClassEnabledPlanCount = plans.filter((plan) => plan.includesLiveClass).length;
   const standaloneExamPlan = plans.find((plan) => plan.isStandaloneExamProduct && plan.includesExam) ?? null;
+  const marketplaceExams = (await examModule.findMany({
+    where: { isActive: true, isPublished: true, isForSale: true },
+    orderBy: { updatedAt: "desc" },
+  })).slice(0, 3);
 
   const nextLiveClass = await prisma.liveClass.findFirst({
     where: {
@@ -312,6 +320,57 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <section className="mx-auto max-w-7xl px-6 pb-8 pt-2 md:pt-4">
+        <div className="relative overflow-hidden rounded-[36px] border border-emerald-400/18 bg-[radial-gradient(circle_at_top,rgba(110,231,183,0.08),transparent_32%),linear-gradient(135deg,rgba(8,16,14,0.98),rgba(11,14,20,0.95)_40%,rgba(13,37,31,0.95))] px-6 py-8 shadow-[0_30px_100px_rgba(0,0,0,0.32)] md:px-8 md:py-10">
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.04),transparent)] opacity-30" />
+          <div className="pointer-events-none absolute -right-16 top-8 h-44 w-44 rounded-full bg-emerald-400/10 blur-3xl" />
+          <div className="pointer-events-none absolute left-10 top-10 h-24 w-24 rounded-full border border-emerald-300/10" />
+
+          <div className="relative mb-8 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-300">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                Exam Marketplace
+              </div>
+              <h2 className="mt-5 max-w-4xl text-3xl font-black text-white md:text-5xl">İhtiyacın olan sınavı satın al, seviyeni öğren.</h2>
+            </div>
+          </div>
+
+          {marketplaceExams.length > 0 ? (
+            <div className="grid gap-5 xl:grid-cols-3">
+              {marketplaceExams.map((exam) => (
+                <ExamMarketplacePurchase
+                  key={exam.id}
+                  examModuleId={exam.id}
+                  title={exam.marketplaceTitle ?? exam.title}
+                  examType={exam.examType}
+                  description={exam.marketplaceDescription ?? exam.description}
+                  coverImageUrl={exam.coverImageUrl}
+                  questionCount={exam.questionCount}
+                  durationMinutes={exam.durationMinutes}
+                  price={exam.price}
+                  defaultFullName={session?.user?.name ?? ""}
+                  defaultEmail={session?.user?.email ?? ""}
+                  compact
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-[28px] border border-dashed border-white/12 bg-white/[0.03] px-6 py-10 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-300">Exam Marketplace Hazır</p>
+              <h3 className="mt-3 text-2xl font-black text-white">İlk satışa açık sınav burada görünecek</h3>
+              <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-slate-400">
+                Admin panelinden bir sınav eklenip fiyat girildiğinde, `Satışta`, `Yayınlı` ve `Aktif` olarak işaretlendiğinde bu alanda otomatik listelenecek.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <Button href="/exam" className="rounded-2xl bg-white text-zinc-950 hover:bg-zinc-200">Sınav modülünü aç</Button>
+                <Button href="/pricing" variant="secondary" className="rounded-2xl border-white/15 bg-white/5 hover:bg-white/10">Ürün yapısını incele</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
       {standaloneExamPlan ? (
         <section className="mx-auto max-w-7xl px-6 pb-6 pt-2">
           <div className="rounded-[34px] border border-emerald-500/20 bg-[linear-gradient(180deg,rgba(13,28,24,0.96),rgba(10,17,15,0.96))] p-8 shadow-[0_24px_70px_rgba(0,0,0,0.24)]">
@@ -335,7 +394,6 @@ export default async function HomePage() {
           </div>
         </section>
       ) : null}
-
       {/* Yaklaşan Canlı Ders — Tek Ders Satın Alım */}
       {nextLiveClass ? (
         <section className="mx-auto max-w-7xl px-6 pb-4 pt-10">

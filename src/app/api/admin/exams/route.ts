@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 
 import { authOptions } from "@/src/auth";
-import { prisma } from "@/src/lib/prisma";
+import { examModule } from "@/src/lib/prisma";
 
 type ExamPayload = {
   id?: string;
@@ -101,7 +101,7 @@ export async function GET() {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  const exams = await prisma.examModule.findMany({
+  const exams = await examModule.findMany({
     orderBy: { updatedAt: "desc" },
   });
 
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const exam = await prisma.examModule.create({
+  const exam = await examModule.create({
     data: {
       title: data.title,
       slug: data.slug,
@@ -155,7 +155,7 @@ export async function PUT(request: Request) {
     );
   }
 
-  const exam = await prisma.examModule.update({
+  const exam = await examModule.update({
     where: { id: data.id },
     data: {
       title: data.title,
@@ -186,6 +186,6 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Sınav id zorunludur." }, { status: 400 });
   }
 
-  await prisma.examModule.delete({ where: { id } });
+  await examModule.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }

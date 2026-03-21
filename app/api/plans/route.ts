@@ -1,27 +1,28 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 
+type PublicPlanRecord = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  monthlyPrice: number | null;
+  yearlyPrice: number | null;
+  includesLiveClass: boolean;
+  includesAIPlanner: boolean;
+  includesReading: boolean;
+  includesGrammar: boolean;
+  includesVocab: boolean;
+  includesExam: boolean;
+};
+
 // Herkese açık plan listesi (aktif planlar)
 export async function GET() {
   try {
-    const plans = await prisma.plan.findMany({
+    const plans = (await prisma.plan.findMany({
       where: { isActive: true },
       orderBy: { monthlyPrice: "asc" },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        monthlyPrice: true,
-        yearlyPrice: true,
-        includesLiveClass: true,
-        includesAIPlanner: true,
-        includesReading: true,
-        includesGrammar: true,
-        includesVocab: true,
-        includesExam: true,
-      },
-    });
+    })) as unknown as PublicPlanRecord[];
 
     // Mobil uygulamanın beklediği formata dönüştür
     const formatted = plans.map((plan) => {

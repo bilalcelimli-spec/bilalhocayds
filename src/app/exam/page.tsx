@@ -5,7 +5,8 @@ import { ArrowRight, CheckCircle2, Clock3, FileText, LibraryBig } from "lucide-r
 
 import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
-import { prisma } from "@/src/lib/prisma";
+import { ExamMarketplacePurchase } from "@/src/components/payment/exam-marketplace-purchase";
+import { examModule, examPurchase } from "@/src/lib/prisma";
 
 type ExamQuestion = {
   prompt: string;
@@ -20,6 +21,7 @@ type NormalizedExamContent = {
 
 const studentNavItems = [
   { label: "Dashboard", href: "/dashboard" },
+  { label: "Siparişlerim", href: "/dashboard/orders" },
   { label: "Canlı Ders Kayıtları", href: "/dashboard/live-recordings" },
   { label: "Paylaşılan İçerikler", href: "/dashboard/content-library" },
   { label: "Vocabulary", href: "/vocabulary" },
@@ -103,10 +105,25 @@ export default async function ExamPage() {
   if (!session) redirect("/login");
   if (session.user.role === "ADMIN") redirect("/admin");
 
-  const exams = await prisma.examModule.findMany({
+  const exams = await examModule.findMany({
     where: { isActive: true, isPublished: true },
     orderBy: { updatedAt: "desc" },
   });
+  const paidPurchases = session.user.email || session.user.id
+    ? await examPurchase.findMany({
+        where: {
+          status: "PAID",
+          OR: [
+            ...(session.user.id ? [{ userId: session.user.id }] : []),
+            ...(session.user.email ? [{ email: session.user.email.toLowerCase() }] : []),
+          ],
+        },
+        select: { examModuleId: true },
+      })
+    : [];
+  const purchasedExamIds = new Set(paidPurchases.map((purchase) => purchase.examModuleId));
+  const fullExamAccess = session.user.hasExamAccess || session.user.role === "TEACHER";
+  const accessibleExamCount = fullExamAccess ? exams.length : exams.filter((exam) => purchasedExamIds.has(exam.id)).length;
 
   return (
     <DashboardShell
@@ -131,7 +148,7 @@ export default async function ExamPage() {
           { label: "Yayınlı Sınav", value: exams.length, Icon: FileText, tone: "border-emerald-500/20 bg-emerald-500/8", color: "text-emerald-300" },
           { label: "Toplam Soru", value: exams.reduce((sum, exam) => sum + exam.questionCount, 0), Icon: LibraryBig, tone: "border-blue-500/20 bg-blue-500/8", color: "text-blue-300" },
           { label: "En Uzun Oturum", value: `${Math.max(...exams.map((exam) => exam.durationMinutes), 0)} dk`, Icon: Clock3, tone: "border-violet-500/20 bg-violet-500/8", color: "text-violet-300" },
-          { label: "Erişim", value: session.user.hasExamAccess ? "Açık" : "Kilitli", Icon: CheckCircle2, tone: "border-amber-500/20 bg-amber-500/8", color: "text-amber-300" },
+          { label: "Erişim", value: fullExamAccess ? "Tam" : accessibleExamCount > 0 ? `${accessibleExamCount} satın alındı` : "Kilitli", Icon: CheckCircle2, tone: "border-amber-500/20 bg-amber-500/8", color: "text-amber-300" },
         ].map((item) => (
           <div key={item.label} className={`rounded-[28px] border p-5 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur-xl ${item.tone}`}>
             <div className="flex items-center justify-between">
@@ -154,9 +171,9 @@ export default async function ExamPage() {
               Admin panelinden eklenen tüm sınavlar burada listelenir. Aynı modül ayrı ürün olarak satılabilir veya mevcut paketlere entegre edilebilir.
             </p>
           </div>
-          {!session.user.hasExamAccess ? (
+          {!fullExamAccess ? (
             <Link href="/pricing" className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-zinc-200">
-              Sınav erişimini aç
+              Tam modül erişimini aç
               <ArrowRight size={14} />
             </Link>
           ) : null}
@@ -169,6 +186,7 @@ export default async function ExamPage() {
           const previewQuestions = content.questions.length > 0
             ? content.questions.slice(0, 3)
             : content.sections.flatMap((section) => section.questions).slice(0, 3);
+          const hasAccess = fullExamAccess || purchasedExamIds.has(exam.id);
 
           return (
             <article key={exam.id} className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.22)]">
@@ -182,17 +200,18 @@ export default async function ExamPage() {
                   {exam.cefrLevel ? <span className="rounded-xl bg-blue-500/15 px-3 py-1 text-xs font-semibold text-blue-300">{exam.cefrLevel}</span> : null}
                   <span className="rounded-xl bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300">{exam.questionCount} soru</span>
                   <span className="rounded-xl bg-violet-500/15 px-3 py-1 text-xs font-semibold text-violet-300">{exam.durationMinutes} dk</span>
+                  <span className={`rounded-xl px-3 py-1 text-xs font-semibold ${hasAccess ? "bg-emerald-500/15 text-emerald-300" : "bg-amber-500/15 text-amber-300"}`}>{hasAccess ? "Erişim açık" : "Satın alınabilir"}</span>
                 </div>
               </div>
 
-              {exam.instructions ? (
+              {hasAccess && exam.instructions ? (
                 <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Talimatlar</p>
                   <p className="mt-2 text-sm leading-7 text-zinc-300">{exam.instructions}</p>
                 </div>
               ) : null}
 
-              {content.sections.length > 0 ? (
+              {hasAccess && content.sections.length > 0 ? (
                 <div className="mt-4 space-y-3">
                   {content.sections.slice(0, 2).map((section, index) => (
                     <div key={`${exam.id}-section-${index}`} className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3">
@@ -203,7 +222,7 @@ export default async function ExamPage() {
                 </div>
               ) : null}
 
-              {previewQuestions.length > 0 ? (
+              {hasAccess && previewQuestions.length > 0 ? (
                 <div className="mt-4 space-y-3">
                   {previewQuestions.map((question, index) => (
                     <div key={`${exam.id}-question-${index}`} className="rounded-2xl border border-white/8 bg-black/20 px-4 py-3">
@@ -219,6 +238,26 @@ export default async function ExamPage() {
                       ) : null}
                     </div>
                   ))}
+                </div>
+              ) : !hasAccess && exam.isForSale && exam.price && exam.price > 0 ? (
+                <div className="mt-4">
+                  <ExamMarketplacePurchase
+                    examModuleId={exam.id}
+                    title={exam.marketplaceTitle ?? exam.title}
+                    examType={exam.examType}
+                    description={exam.marketplaceDescription ?? exam.description}
+                    coverImageUrl={exam.coverImageUrl}
+                    questionCount={exam.questionCount}
+                    durationMinutes={exam.durationMinutes}
+                    price={exam.price}
+                    defaultFullName={session.user.name ?? ""}
+                    defaultEmail={session.user.email ?? ""}
+                    compact
+                  />
+                </div>
+              ) : !hasAccess ? (
+                <div className="mt-4 rounded-2xl border border-dashed border-amber-400/20 bg-amber-500/5 px-4 py-6 text-sm text-amber-100/80">
+                  Bu sınav için ayrı satın alım ya da sınav modülü erişimi gerekiyor.
                 </div>
               ) : (
                 <div className="mt-4 rounded-2xl border border-dashed border-white/10 px-4 py-6 text-sm text-zinc-500">

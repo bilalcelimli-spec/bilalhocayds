@@ -16,6 +16,7 @@ const adminNavItems = [
   { label: "Reading Yönetimi", href: "/admin/readings" },
   { label: "Grammar Yönetimi", href: "/admin/grammar" },
   { label: "Vocabulary Yönetimi", href: "/admin/vocabulary" },
+  { label: "Sınav Satışları", href: "/admin/exam-sales" },
   { label: "Canlı Ders Yönetimi", href: "/admin/live-classes" },
   { label: "Canlı Ders Kayıtları", href: "/admin/live-recordings" },
   { label: "Plan Yönetimi", href: "/admin/plans" },
@@ -137,6 +138,12 @@ export default async function AdminAccountingPage() {
           className="rounded-xl border border-fuchsia-500/20 bg-fuchsia-500/10 px-3 py-2 text-sm font-semibold text-fuchsia-300 hover:bg-fuchsia-500/20"
         >
           Plan modulu ile yonet
+        </Link>
+        <Link
+          href="/admin/exam-sales"
+          className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-sm font-semibold text-cyan-300 hover:bg-cyan-500/20"
+        >
+          Sınav satışlarını aç
         </Link>
       </div>
 

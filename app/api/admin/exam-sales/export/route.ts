@@ -1,0 +1,1 @@
+export { GET } from "@/src/app/api/admin/exam-sales/export/route";

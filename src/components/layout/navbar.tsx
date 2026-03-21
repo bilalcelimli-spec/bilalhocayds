@@ -39,9 +39,9 @@ export async function Navbar() {
                   bilalhocayds
                 </div>
                 <div className="mt-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
-                  <span className="hidden sm:inline">AI Powered English Platform</span>
+                  <span className="hidden sm:inline">AI Powered ENGLISH Platform</span>
                   <span className="hidden h-1 w-1 rounded-full bg-amber-400 sm:inline-block" />
-                  <span className="hidden sm:inline text-amber-300">Premium Learning Flow</span>
+                  <span className="hidden sm:inline text-amber-300">PREMIUM Learning Flow</span>
                 </div>
               </div>
             </Link>

@@ -160,7 +160,7 @@ Lütfen aşağıdaki JSON formatında tam ve optimize edilmiş öneriler sun:
         primaryKeyword: currentPrimaryKeyword ?? pageLabel,
         secondaryKeywords:
           currentSecondaryKeywords ??
-          "yds hazırlık, yökdil hazırlık, ydt hazırlık, online İngilizce, sınav İngilizcesi",
+          "yds hazırlık, yökdil hazırlık, ydt hazırlık, online Ingilizce, sınav Ingilizcesi",
         searchIntent: currentSearchIntent ?? "commercial",
         title: currentTitle ?? `${pageLabel} | Bilal Hoca YDS`,
         description:
@@ -168,7 +168,7 @@ Lütfen aşağıdaki JSON formatında tam ve optimize edilmiş öneriler sun:
           `YDS, YÖKDİL ve YDT sınavına hazırlanmak için Bilal Hoca'nın AI destekli platformunu keşfet. ${pageLabel} modülü ile sınava adım at.`,
         keywords:
           currentKeywords ??
-          "YDS hazırlık, YÖKDİL, YDT, online İngilizce, canlı ders, AI öğrenme",
+          "YDS hazırlık, YÖKDİL, YDT, online Ingilizce, canlı ders, AI öğrenme",
         ogTitle: currentTitle ?? `${pageLabel} | Bilal Hoca YDS`,
         ogDescription:
           currentDescription ??

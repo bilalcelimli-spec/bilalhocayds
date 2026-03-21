@@ -119,6 +119,85 @@ export async function sendLiveClassPurchaseEmail({
   });
 }
 
+export async function sendExamPurchaseEmail({
+	to,
+	fullName,
+	examTitle,
+	examType,
+	questionCount,
+	durationMinutes,
+	price,
+	loginUrl,
+}: {
+	to: string;
+	fullName: string;
+	examTitle: string;
+	examType: string;
+	questionCount: number;
+	durationMinutes: number;
+	price: number;
+	loginUrl: string;
+}) {
+	const transporter = createTransporter();
+	if (!transporter) {
+		console.warn("[mail] SMTP env vars not configured, skipping exam email.");
+		return;
+	}
+
+	const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "noreply@bilalhocayds.com";
+	const amount = new Intl.NumberFormat("tr-TR", {
+		style: "currency",
+		currency: "TRY",
+		maximumFractionDigits: 0,
+	}).format(price);
+
+	const html = `
+<!DOCTYPE html>
+<html lang="tr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#09090b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 16px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <p style="font-size:13px;font-weight:700;letter-spacing:.15em;color:#34d399;text-transform:uppercase;margin:0;">Bilal Hoca YDS/YDT</p>
+    </div>
+    <div style="background:#18181b;border:1px solid #27272a;border-radius:20px;padding:32px;">
+      <div style="display:inline-block;background:#064e3b;border:1px solid #047857;border-radius:999px;padding:4px 14px;font-size:12px;font-weight:600;color:#6ee7b7;margin-bottom:20px;">
+        ✓ Exam Purchase Confirmed
+      </div>
+      <h1 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#fff;">Merhaba, ${fullName}!</h1>
+      <p style="margin:0 0 24px;font-size:15px;color:#a1a1aa;line-height:1.6;">
+        <strong style="color:#d1fae5;">${examTitle}</strong> sınav paketi satın alımın onaylandı.
+      </p>
+
+      <div style="background:#27272a;border-radius:12px;padding:16px 20px;margin-bottom:20px;">
+        <table style="width:100%;border-collapse:collapse;">
+          <tr><td style="padding:6px 0;font-size:13px;color:#71717a;width:40%;">Sınav</td><td style="padding:6px 0;font-size:14px;color:#fff;font-weight:600;">${examTitle}</td></tr>
+          <tr><td style="padding:6px 0;font-size:13px;color:#71717a;">Tür</td><td style="padding:6px 0;font-size:14px;color:#fff;font-weight:600;">${examType}</td></tr>
+          <tr><td style="padding:6px 0;font-size:13px;color:#71717a;">Soru</td><td style="padding:6px 0;font-size:14px;color:#fff;font-weight:600;">${questionCount}</td></tr>
+          <tr><td style="padding:6px 0;font-size:13px;color:#71717a;">Süre</td><td style="padding:6px 0;font-size:14px;color:#fff;font-weight:600;">${durationMinutes} dakika</td></tr>
+          <tr><td style="padding:6px 0;font-size:13px;color:#71717a;">Tutar</td><td style="padding:6px 0;font-size:14px;color:#fff;font-weight:600;">${amount}</td></tr>
+        </table>
+      </div>
+
+      <a href="${loginUrl}" style="display:block;text-align:center;background:#10b981;color:#04130d;font-size:15px;font-weight:700;padding:14px 24px;border-radius:12px;text-decoration:none;margin-bottom:24px;">Sınavlarına Git →</a>
+
+      <p style="font-size:12px;color:#52525b;line-height:1.6;margin:0;">
+        Giriş yaptıktan sonra exam marketplace içinden satın aldığın sınavlara erişebilirsin.
+        Herhangi bir sorun yaşarsan <a href="mailto:${from}" style="color:#34d399;">${from}</a> adresine yazabilirsin.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+	await transporter.sendMail({
+		from: `"Bilal Hoca YDS" <${from}>`,
+		to,
+		subject: `✅ Sınav Satın Alımı: ${examTitle}`,
+		html,
+	});
+}
+
 export async function sendWelcomeEmail({
   to,
   fullName,
