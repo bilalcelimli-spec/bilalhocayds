@@ -78,6 +78,7 @@ export default async function PricingDetailPage({ params, searchParams }: PagePr
       includesReading: true,
       includesGrammar: true,
       includesVocab: true,
+      includesExam: true,
     },
   });
 
@@ -90,6 +91,7 @@ export default async function PricingDetailPage({ params, searchParams }: PagePr
     plan.includesReading && "Reading modülü ile metin ve analiz çalışması",
     plan.includesGrammar && "Grammar modülü ile konu ve soru takibi",
     plan.includesAIPlanner && "AI çalışma planı ile günlük yönlendirme",
+    plan.includesExam && "Sınav modülü ile süreli deneme ve cevap anahtarı erişimi",
     plan.includesLiveClass && "Haftada 4 saat canlı ders erişimi ve soru çözüm desteği",
   ].filter((item): item is string => Boolean(item));
 

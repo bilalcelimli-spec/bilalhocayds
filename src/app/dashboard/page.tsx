@@ -6,6 +6,7 @@ import {
   BookOpen,
   CheckCircle2,
   Circle,
+  FileText,
   Flame,
   GraduationCap,
   Languages,
@@ -19,9 +20,11 @@ import { DashboardShell } from "@/src/components/dashboard/shell";
 const studentNavItems = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Canlı Ders Kayıtları", href: "/dashboard/live-recordings" },
+  { label: "Paylaşılan İçerikler", href: "/dashboard/content-library" },
   { label: "Vocabulary", href: "/vocabulary" },
   { label: "Reading", href: "/reading" },
   { label: "Grammar", href: "/grammar" },
+  { label: "Sınav", href: "/exam" },
   { label: "Canlı Dersler", href: "/live-classes" },
   { label: "Fiyatlandırma", href: "/pricing" },
 ];
@@ -30,7 +33,7 @@ const todayTasks = [
   { id: 1, label: "20 kelime kartını tamamla", module: "Vocabulary", done: false },
   { id: 2, label: "1 reading metnini oku ve soruları çöz", module: "Reading", done: false },
   { id: 3, label: "Relative Clauses konusunu tekrar et", module: "Grammar", done: false },
-  { id: 4, label: "10 soruluk mini practice yap", module: "Mixed", done: false },
+  { id: 4, label: "1 süreli mini deneme çöz", module: "Exam", done: false },
 ];
 
 const moduleCards = [
@@ -57,6 +60,14 @@ const moduleCards = [
     Icon: GraduationCap,
     gradient: "from-violet-600 to-violet-700",
     stat: "1 konu",
+  },
+  {
+    title: "Sınav",
+    desc: "API ile eklenen deneme sınavlarını süreli çöz",
+    href: "/exam",
+    Icon: FileText,
+    gradient: "from-emerald-600 to-emerald-700",
+    stat: "Deneme seti",
   },
   {
     title: "Canlı Ders",
@@ -93,7 +104,7 @@ export default async function DashboardPage() {
           { label: "Bugünkü Kelimeler", value: "20", Icon: Languages, color: "text-blue-300", tone: "border-blue-500/20 bg-blue-500/8" },
           { label: "Reading Görevi", value: "1", Icon: BookOpen, color: "text-indigo-300", tone: "border-indigo-500/20 bg-indigo-500/8" },
           { label: "Grammar Alıştırması", value: "1", Icon: GraduationCap, color: "text-violet-300", tone: "border-violet-500/20 bg-violet-500/8" },
-          { label: "Günlük Seri", value: "7 gün", Icon: Flame, color: "text-orange-300", tone: "border-orange-500/20 bg-orange-500/8" },
+          { label: "Sınav Hedefi", value: session.user.hasExamAccess ? "Açık" : "Kilitli", Icon: FileText, color: "text-emerald-300", tone: "border-emerald-500/20 bg-emerald-500/8" },
         ].map((s) => (
           <div
             key={s.label}
@@ -195,7 +206,9 @@ export default async function DashboardPage() {
       <div>
         <h2 className="mb-4 text-lg font-bold text-white">Modüllere Git</h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {moduleCards.map((m) => (
+          {moduleCards
+            .filter((m) => m.href !== "/exam" || session.user.hasExamAccess)
+            .map((m) => (
             <Link
               key={m.href}
               href={m.href}
@@ -220,6 +233,36 @@ export default async function DashboardPage() {
           ))}
         </div>
       </div>
+
+      {!session.user.hasExamAccess ? (
+        <div className="rounded-[30px] border border-emerald-500/20 bg-gradient-to-r from-emerald-900/25 via-teal-900/15 to-cyan-900/15 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.18)] sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15">
+                <FileText size={18} className="text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">
+                  Yeni Modül
+                </p>
+                <h3 className="mt-1 text-base font-black text-white">
+                  Sınav modülü ayrı olarak da açılabiliyor
+                </h3>
+                <p className="mt-1 text-sm text-zinc-300">
+                  Süreli deneme akışı ve admin tarafından eklenen sınav setleri için erişimi paketine ekleyebilir veya ayrı ürün olarak satın alabilirsin.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/pricing"
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-zinc-200"
+            >
+              Sınav erişimini aç
+              <ArrowRight size={14} />
+            </Link>
+          </div>
+        </div>
+      ) : null}
 
       <div className="rounded-[30px] border border-fuchsia-500/20 bg-gradient-to-r from-fuchsia-900/25 via-indigo-900/15 to-cyan-900/15 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.18)] sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

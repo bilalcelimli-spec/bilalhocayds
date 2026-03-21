@@ -70,12 +70,15 @@ export default async function HomePage() {
       includesReading: true,
       includesGrammar: true,
       includesVocab: true,
+      includesExam: true,
+      isStandaloneExamProduct: true,
     },
   });
 
   const plans = reorderPopularToMiddle(rawPlans);
   const premiumPlan = plans.find((plan) => plan.slug === "premium") ?? plans[0] ?? null;
   const liveClassEnabledPlanCount = plans.filter((plan) => plan.includesLiveClass).length;
+  const standaloneExamPlan = plans.find((plan) => plan.isStandaloneExamProduct && plan.includesExam) ?? null;
 
   const nextLiveClass = await prisma.liveClass.findFirst({
     where: {
@@ -257,6 +260,7 @@ export default async function HomePage() {
               plan.includesReading && "Reading modülü",
               plan.includesGrammar && "Grammar modülü",
               plan.includesAIPlanner && "AI çalışma planı",
+              plan.includesExam && "Sınav modülü",
               plan.includesLiveClass && "Haftada 4 saat canlı ders erişimi",
             ].filter((item): item is string => Boolean(item));
 
@@ -307,6 +311,30 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
+
+      {standaloneExamPlan ? (
+        <section className="mx-auto max-w-7xl px-6 pb-6 pt-2">
+          <div className="rounded-[34px] border border-emerald-500/20 bg-[linear-gradient(180deg,rgba(13,28,24,0.96),rgba(10,17,15,0.96))] p-8 shadow-[0_24px_70px_rgba(0,0,0,0.24)]">
+            <div className="grid gap-6 md:grid-cols-[1.2fr_0.8fr] md:items-center">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-300">Yeni Ürün</p>
+                <h2 className="mt-3 text-3xl font-black text-white">Sınav modülü artık ayrı da satılıyor</h2>
+                <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-300">
+                  Paket dışında sadece sınav çözüm akışına ihtiyaç duyan öğrenciler için ayrı satın alınabilen exam access ürünü açıldı. Admin isterse aynı erişimi mevcut paketlere de dahil edebilir.
+                </p>
+              </div>
+              <div className="flex flex-col gap-3 md:items-end">
+                <Button href={`/pricing/${standaloneExamPlan.slug}`} className="w-full md:w-auto rounded-2xl bg-white text-zinc-950 hover:bg-zinc-200">
+                  Sınav ürününü incele
+                </Button>
+                <Button href="/exam" variant="secondary" className="w-full md:w-auto rounded-2xl border-white/15 bg-white/5 hover:bg-white/10">
+                  Sınav modülünü gör
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {/* Yaklaşan Canlı Ders — Tek Ders Satın Alım */}
       {nextLiveClass ? (

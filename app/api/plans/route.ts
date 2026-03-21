@@ -19,6 +19,7 @@ export async function GET() {
         includesReading: true,
         includesGrammar: true,
         includesVocab: true,
+        includesExam: true,
       },
     });
 
@@ -28,6 +29,7 @@ export async function GET() {
       if (plan.includesVocab) features.push("AI Vocabulary Engine");
       if (plan.includesReading) features.push("AI Reading Practice");
       if (plan.includesGrammar) features.push("AI Grammar Trainer");
+      if (plan.includesExam) features.push("Sınav Modülü");
       if (plan.includesLiveClass) features.push("Canlı Dersler");
       if (plan.includesAIPlanner) features.push("AI Çalışma Planlayıcı");
 

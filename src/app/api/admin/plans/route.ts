@@ -16,6 +16,8 @@ type PlanPayload = {
   includesReading: boolean;
   includesGrammar: boolean;
   includesVocab: boolean;
+  includesExam: boolean;
+  isStandaloneExamProduct: boolean;
   isActive: boolean;
 };
 
@@ -56,6 +58,8 @@ function parsePlanPayload(data: unknown): PlanPayload {
     includesReading: input.includesReading !== false,
     includesGrammar: input.includesGrammar !== false,
     includesVocab: input.includesVocab !== false,
+    includesExam: Boolean(input.includesExam),
+    isStandaloneExamProduct: Boolean(input.isStandaloneExamProduct),
     isActive: input.isActive !== false,
   };
 }
@@ -96,6 +100,8 @@ export async function POST(request: Request) {
       includesReading: data.includesReading,
       includesGrammar: data.includesGrammar,
       includesVocab: data.includesVocab,
+      includesExam: data.includesExam,
+      isStandaloneExamProduct: data.isStandaloneExamProduct,
       isActive: data.isActive,
     },
   });
@@ -129,6 +135,8 @@ export async function PUT(request: Request) {
       includesReading: data.includesReading,
       includesGrammar: data.includesGrammar,
       includesVocab: data.includesVocab,
+      includesExam: data.includesExam,
+      isStandaloneExamProduct: data.isStandaloneExamProduct,
       isActive: data.isActive,
     },
   });

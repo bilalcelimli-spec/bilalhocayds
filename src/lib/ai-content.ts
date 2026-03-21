@@ -1276,12 +1276,12 @@ async function createAiVocabularyExamples(items: VocabularySeed[], profile: AiSt
         const word = typeof entry?.word === "string" ? entry.word.trim().toLowerCase() : "";
         const examples = Array.isArray(entry?.examples)
           ? entry.examples
-              .map((example) => {
+              .map((example: { en?: unknown; tr?: unknown }) => {
                 const en = typeof example?.en === "string" ? example.en.trim() : "";
                 const tr = typeof example?.tr === "string" ? example.tr.trim() : "";
                 return en && tr ? { en, tr } : null;
               })
-              .filter((example): example is { en: string; tr: string } => Boolean(example))
+              .filter((example: { en: string; tr: string } | null): example is { en: string; tr: string } => Boolean(example))
           : [];
         const englishDefinition = typeof entry?.englishDefinition === "string" ? entry.englishDefinition.trim() : "";
         const synonym = typeof entry?.synonym === "string" ? entry.synonym.trim() : "";
@@ -1289,8 +1289,8 @@ async function createAiVocabularyExamples(items: VocabularySeed[], profile: AiSt
         const collocation = typeof entry?.collocation === "string" ? entry.collocation.trim() : "";
         const wordFamily = Array.isArray(entry?.wordFamily)
           ? entry.wordFamily
-              .map((value) => (typeof value === "string" ? value.trim() : ""))
-              .filter((value) => value.length > 0)
+              .map((value: unknown) => (typeof value === "string" ? value.trim() : ""))
+              .filter((value: string) => value.length > 0)
               .slice(0, 4)
           : [];
         const examNote = typeof entry?.examNote === "string" ? entry.examNote.trim() : "";
@@ -1364,8 +1364,8 @@ async function createAiReadingPassage(
 
   const keyVocabulary = Array.isArray(parsed.keyVocabulary)
     ? parsed.keyVocabulary
-        .map((word) => (typeof word === "string" ? word.trim().toLowerCase() : ""))
-        .filter((word) => word.length >= 4)
+        .map((word: unknown) => (typeof word === "string" ? word.trim().toLowerCase() : ""))
+        .filter((word: string) => word.length >= 4)
         .slice(0, 5)
     : [];
 
@@ -1407,7 +1407,7 @@ async function createAiReadingQuestions(
   });
 
   if (!aiText) {
-    return createReadingQuestions(passage);
+    return createReadingQuestionFallbacks(passage);
   }
 
   const parsed = extractJsonArray(aiText);
@@ -1417,7 +1417,7 @@ async function createAiReadingQuestions(
 
   const allowedTypes = new Set(["main-idea", "detail", "inference", "vocabulary", "tone"]);
   const normalized = parsed
-    .map((item) => {
+    .map((item): ReadingQuestion | null => {
       const type = typeof item?.type === "string" ? item.type : "detail";
       const question = typeof item?.question === "string" ? item.question.trim() : "";
       const answer = typeof item?.answer === "string" ? item.answer.trim() : "";
@@ -1425,13 +1425,13 @@ async function createAiReadingQuestions(
       const skillMeasured = typeof item?.skillMeasured === "string" ? item.skillMeasured.trim() : type;
       const whyOthersWrong = Array.isArray(item?.whyOthersWrong)
         ? item.whyOthersWrong
-            .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
-            .filter((entry) => entry.length > 0)
+            .map((entry: unknown) => (typeof entry === "string" ? entry.trim() : ""))
+            .filter((entry: string) => entry.length > 0)
         : [];
       const options = Array.isArray(item?.options)
         ? item.options
-            .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
-            .filter((entry) => entry.length > 0)
+            .map((entry: unknown) => (typeof entry === "string" ? entry.trim() : ""))
+            .filter((entry: string) => entry.length > 0)
         : undefined;
 
       if (!allowedTypes.has(type) || question.length < 8 || answer.length < 4 || explanation.length < 8) {
@@ -1446,7 +1446,7 @@ async function createAiReadingQuestions(
         answer,
         explanation,
         whyOthersWrong,
-        options,
+        ...(options ? { options } : {}),
       };
     })
     .filter((item): item is ReadingQuestion => Boolean(item));

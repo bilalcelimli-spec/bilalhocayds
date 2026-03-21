@@ -31,6 +31,22 @@ enum LiveClassPurchaseStatus {
   FAILED
 }
 
+enum ContentSourceType {
+  TEXT
+  WEB
+  PDF
+  VIDEO
+  AUDIO
+  DOCUMENT
+  OTHER
+}
+
+enum ContentGenerationStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 model User {
   id             String          @id @default(cuid())
   name           String?
@@ -87,6 +103,8 @@ model Plan {
   includesReading   Boolean  @default(true)
   includesGrammar   Boolean  @default(true)
   includesVocab     Boolean  @default(true)
+  includesExam      Boolean  @default(false)
+  isStandaloneExamProduct Boolean @default(false)
   isActive          Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -283,4 +301,61 @@ model SeoConfig {
   contentNotes    String?  @db.Text
   updatedAt       DateTime @updatedAt
   createdAt       DateTime @default(now())
+}
+
+model ContentSource {
+  id           String            @id @default(cuid())
+  title        String
+  sourceType   ContentSourceType
+  sourceUrl    String?
+  mimeType     String?
+  rawText      String?           @db.Text
+  extractedText String           @db.Text
+  styleNotes   String?           @db.Text
+  tags         String[]          @default([])
+  metadataJson Json?
+  createdById  String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}
+
+model ContentGenerationRun {
+  id                 String                  @id @default(cuid())
+  title              String
+  status             ContentGenerationStatus @default(COMPLETED)
+  isApproved         Boolean                 @default(false)
+  approvedAt         DateTime?
+  approvedById       String?
+  isPublished        Boolean                 @default(false)
+  publishedAt        DateTime?
+  publishedById      String?
+  itemType           String
+  outputFormat       String
+  itemCount          Int
+  sourceIds          String[]                @default([])
+  sourceSnapshotJson Json?
+  styleAnalysis      String?                 @db.Text
+  instructions       String?                 @db.Text
+  generatedItemsJson Json?
+  generatedText      String?                 @db.Text
+  createdById        String?
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+}
+
+model ExamModule {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  examType        String
+  cefrLevel       String?
+  durationMinutes Int      @default(45)
+  questionCount   Int      @default(20)
+  description     String?  @db.Text
+  instructions    String?  @db.Text
+  contentJson     Json
+  isPublished     Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

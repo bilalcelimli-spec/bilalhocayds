@@ -2,6 +2,7 @@ import { Button } from "@/src/components/common/button";
 import { AiArticleReader } from "@/src/components/reading/ai-article-reader";
 import { createAiProfileOverridesFromStudentContext, getDailyReadingModule, getDailyVocabulary } from "@/src/lib/ai-content";
 import { authOptions } from "@/src/auth";
+import { getPublishedContentByModule } from "@/src/lib/content-creator-engine";
 import { prisma } from "@/src/lib/prisma";
 import { getServerSession } from "next-auth";
 
@@ -30,9 +31,10 @@ export default async function ReadingPage() {
 		focusSkill: "reading",
 	});
 
-	const [reading, vocabulary] = await Promise.all([
+	const [reading, vocabulary, publishedReadingRuns] = await Promise.all([
 		getDailyReadingModule({ interestTags: profile?.interestTags ?? [], profile: aiProfile }),
 		getDailyVocabulary({ profile: { ...aiProfile, focusSkill: "vocabulary" } }),
+		getPublishedContentByModule("reading", 3),
 	]);
 	const mainPassage = reading.passages[0];
 	const supportingPassages = reading.passages.slice(1);
@@ -117,6 +119,30 @@ export default async function ReadingPage() {
 			</div>
 
 			<div className="mt-10 space-y-6">
+				{publishedReadingRuns.length ? (
+					<div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/[0.06] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.18)]">
+						<div className="flex flex-wrap items-center justify-between gap-3">
+							<div>
+								<p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300">Published From Content Engine</p>
+								<h2 className="mt-2 text-xl font-bold text-white">Admin onaylı ek reading içerikleri</h2>
+							</div>
+							<Button href="/dashboard/content-library" variant="secondary" size="sm">
+								Tümünü Gör
+							</Button>
+						</div>
+						<div className="mt-5 grid gap-4 lg:grid-cols-3">
+							{publishedReadingRuns.map((run) => (
+								<div key={run.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+									<p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">{run.itemType}</p>
+									<h3 className="mt-2 text-base font-bold text-white">{run.title}</h3>
+									<p className="mt-2 text-sm leading-7 text-slate-300">{run.generatedText?.slice(0, 240) ?? run.styleAnalysis ?? ""}</p>
+									<p className="mt-3 text-[11px] uppercase tracking-[0.18em] text-slate-500">{run.items.length} içerik · {run.publishedAt ? new Date(run.publishedAt).toLocaleDateString("tr-TR") : ""}</p>
+								</div>
+							))}
+						</div>
+					</div>
+				) : null}
+
 				<AiArticleReader
 					passage={mainPassage}
 					generatedAt={reading.generatedAt}

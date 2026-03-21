@@ -1,6 +1,7 @@
 import { Button } from "@/src/components/common/button";
 import { createAiProfileOverridesFromStudentContext, getDailyGrammarModule } from "@/src/lib/ai-content";
 import { authOptions } from "@/src/auth";
+import { getPublishedContentByModule } from "@/src/lib/content-creator-engine";
 import { prisma } from "@/src/lib/prisma";
 import { getServerSession } from "next-auth";
 
@@ -21,15 +22,18 @@ export default async function GrammarPage() {
 		  })
 		: null;
 
-	const grammar = await getDailyGrammarModule({
-		profile: createAiProfileOverridesFromStudentContext({
-			targetExam: profile?.targetExam,
-			currentLevel: profile?.currentLevel,
-			targetScore: profile?.targetScore,
-			dailyGoalMinutes: profile?.dailyGoalMinutes,
-			interestTags: profile?.interestTags,
+	const [grammar, publishedGrammarRuns] = await Promise.all([
+		getDailyGrammarModule({
+			profile: createAiProfileOverridesFromStudentContext({
+				targetExam: profile?.targetExam,
+				currentLevel: profile?.currentLevel,
+				targetScore: profile?.targetScore,
+				dailyGoalMinutes: profile?.dailyGoalMinutes,
+				interestTags: profile?.interestTags,
+			}),
 		}),
-	});
+		getPublishedContentByModule("grammar", 3),
+	]);
 
 	const activityGroups = [
 		{ label: "Multiple Choice", items: grammar.activitySet.multipleChoice },
@@ -99,6 +103,29 @@ export default async function GrammarPage() {
 
 			<div className="mt-10 grid gap-6 lg:grid-cols-3">
 				<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl lg:col-span-2">
+					{publishedGrammarRuns.length ? (
+						<div className="mb-6 rounded-3xl border border-emerald-500/20 bg-emerald-500/[0.06] p-5">
+							<div className="flex flex-wrap items-center justify-between gap-3">
+								<div>
+									<p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300">Published From Content Engine</p>
+									<h2 className="mt-2 text-lg font-bold text-white">Modüle dağıtılan ek grammar setleri</h2>
+								</div>
+								<Button href="/dashboard/content-library" variant="secondary" size="sm">
+									Kütüphaneyi Aç
+								</Button>
+							</div>
+							<div className="mt-4 space-y-3">
+								{publishedGrammarRuns.map((run) => (
+									<div key={run.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+										<p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">{run.itemType}</p>
+										<h3 className="mt-2 text-base font-bold text-white">{run.title}</h3>
+										<p className="mt-2 text-sm leading-7 text-slate-300">{run.generatedText?.slice(0, 260) ?? run.styleAnalysis ?? ""}</p>
+									</div>
+								))}
+							</div>
+						</div>
+					) : null}
+
 					<div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 						<div>
 							<h2 className="text-xl font-bold text-white">Concept Explanation</h2>

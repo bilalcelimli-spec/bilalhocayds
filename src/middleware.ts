@@ -1,7 +1,7 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
-const protectedRoutes = ["/dashboard", "/teacher", "/vocabulary", "/reading", "/grammar"];
+const protectedRoutes = ["/dashboard", "/teacher", "/vocabulary", "/reading", "/grammar", "/exam"];
 const adminRoutes = ["/admin"];
 const authRoutes = ["/login", "/register"];
 const studentAllowedWithoutSubscription = ["/pricing", "/payment/success", "/payment/failure", "/login", "/dashboard/live-recordings"];
@@ -31,6 +31,24 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith(route),
   );
 
+  if (isStudent && hasActiveSubscription) {
+    if (pathname.startsWith("/reading") && token?.hasReadingAccess !== true) {
+      return NextResponse.redirect(new URL("/pricing", req.url));
+    }
+
+    if (pathname.startsWith("/grammar") && token?.hasGrammarAccess !== true) {
+      return NextResponse.redirect(new URL("/pricing", req.url));
+    }
+
+    if (pathname.startsWith("/vocabulary") && token?.hasVocabAccess !== true) {
+      return NextResponse.redirect(new URL("/pricing", req.url));
+    }
+
+    if (pathname.startsWith("/exam") && token?.hasExamAccess !== true) {
+      return NextResponse.redirect(new URL("/pricing", req.url));
+    }
+  }
+
   if (isStudent && !hasActiveSubscription && (isProtected || isAuth) && !isAllowedWithoutSubscription) {
     return NextResponse.redirect(new URL("/pricing", req.url));
   }
@@ -52,6 +70,7 @@ export const config = {
     "/vocabulary/:path*",
     "/reading/:path*",
     "/grammar/:path*",
+    "/exam/:path*",
     "/admin/:path*",
     "/pricing/:path*",
     "/payment/success",

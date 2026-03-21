@@ -34,6 +34,8 @@ export default async function PricingPage() {
 				includesReading: true,
 				includesGrammar: true,
 				includesVocab: true,
+				includesExam: true,
+				isStandaloneExamProduct: true,
 			},
 		}),
 	]);
@@ -42,6 +44,7 @@ export default async function PricingPage() {
 	const isLoggedInStudent = session?.user?.role === "STUDENT";
 	const premiumPlan = plans.find((plan) => plan.slug === "premium") ?? plans[0] ?? null;
 	const liveClassPlanCount = plans.filter((plan) => plan.includesLiveClass).length;
+	const standaloneExamPlan = plans.find((plan) => plan.isStandaloneExamProduct && plan.includesExam) ?? null;
 
 	return (
 		<div className="mx-auto max-w-7xl px-6 py-10">
@@ -148,6 +151,23 @@ export default async function PricingPage() {
 			<div id="pricing-cards">
 				<PricingCheckout plans={plans} />
 			</div>
+
+			{standaloneExamPlan ? (
+				<div className="mt-12 rounded-[32px] border border-emerald-500/20 bg-[linear-gradient(180deg,rgba(13,28,24,0.96),rgba(10,17,15,0.96))] p-8 shadow-[0_24px_70px_rgba(0,0,0,0.24)]">
+					<div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+						<div>
+							<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-300">Ayrı Satın Alma</p>
+							<h2 className="mt-3 text-3xl font-black text-white">Sınav modülünü tek başına da alabilirsin</h2>
+							<p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-300">
+								API ile eklenen deneme sınavları, süreli sınav akışı ve cevap anahtarı erişimi bu ürünle tek başına da açılabilir.
+							</p>
+						</div>
+						<Link href={`/pricing/${standaloneExamPlan.slug}`} className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-200">
+							Sınav ürününü aç
+						</Link>
+					</div>
+				</div>
+			) : null}
 
 			<div className="mt-12 rounded-3xl border border-white/8 bg-zinc-900/60 p-8 backdrop-blur-xl">
 				<div className="grid gap-6 md:grid-cols-3">

@@ -13,6 +13,8 @@ type Plan = {
   includesReading?: boolean;
   includesGrammar?: boolean;
   includesVocab?: boolean;
+  includesExam?: boolean;
+  isStandaloneExamProduct?: boolean;
   isActive?: boolean;
 };
 
@@ -31,6 +33,8 @@ type PlanFormState = {
   includesReading: boolean;
   includesGrammar: boolean;
   includesVocab: boolean;
+  includesExam: boolean;
+  isStandaloneExamProduct: boolean;
   isActive: boolean;
 };
 
@@ -45,6 +49,8 @@ const emptyForm = (): PlanFormState => ({
   includesReading: true,
   includesGrammar: true,
   includesVocab: true,
+  includesExam: false,
+  isStandaloneExamProduct: false,
   isActive: true,
 });
 
@@ -118,6 +124,8 @@ export default function AdminPlans({ initialPlans }: AdminPlansProps) {
       includesReading: plan.includesReading ?? true,
       includesGrammar: plan.includesGrammar ?? true,
       includesVocab: plan.includesVocab ?? true,
+      includesExam: plan.includesExam ?? false,
+      isStandaloneExamProduct: plan.isStandaloneExamProduct ?? false,
       isActive: plan.isActive ?? true,
     });
   }
@@ -221,7 +229,9 @@ export default function AdminPlans({ initialPlans }: AdminPlansProps) {
               <label><input className="mr-2" name="includesReading" type="checkbox" checked={form.includesReading} onChange={handleChange} />Reading modülü</label>
               <label><input className="mr-2" name="includesGrammar" type="checkbox" checked={form.includesGrammar} onChange={handleChange} />Grammar modülü</label>
               <label><input className="mr-2" name="includesAIPlanner" type="checkbox" checked={form.includesAIPlanner} onChange={handleChange} />AI çalışma planı</label>
+              <label><input className="mr-2" name="includesExam" type="checkbox" checked={form.includesExam} onChange={handleChange} />Sınav modülü</label>
               <label><input className="mr-2" name="includesLiveClass" type="checkbox" checked={form.includesLiveClass} onChange={handleChange} />Canlı ders erişimi</label>
+              <label><input className="mr-2" name="isStandaloneExamProduct" type="checkbox" checked={form.isStandaloneExamProduct} onChange={handleChange} />Ana sayfada ayrı sınav ürünü olarak sat</label>
               <label><input className="mr-2" name="isActive" type="checkbox" checked={form.isActive} onChange={handleChange} />Paket aktif</label>
             </div>
 
@@ -254,7 +264,9 @@ export default function AdminPlans({ initialPlans }: AdminPlansProps) {
             plan.includesReading && "Reading",
             plan.includesGrammar && "Grammar",
             plan.includesAIPlanner && "AI planı",
+            plan.includesExam && "Sınav",
             plan.includesLiveClass && "Canlı ders",
+            plan.isStandaloneExamProduct && "Ayrı sınav ürünü",
           ].filter((item): item is string => Boolean(item));
 
           return (

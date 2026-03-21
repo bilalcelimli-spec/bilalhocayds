@@ -16,6 +16,7 @@ type PricingPlan = {
   includesReading: boolean;
   includesGrammar: boolean;
   includesVocab: boolean;
+  includesExam: boolean;
 };
 
 type PricingCheckoutProps = {
@@ -73,6 +74,7 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
             plan.includesReading && "Reading modülü",
             plan.includesGrammar && "Grammar modülü",
             plan.includesAIPlanner && "AI çalışma planı",
+            plan.includesExam && "Sınav modülü",
             plan.includesLiveClass && "Haftada 4 saat canlı ders erişimi",
           ].filter((feature): feature is string => Boolean(feature));
 

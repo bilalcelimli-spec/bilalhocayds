@@ -5,6 +5,7 @@ import {
   ArrowRight,
   BookOpen,
   CalendarDays,
+  FileText,
   GraduationCap,
   Languages,
   PlusCircle,
@@ -21,9 +22,11 @@ import { prisma } from "@/src/lib/prisma";
 
 const teacherNavItems = [
   { label: "Dashboard", href: "/teacher" },
+  { label: "Paylaşılan İçerikler", href: "/dashboard/content-library" },
   { label: "Reading Modülü", href: "/reading" },
   { label: "Grammar Modülü", href: "/grammar" },
   { label: "Vocabulary Modülü", href: "/vocabulary" },
+  { label: "Sınav Modülü", href: "/exam" },
   { label: "Canlı Dersler", href: "/live-classes" },
   { label: "Admin Paneli", href: "/admin" },
 ];
@@ -249,6 +252,13 @@ export default async function TeacherPage() {
               Icon: CalendarDays,
               color: "text-teal-400",
               bg: "bg-teal-500/10 border-teal-500/20",
+            },
+            {
+              title: "Sınav Modülü",
+              href: "/exam",
+              Icon: FileText,
+              color: "text-emerald-400",
+              bg: "bg-emerald-500/10 border-emerald-500/20",
             },
             {
               title: "Kelime Havuzu",
