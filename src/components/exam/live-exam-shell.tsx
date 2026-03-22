@@ -1,33 +1,120 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
-import type { MockExamWorkspace } from "@/src/lib/mock-exam-workspace";
+import { formatDurationLabel } from "@/src/lib/exam-workspace";
 
 type LiveExamShellProps = {
-  workspace: MockExamWorkspace;
-  remainingTimeLabel: string;
   attemptId: string;
+  examSlug: string;
+  title: string;
+  totalQuestions: number;
+  remainingSeconds: number;
+  questions: Array<{
+    id: string;
+    number: number;
+    section: string;
+    prompt: string;
+    options: string[];
+    selectedAnswer: string | null;
+    isFlaggedForReview: boolean;
+  }>;
 };
 
-export function LiveExamShell({ workspace, remainingTimeLabel, attemptId }: LiveExamShellProps) {
+export function LiveExamShell({
+  attemptId,
+  examSlug,
+  title,
+  totalQuestions,
+  remainingSeconds: initialRemainingSeconds,
+  questions,
+}: LiveExamShellProps) {
+  const router = useRouter();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [remainingSeconds, setRemainingSeconds] = useState(initialRemainingSeconds);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>(
-    Object.fromEntries(
-      workspace.questions.map((question) => [question.id, question.selected ?? ""]),
-    ),
+    Object.fromEntries(questions.map((question) => [question.id, question.selectedAnswer ?? ""])),
   );
   const [flaggedQuestions, setFlaggedQuestions] = useState<Record<string, boolean>>(
-    Object.fromEntries(
-      workspace.questions.map((question) => [question.id, Boolean(question.flagged)]),
-    ),
+    Object.fromEntries(questions.map((question) => [question.id, question.isFlaggedForReview])),
   );
+  const [submitPending, setSubmitPending] = useState(false);
+  const [savePendingQuestionId, setSavePendingQuestionId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const hasAutoSubmittedRef = useRef(false);
 
-  const currentQuestion = workspace.questions[currentQuestionIndex];
-  const answeredCount = useMemo(
-    () => Object.values(selectedAnswers).filter(Boolean).length,
-    [selectedAnswers],
-  );
+  const currentQuestion = questions[currentQuestionIndex];
+  const answeredCount = useMemo(() => Object.values(selectedAnswers).filter(Boolean).length, [selectedAnswers]);
+
+  async function persistAnswer(questionId: string, payload: { selectedAnswer?: string | null; isFlaggedForReview?: boolean }) {
+    setSavePendingQuestionId(questionId);
+    setError("");
+
+    const response = await fetch(`/api/exam-attempts/${attemptId}/answers`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        answers: [{ questionId, ...payload }],
+      }),
+    });
+
+    setSavePendingQuestionId(null);
+
+    if (response.ok) {
+      return;
+    }
+
+    const data = (await response.json()) as { error?: string };
+    if (response.status === 409) {
+      router.push(`/exam/${examSlug}/attempt/${attemptId}/result`);
+      return;
+    }
+
+    setError(data.error ?? "Cevap kaydedilemedi.");
+  }
+
+  async function submitAttempt(auto = false) {
+    if (submitPending) {
+      return;
+    }
+
+    setSubmitPending(true);
+    setError("");
+
+    const response = await fetch(`/api/exam-attempts/${attemptId}/submit`, {
+      method: "POST",
+    });
+
+    setSubmitPending(false);
+
+    if (!response.ok) {
+      const data = (await response.json()) as { error?: string };
+      setError(data.error ?? (auto ? "Sinav otomatik gonderilemedi." : "Sinav gonderilemedi."));
+      return;
+    }
+
+    router.push(`/exam/${examSlug}/attempt/${attemptId}/result`);
+  }
+
+  useEffect(() => {
+    if (remainingSeconds <= 0) {
+      if (!hasAutoSubmittedRef.current) {
+        hasAutoSubmittedRef.current = true;
+        void submitAttempt(true);
+      }
+
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setRemainingSeconds((current) => Math.max(current - 1, 0));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [remainingSeconds]);
 
   return (
     <div className="space-y-6">
@@ -35,16 +122,29 @@ export function LiveExamShell({ workspace, remainingTimeLabel, attemptId }: Live
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300">Live Attempt</p>
-            <h1 className="mt-2 text-2xl font-black text-white">{workspace.title}</h1>
+            <h1 className="mt-2 text-2xl font-black text-white">{title}</h1>
             <p className="mt-1 text-sm text-zinc-400">Attempt ID: {attemptId} · Autosave aktif · OMR paneli sağda sabit</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-zinc-200">{answeredCount}/{workspace.totalQuestions} işaretlendi</div>
-            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-200">Kalan süre: {remainingTimeLabel}</div>
-            <button type="button" className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200">Sınavı Gönder</button>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-zinc-200">{answeredCount}/{totalQuestions} işaretlendi</div>
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-200">Kalan süre: {formatDurationLabel(remainingSeconds)}</div>
+            <button
+              type="button"
+              onClick={() => void submitAttempt(false)}
+              disabled={submitPending}
+              className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {submitPending ? "Gönderiliyor..." : "Sınavı Gönder"}
+            </button>
           </div>
         </div>
       </header>
+
+      {error ? (
+        <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+          {error}
+        </div>
+      ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="rounded-[32px] border border-white/10 bg-[rgba(18,20,28,0.95)] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.22)]">
@@ -55,12 +155,14 @@ export function LiveExamShell({ workspace, remainingTimeLabel, attemptId }: Live
             </div>
             <button
               type="button"
-              onClick={() =>
+              onClick={() => {
+                const nextFlagState = !flaggedQuestions[currentQuestion.id];
                 setFlaggedQuestions((current) => ({
                   ...current,
-                  [currentQuestion.id]: !current[currentQuestion.id],
-                }))
-              }
+                  [currentQuestion.id]: nextFlagState,
+                }));
+                void persistAnswer(currentQuestion.id, { isFlaggedForReview: nextFlagState });
+              }}
               className={`rounded-2xl border px-4 py-2 text-sm transition ${
                 flaggedQuestions[currentQuestion.id]
                   ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
@@ -83,12 +185,13 @@ export function LiveExamShell({ workspace, remainingTimeLabel, attemptId }: Live
                   <button
                     key={option}
                     type="button"
-                    onClick={() =>
+                    onClick={() => {
                       setSelectedAnswers((current) => ({
                         ...current,
                         [currentQuestion.id]: letter,
-                      }))
-                    }
+                      }));
+                      void persistAnswer(currentQuestion.id, { selectedAnswer: letter });
+                    }}
                     className={`flex items-start gap-3 rounded-2xl border px-4 py-4 text-left transition ${
                       isSelected
                         ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-100"
@@ -116,21 +219,20 @@ export function LiveExamShell({ workspace, remainingTimeLabel, attemptId }: Live
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() =>
+                onClick={() => {
                   setSelectedAnswers((current) => ({
                     ...current,
                     [currentQuestion.id]: "",
-                  }))
-                }
+                  }));
+                  void persistAnswer(currentQuestion.id, { selectedAnswer: null });
+                }}
                 className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300 transition hover:bg-white/10"
               >
                 Cevabı temizle
               </button>
               <button
                 type="button"
-                onClick={() =>
-                  setCurrentQuestionIndex((current) => Math.min(current + 1, workspace.questions.length - 1))
-                }
+                onClick={() => setCurrentQuestionIndex((current) => Math.min(current + 1, questions.length - 1))}
                 className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200"
               >
                 Sonraki
@@ -144,9 +246,9 @@ export function LiveExamShell({ workspace, remainingTimeLabel, attemptId }: Live
           <p className="mt-2 text-sm text-zinc-400">Tıkla ve soruya atla. Cevaplanan, boş ve review işaretli sorular ayrı görünür.</p>
 
           <div className="mt-5 grid grid-cols-5 gap-2">
-            {Array.from({ length: workspace.totalQuestions }, (_, index) => {
+            {Array.from({ length: totalQuestions }, (_, index) => {
               const number = index + 1;
-              const question = workspace.questions.find((item) => item.number === number);
+              const question = questions.find((item) => item.number === number);
               const answer = question ? selectedAnswers[question.id] : "";
               const flagged = question ? flaggedQuestions[question.id] : false;
               const isCurrent = currentQuestion.number === number;
@@ -156,7 +258,7 @@ export function LiveExamShell({ workspace, remainingTimeLabel, attemptId }: Live
                   key={number}
                   type="button"
                   onClick={() => {
-                    const targetIndex = workspace.questions.findIndex((item) => item.number === number);
+                    const targetIndex = questions.findIndex((item) => item.number === number);
                     if (targetIndex >= 0) {
                       setCurrentQuestionIndex(targetIndex);
                     }
@@ -177,6 +279,10 @@ export function LiveExamShell({ workspace, remainingTimeLabel, attemptId }: Live
           </div>
         </aside>
       </div>
+
+      {savePendingQuestionId ? (
+        <p className="text-right text-xs text-zinc-500">Soru kaydediliyor: {savePendingQuestionId}</p>
+      ) : null}
     </div>
   );
 }

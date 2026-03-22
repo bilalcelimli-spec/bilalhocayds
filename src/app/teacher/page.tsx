@@ -48,6 +48,7 @@ export default async function TeacherPage() {
     nextClass,
     recentReadings,
     recentGrammar,
+    assignedReviewBookings,
   ] = await Promise.all([
     prisma.user.count({ where: { role: "STUDENT" } }),
     prisma.reading.count({ where: { isActive: true } }),
@@ -66,6 +67,27 @@ export default async function TeacherPage() {
       where: { isActive: true },
       orderBy: { createdAt: "desc" },
       take: 4,
+    }),
+    prisma.examReviewBooking.findMany({
+      where: {
+        teacherId: session.user.id,
+        status: { in: ["PAID", "SCHEDULED", "COMPLETED"] },
+      },
+      orderBy: [{ scheduledStartAt: "asc" }, { createdAt: "desc" }],
+      take: 5,
+      include: {
+        student: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+        examModule: {
+          select: {
+            title: true,
+          },
+        },
+      },
     }),
   ]);
   const zoomDesktopLink = buildZoomDesktopLink(nextClass?.meetingLink);
@@ -225,6 +247,31 @@ export default async function TeacherPage() {
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_22px_60px_rgba(0,0,0,0.22)]">
+        <div className="mb-5 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-white">Exam Review Bookings</h2>
+            <p className="mt-0.5 text-xs text-zinc-400">Atanmış birebir review oturumları</p>
+          </div>
+          <Link href="/admin/exams" className="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-zinc-300 transition hover:bg-white/10 hover:text-white">
+            Workspace Aç
+            <ArrowRight size={12} />
+          </Link>
+        </div>
+
+        <div className="space-y-3">
+          {assignedReviewBookings.length ? assignedReviewBookings.map((booking) => (
+            <div key={booking.id} className="rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3 text-sm text-zinc-300">
+              <p className="font-semibold text-white">{booking.student.name ?? booking.student.email} · {booking.examModule.title}</p>
+              <p className="mt-1 text-xs text-zinc-500">Status: {booking.status}</p>
+              <p className="mt-1 text-xs text-zinc-400">{booking.scheduledStartAt ? format(booking.scheduledStartAt, "d MMMM yyyy · HH:mm", { locale: tr }) : "Henüz slot atanmadı"}</p>
+            </div>
+          )) : (
+            <p className="py-4 text-center text-sm text-zinc-500">Sana atanmış review booking bulunmuyor.</p>
+          )}
         </div>
       </div>
 

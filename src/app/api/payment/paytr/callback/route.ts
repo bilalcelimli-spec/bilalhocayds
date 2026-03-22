@@ -159,6 +159,33 @@ export async function POST(request: Request) {
     }
   }
 
+  if (merchantOid.startsWith("revp")) {
+    const nextPaymentStatus = status === "success" ? "PAID" : "FAILED";
+
+    const payment = await prisma.examReviewPayment.findUnique({
+      where: { providerPaymentId: merchantOid },
+      select: { id: true, bookingId: true },
+    }).catch(() => null);
+
+    await prisma.examReviewPayment.updateMany({
+      where: { providerPaymentId: merchantOid },
+      data: {
+        status: nextPaymentStatus,
+        providerMessage: status === "success" ? "PayTR callback success" : failedReasonMsg || failedReasonCode || "PayTR callback failed",
+        ...(status === "success" ? { paidAt: new Date() } : {}),
+      },
+    }).catch(() => null);
+
+    if (payment?.bookingId) {
+      await prisma.examReviewBooking.update({
+        where: { id: payment.bookingId },
+        data: {
+          status: status === "success" ? "PAID" : "PENDING_PAYMENT",
+        },
+      }).catch(() => null);
+    }
+  }
+
   if (merchantOid.startsWith("lead") && status !== "success") {
     console.error("PayTR lead payment failed", {
       merchantOid,
