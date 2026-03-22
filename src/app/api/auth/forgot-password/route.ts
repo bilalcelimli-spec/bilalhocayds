@@ -15,12 +15,12 @@ const forgotPasswordSchema = z.object({
 });
 
 const genericResponse = {
-  message: "Eger bu e-posta adresiyle kayitli bir hesap varsa, sifre sifirlama baglantisi gonderildi.",
+  message: "Eğer bu e-posta adresiyle kayıtlı bir hesap varsa, şifre sıfırlama bağlantısı gönderildi.",
 };
 
 export async function POST(request: Request) {
   if (isRateLimited(`forgot-password:${getClientIp(request)}`, 5, 60_000)) {
-    return Response.json({ error: "Cok fazla istek. Lutfen bir dakika sonra tekrar deneyin." }, { status: 429 });
+    return Response.json({ error: "Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin." }, { status: 429 });
   }
 
   try {
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const parsed = forgotPasswordSchema.safeParse(body);
 
     if (!parsed.success) {
-      return Response.json({ error: "Gecersiz e-posta adresi." }, { status: 400 });
+      return Response.json({ error: "Geçersiz e-posta adresi." }, { status: 400 });
     }
 
     const normalizedEmail = parsed.data.email.toLowerCase();
@@ -71,6 +71,6 @@ export async function POST(request: Request) {
 
     return Response.json(genericResponse);
   } catch {
-    return Response.json({ error: "Sunucu hatasi" }, { status: 500 });
+    return Response.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

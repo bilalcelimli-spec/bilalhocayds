@@ -16,11 +16,11 @@ export default function ResetPasswordPage() {
           <div className="relative">
             <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">
               <span className="h-2 w-2 rounded-full bg-amber-400" />
-              Yeni Sifre
+              Yeni Şifre
             </div>
-            <h1 className="mt-6 max-w-xl text-4xl font-black leading-tight text-white md:text-5xl">Guvenli bir yeni sifre belirle</h1>
+            <h1 className="mt-6 max-w-xl text-4xl font-black leading-tight text-white md:text-5xl">Güvenli bir yeni şifre belirle</h1>
             <p className="mt-5 max-w-xl text-base leading-8 text-slate-300">
-              Gecerli sifirlama baglantin varsa yeni sifreni tanimla ve hesabina tekrar erisim kazan.
+              Geçerli sıfırlama bağlantın varsa yeni şifreni tanımla ve hesabına tekrar erişim kazan.
             </p>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -30,8 +30,8 @@ export default function ResetPasswordPage() {
                     <ShieldCheck size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white">Tek kullanimlik islem</p>
-                    <p className="mt-1 text-xs leading-6 text-slate-400">Baglanti kullanildiginda ayni token tekrar gecersiz olur.</p>
+                    <p className="text-sm font-semibold text-white">Tek kullanımlık işlem</p>
+                    <p className="mt-1 text-xs leading-6 text-slate-400">Bağlantı kullanıldığında aynı token tekrar geçersiz olur.</p>
                   </div>
                 </div>
               </div>
@@ -41,8 +41,8 @@ export default function ResetPasswordPage() {
                     <LockKeyhole size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white">Eski sifre iptal edilir</p>
-                    <p className="mt-1 text-xs leading-6 text-slate-400">Guncelleme sonrasi sadece yeni sifren gecerli kalir.</p>
+                    <p className="text-sm font-semibold text-white">Eski şifre iptal edilir</p>
+                    <p className="mt-1 text-xs leading-6 text-slate-400">Güncelleme sonrası sadece yeni şifren geçerli kalır.</p>
                   </div>
                 </div>
               </div>
@@ -54,18 +54,18 @@ export default function ResetPasswordPage() {
                   <KeyRound size={18} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300">Onemli</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300">Önemli</p>
                   <p className="mt-2 text-sm leading-7 text-amber-100/85">
-                    Sifre degisikligi tamamlandiginda ayni link tekrar kullanilamaz. Gerekirse yeni bir sifirlama talebi olustur.
+                    Şifre değişikliği tamamlandığında aynı link tekrar kullanılamaz. Gerekirse yeni bir sıfırlama talebi oluştur.
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="mt-8 flex items-center gap-3 text-sm text-slate-300">
-              <span>Giris ekranina donmek ister misin?</span>
+              <span>Giriş ekranına dönmek ister misin?</span>
               <Link href="/login" className="inline-flex items-center gap-1 font-semibold text-white transition hover:text-amber-300">
-                Giris yap
+                Giriş yap
                 <ArrowUpRight size={14} />
               </Link>
             </div>
@@ -77,16 +77,16 @@ export default function ResetPasswordPage() {
           <div className="pointer-events-none absolute -left-8 bottom-10 h-40 w-40 rounded-full bg-amber-400/10 blur-3xl" />
 
           <div className="relative">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Sifre Guncelleme</p>
-            <h2 className="mt-3 text-3xl font-black text-white">Yeni Sifreni Tanimla</h2>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Şifre Güncelleme</p>
+            <h2 className="mt-3 text-3xl font-black text-white">Yeni Şifreni Tanımla</h2>
             <p className="mt-3 text-sm leading-7 text-slate-400">
-              Baglanti gecerliyse asagidan yeni sifreni belirleyebilirsin.
+              Bağlantı geçerliyse aşağıdan yeni şifreni belirleyebilirsin.
             </p>
             <div className="mt-8">
               <Suspense
                 fallback={
                   <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6 text-sm leading-7 text-slate-300">
-                    Sifirlama ekrani hazirlaniyor...
+                    Sıfırlama ekranı hazırlanıyor...
                   </div>
                 }
               >

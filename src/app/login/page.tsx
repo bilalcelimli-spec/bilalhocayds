@@ -84,9 +84,9 @@ export default function LoginPage() {
               <LoginForm />
             </div>
             <p className="mt-5 text-center text-xs text-zinc-500">
-              Sifreni mi unuttun?{" "}
+              Şifreni mi unuttun?{" "}
               <Link href="/forgot-password" className="text-amber-400 transition hover:text-amber-300 hover:underline">
-                Sifirla
+                Sıfırla
               </Link>
             </p>
           </div>

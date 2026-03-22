@@ -28,14 +28,14 @@ export function ForgotPasswordForm() {
       const data = (await response.json()) as { error?: string; message?: string };
 
       if (!response.ok) {
-        setError(data.error ?? "Istek gonderilemedi.");
+        setError(data.error ?? "İstek gönderilemedi.");
         return;
       }
 
-      setSuccess(data.message ?? "Sifirlama baglantisi gonderildi.");
+      setSuccess(data.message ?? "Sıfırlama bağlantısı gönderildi.");
       setEmail("");
     } catch {
-      setError("Baglanti kurulamadi. Lutfen tekrar dene.");
+      setError("Bağlantı kurulamadı. Lütfen tekrar dene.");
     } finally {
       setPending(false);
     }
@@ -71,11 +71,11 @@ export function ForgotPasswordForm() {
 
       <div className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
         <div className="flex items-center justify-between gap-4 text-xs">
-          <span className="font-semibold uppercase tracking-[0.18em] text-amber-300">Sifirlama Linki</span>
-          <span className="text-slate-500">1 saat gecerli</span>
+          <span className="font-semibold uppercase tracking-[0.18em] text-amber-300">Sıfırlama Linki</span>
+          <span className="text-slate-500">1 saat geçerli</span>
         </div>
         <p className="mt-2 text-sm leading-6 text-slate-400">
-          Kayitli e-posta adresini gir. Gecerli bir hesabin varsa yeni sifreni belirlemen icin baglanti gondeririz.
+          Kayıtlı e-posta adresini gir. Geçerli bir hesabın varsa yeni şifreni belirlemen için bağlantı göndeririz.
         </p>
       </div>
 
@@ -85,12 +85,12 @@ export function ForgotPasswordForm() {
         className="flex w-full items-center justify-center gap-2 rounded-[22px] bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] px-5 py-3.5 font-bold text-zinc-950 shadow-[0_12px_30px_rgba(212,168,67,0.32)] transition hover:brightness-105 disabled:opacity-50"
       >
         <Send size={16} />
-        {pending ? "Baglanti gonderiliyor..." : "Sifirlama Baglantisi Gonder"}
+        {pending ? "Bağlantı gönderiliyor..." : "Sıfırlama Bağlantısı Gönder"}
       </button>
 
       <Link href="/login" className="inline-flex items-center gap-2 text-sm font-medium text-slate-300 transition hover:text-white">
         <ArrowLeft size={16} />
-        Giris ekranina don
+        Giriş ekranına dön
       </Link>
     </form>
   );

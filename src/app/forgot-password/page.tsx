@@ -15,11 +15,11 @@ export default function ForgotPasswordPage() {
           <div className="relative">
             <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">
               <span className="h-2 w-2 rounded-full bg-amber-400" />
-              Sifre Yenileme
+              Şifre Yenileme
             </div>
-            <h1 className="mt-6 max-w-xl text-4xl font-black leading-tight text-white md:text-5xl">Hesabina yeniden erismek icin sifreni yenile</h1>
+            <h1 className="mt-6 max-w-xl text-4xl font-black leading-tight text-white md:text-5xl">Hesabına yeniden erişmek için şifreni yenile</h1>
             <p className="mt-5 max-w-xl text-base leading-8 text-slate-300">
-              Kayitli e-posta adresini gir. Hesabin aktifse yeni sifreni belirlemen icin sana guvenli bir baglanti gonderelim.
+              Kayıtlı e-posta adresini gir. Hesabın aktifse yeni şifreni belirlemen için sana güvenli bir bağlantı gönderelim.
             </p>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -29,8 +29,8 @@ export default function ForgotPasswordPage() {
                     <MailCheck size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white">E-posta dogrulamasi</p>
-                    <p className="mt-1 text-xs leading-6 text-slate-400">Baglanti sadece talep edilen hesaba gonderilir.</p>
+                    <p className="text-sm font-semibold text-white">E-posta doğrulaması</p>
+                    <p className="mt-1 text-xs leading-6 text-slate-400">Bağlantı sadece talep edilen hesaba gönderilir.</p>
                   </div>
                 </div>
               </div>
@@ -40,8 +40,8 @@ export default function ForgotPasswordPage() {
                     <ShieldCheck size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white">Kisa sureli baglanti</p>
-                    <p className="mt-1 text-xs leading-6 text-slate-400">Sifirlama baglantisi 1 saat sonra gecersiz olur.</p>
+                    <p className="text-sm font-semibold text-white">Kısa süreli bağlantı</p>
+                    <p className="mt-1 text-xs leading-6 text-slate-400">Sıfırlama bağlantısı 1 saat sonra geçersiz olur.</p>
                   </div>
                 </div>
               </div>
@@ -55,16 +55,16 @@ export default function ForgotPasswordPage() {
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300">Ne olacak?</p>
                   <p className="mt-2 text-sm leading-7 text-amber-100/85">
-                    E-postadaki baglantidan yeni sifreni girersin. Islem tamamlandiginda eski sifreyle giris yapamazsin.
+                    E-postadaki bağlantıdan yeni şifreni girersin. İşlem tamamlandığında eski şifreyle giriş yapamazsın.
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="mt-8 flex items-center gap-3 text-sm text-slate-300">
-              <span>Hesabini hatirladin mi?</span>
+              <span>Hesabını hatırladın mı?</span>
               <Link href="/login" className="inline-flex items-center gap-1 font-semibold text-white transition hover:text-amber-300">
-                Giris yap
+                Giriş yap
                 <ArrowUpRight size={14} />
               </Link>
             </div>
@@ -77,9 +77,9 @@ export default function ForgotPasswordPage() {
 
           <div className="relative">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Hesap Kurtarma</p>
-            <h2 className="mt-3 text-3xl font-black text-white">Sifirla ve Devam Et</h2>
+            <h2 className="mt-3 text-3xl font-black text-white">Sıfırla ve Devam Et</h2>
             <p className="mt-3 text-sm leading-7 text-slate-400">
-              Kayitli e-posta adresini yazarak sifre sifirlama baglantini iste.
+              Kayıtlı e-posta adresini yazarak şifre sıfırlama bağlantını iste.
             </p>
             <div className="mt-8">
               <ForgotPasswordForm />

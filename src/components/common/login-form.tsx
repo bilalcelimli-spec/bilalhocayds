@@ -85,7 +85,7 @@ export function LoginForm() {
         </div>
         <div className="mt-3 flex justify-end">
           <Link href="/forgot-password" className="text-sm font-medium text-amber-300 transition hover:text-amber-200 hover:underline">
-            Sifremi unuttum
+            Şifremi unuttum
           </Link>
         </div>
       </div>
