@@ -64,6 +64,8 @@ model User {
   subscriptions  Subscription[]
   liveClassPurchases LiveClassPurchase[]
   examPurchases  ExamPurchase[]
+  studentFeatureAccess StudentFeatureAccess?
+  studentFeatureExamAccesses StudentFeatureExamAccess[]
 }
 
 model StudentProfile {
@@ -79,6 +81,37 @@ model StudentProfile {
   updatedAt          DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model StudentFeatureAccess {
+  id                      String   @id @default(cuid())
+  userId                  String   @unique
+  hasReadingAccess        Boolean  @default(false)
+  hasGrammarAccess        Boolean  @default(false)
+  hasVocabAccess          Boolean  @default(false)
+  hasExamAccess           Boolean  @default(false)
+  hasLiveClassesAccess    Boolean  @default(false)
+  hasLiveRecordingsAccess Boolean  @default(false)
+  hasContentLibraryAccess Boolean  @default(false)
+  hasAIPlannerAccess      Boolean  @default(false)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model StudentFeatureExamAccess {
+  id           String   @id @default(cuid())
+  userId       String
+  examModuleId String
+  createdAt    DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  examModule ExamModule @relation(fields: [examModuleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, examModuleId])
+  @@index([userId])
+  @@index([examModuleId])
 }
 
 model TeacherProfile {
@@ -397,6 +430,7 @@ model ExamModule {
 
   purchases       ExamPurchase[]
   plans           PlanExamModule[]
+  studentAccesses StudentFeatureExamAccess[]
 }
 
 model ExamPurchase {

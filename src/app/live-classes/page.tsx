@@ -31,6 +31,7 @@ function formatPrice(price: number | null) {
 export default async function LiveClassesPage() {
 	const now = new Date();
 	const session = await getServerSession(authOptions);
+	const hasManualLiveClassAccess = session?.user?.hasLiveClassesAccess === true;
 	const [classes, activeLiveClassSubscription] = await Promise.all([
 		prisma.liveClass.findMany({
 			orderBy: { scheduledAt: "asc" },
@@ -48,7 +49,7 @@ export default async function LiveClassesPage() {
 			})
 			: Promise.resolve(null),
 	]);
-
+	const hasLiveClassPlan = Boolean(activeLiveClassSubscription) || hasManualLiveClassAccess;
 	const upcomingClasses = classes.filter((item) => item.scheduledAt >= now);
 	const pastClasses = classes.filter((item) => item.scheduledAt < now);
 	const nextClass = upcomingClasses[0];
@@ -72,7 +73,6 @@ export default async function LiveClassesPage() {
 				).map((item) => item.liveClassId),
 		  )
 		: new Set<string>();
-	const hasLiveClassPlan = Boolean(activeLiveClassSubscription);
 
 	return (
 		<div className="mx-auto max-w-7xl px-6 py-10">
@@ -215,7 +215,9 @@ export default async function LiveClassesPage() {
 				<div className="mt-6 rounded-3xl border border-emerald-400/30 bg-emerald-400/10 p-5 text-white">
 				<p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">Aktif Canlı Ders Erişimi</p>
 				<p className="mt-2 text-lg font-bold">
-					{activeLiveClassSubscription?.plan.name} planın ile tüm canlı derslere ekstra ödeme olmadan katılabilirsin.
+					{activeLiveClassSubscription?.plan.name
+						? `${activeLiveClassSubscription.plan.name} planın ile tüm canlı derslere ekstra ödeme olmadan katılabilirsin.`
+						: "Admin tarafından canlı ders erişimin açıldı. Tüm canlı derslere ekstra ödeme olmadan katılabilirsin."}
 				</p>
 				<p className="mt-2 text-sm text-emerald-100/80">
 					Zoom bağlantıları ders kartlarında otomatik görünür. Tek ders satın alma sadece üyeliği olmayanlar için gerekir.

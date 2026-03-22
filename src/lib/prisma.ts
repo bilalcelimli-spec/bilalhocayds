@@ -88,6 +88,45 @@ type ExamPurchaseWriteInput = {
 	paidAt?: Date | null;
 };
 
+type StudentFeatureAccessRecord = {
+	id: string;
+	userId: string;
+	hasReadingAccess: boolean;
+	hasGrammarAccess: boolean;
+	hasVocabAccess: boolean;
+	hasExamAccess: boolean;
+	hasLiveClassesAccess: boolean;
+	hasLiveRecordingsAccess: boolean;
+	hasContentLibraryAccess: boolean;
+	hasAIPlannerAccess: boolean;
+	createdAt: Date;
+	updatedAt: Date;
+};
+
+type StudentFeatureAccessWriteInput = {
+	hasReadingAccess?: boolean;
+	hasGrammarAccess?: boolean;
+	hasVocabAccess?: boolean;
+	hasExamAccess?: boolean;
+	hasLiveClassesAccess?: boolean;
+	hasLiveRecordingsAccess?: boolean;
+	hasContentLibraryAccess?: boolean;
+	hasAIPlannerAccess?: boolean;
+};
+
+type StudentFeatureExamAccessRecord = {
+	id: string;
+	userId: string;
+	examModuleId: string;
+	createdAt: Date;
+	examModule?: {
+		id: string;
+		title: string;
+		isPublished: boolean;
+		isActive: boolean;
+	};
+};
+
 type ExamModuleDelegate = {
 	create(args: { data: ExamModuleWriteInput }): Promise<ExamModuleRecord>;
 	update(args: { where: { id: string }; data: ExamModuleWriteInput }): Promise<ExamModuleRecord>;
@@ -147,10 +186,35 @@ type ExamPurchaseDelegate = {
 	}): Promise<ExamPurchaseRecord | null>;
 };
 
+type StudentFeatureAccessDelegate = {
+	findUnique(args: { where: { userId: string }; select?: Record<string, boolean> }): Promise<StudentFeatureAccessRecord | null>;
+	upsert(args: {
+		where: { userId: string };
+		update: StudentFeatureAccessWriteInput;
+		create: { userId: string } & StudentFeatureAccessWriteInput;
+	}): Promise<StudentFeatureAccessRecord>;
+	deleteMany(args: { where: { userId: string } }): Promise<{ count: number }>;
+};
+
+type StudentFeatureExamAccessDelegate = {
+	findMany(args?: {
+		where?: { userId?: string };
+		orderBy?: { createdAt?: "asc" | "desc" };
+		select?: { examModuleId?: boolean; examModule?: boolean | object };
+	}): Promise<StudentFeatureExamAccessRecord[]>;
+	createMany(args: {
+		data: Array<{ userId: string; examModuleId: string }>;
+		skipDuplicates?: boolean;
+	}): Promise<{ count: number }>;
+	deleteMany(args: { where: { userId: string } }): Promise<{ count: number }>;
+};
+
 export const prisma = basePrisma as typeof basePrisma & {
 	examModule: ExamModuleDelegate;
 	examPurchase: ExamPurchaseDelegate;
 	planExamModule: PlanExamModuleDelegate;
+	studentFeatureAccess: StudentFeatureAccessDelegate;
+	studentFeatureExamAccess: StudentFeatureExamAccessDelegate;
 };
 
 export const examModule = (basePrisma as unknown as {

@@ -80,26 +80,30 @@ export default async function DashboardContentLibraryPage() {
 
   const navItems = session.user.role === "TEACHER" ? teacherNavItems : studentNavItems;
   const roleLabel = session.user.role === "TEACHER" ? "Öğretmen Paneli" : "Öğrenci Paneli";
+  const hasContentLibraryAccess =
+    session.user.role === "TEACHER" || session.user.hasContentLibraryAccess === true;
 
-  const publishedRuns = await prisma.contentGenerationRun.findMany({
-    where: {
-      status: "COMPLETED",
-      isApproved: true,
-      isPublished: true,
-    },
-    orderBy: { publishedAt: "desc" },
-    select: {
-      id: true,
-      title: true,
-      itemType: true,
-      outputFormat: true,
-      itemCount: true,
-      styleAnalysis: true,
-      generatedItemsJson: true,
-      generatedText: true,
-      publishedAt: true,
-    },
-  });
+  const publishedRuns = hasContentLibraryAccess
+    ? await prisma.contentGenerationRun.findMany({
+        where: {
+          status: "COMPLETED",
+          isApproved: true,
+          isPublished: true,
+        },
+        orderBy: { publishedAt: "desc" },
+        select: {
+          id: true,
+          title: true,
+          itemType: true,
+          outputFormat: true,
+          itemCount: true,
+          styleAnalysis: true,
+          generatedItemsJson: true,
+          generatedText: true,
+          publishedAt: true,
+        },
+      })
+    : [];
 
   return (
     <DashboardShell
@@ -110,6 +114,24 @@ export default async function DashboardContentLibraryPage() {
       userName={session.user.name ?? undefined}
       userRole={session.user.role}
     >
+      {!hasContentLibraryAccess ? (
+        <div className="rounded-[30px] border border-amber-400/30 bg-amber-400/10 p-8 shadow-[0_24px_70px_rgba(0,0,0,0.24)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-200">Erişim Kapalı</p>
+          <h2 className="mt-3 text-2xl font-black text-white">Paylaşılan içerik kütüphanesi bu öğrenci için kapalı</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-200">
+            Admin panelinden içerik kütüphanesi yetkisi açıldığında veya uygun bir plan tanımlandığında bu alandaki yayınlanmış içerikler görünür hale gelir.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link href="/dashboard" className="rounded-2xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-zinc-200">
+              Dashboard&apos;a Dön
+            </Link>
+            <Link href="/pricing" className="rounded-2xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-zinc-200 transition hover:bg-white/10">
+              Planları Gör
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap items-center gap-3">
         <Link
           href={session.user.role === "TEACHER" ? "/teacher" : "/dashboard"}
@@ -124,7 +146,7 @@ export default async function DashboardContentLibraryPage() {
       </div>
 
       <div className="space-y-5">
-        {publishedRuns.length ? (
+        {hasContentLibraryAccess && publishedRuns.length ? (
           publishedRuns.map((run) => {
             const Icon = inferIcon(run.itemType);
             const items = normalizeGeneratedItems(run.generatedItemsJson);
@@ -181,12 +203,12 @@ export default async function DashboardContentLibraryPage() {
               </section>
             );
           })
-        ) : (
+        ) : hasContentLibraryAccess ? (
           <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-8 text-center shadow-[0_24px_70px_rgba(0,0,0,0.24)]">
             <p className="text-lg font-bold text-white">Henüz yayınlanmış içerik yok</p>
             <p className="mt-2 text-sm text-zinc-500">Admin bir üretimi onaylayıp yayınladığında burada tüm kullanıcılarla paylaşılacak.</p>
           </div>
-        )}
+        ) : null}
       </div>
     </DashboardShell>
   );

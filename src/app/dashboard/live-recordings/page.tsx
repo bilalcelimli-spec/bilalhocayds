@@ -58,7 +58,8 @@ export default async function DashboardLiveRecordingsPage() {
     }),
   ]);
 
-  const hasLiveRecordingsAccess = Boolean(accessSubscription);
+  const hasLiveRecordingsAccess =
+    session.user.hasLiveRecordingsAccess === true || Boolean(accessSubscription);
 
   return (
     <DashboardShell
@@ -82,6 +83,8 @@ export default async function DashboardLiveRecordingsPage() {
           <p className="mt-1 text-xs text-zinc-300">
             {accessSubscription
               ? `${accessSubscription.plan.name} programı satın alındığı için erişim açık`
+              : session.user.hasLiveRecordingsAccess
+                ? "Admin tarafından canlı ders kayıt erişimi tanımlandığı için arşiv açık"
               : "Canlı ders içeren bir program satın aldığında kayıt arşivi açılır."}
           </p>
         </div>
@@ -90,6 +93,8 @@ export default async function DashboardLiveRecordingsPage() {
           <p className="mt-2 text-sm font-semibold text-white">
             {accessSubscription?.endDate
               ? format(accessSubscription.endDate, "d MMMM yyyy", { locale: tr })
+              : session.user.hasLiveRecordingsAccess
+                ? "Admin erişimi"
               : accessSubscription
                 ? "Süre sınırı yok"
                 : "Üyelik bulunamadı"}
@@ -104,7 +109,7 @@ export default async function DashboardLiveRecordingsPage() {
               <p className="text-xs font-semibold uppercase tracking-wide text-amber-200">Erişim Kilitli</p>
               <h2 className="mt-1 text-lg font-bold text-white">Canlı ders kayıtları program satın alımıyla açılır</h2>
               <p className="mt-2 text-sm text-zinc-200">
-                Canlı ders içeren bir program satın aldığında derse katılamasan bile tüm geçmiş kayıtları sistemden izleyebilirsin.
+                Admin isterse bu arşivi manuel olarak da açabilir. Aksi durumda canlı ders içeren bir program satın aldığında geçmiş kayıtları sistemden izleyebilirsin.
               </p>
             </div>
             <Link

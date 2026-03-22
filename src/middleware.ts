@@ -26,12 +26,12 @@ export async function middleware(req: NextRequest) {
   }
 
   const isStudent = token?.role === "STUDENT";
-  const hasActiveSubscription = token?.hasActiveSubscription === true;
+  const hasStudentPlatformAccess = token?.hasStudentPlatformAccess === true;
   const isAllowedWithoutSubscription = studentAllowedWithoutSubscription.some((route) =>
     pathname.startsWith(route),
   );
 
-  if (isStudent && hasActiveSubscription) {
+  if (isStudent && hasStudentPlatformAccess) {
     if (pathname.startsWith("/reading") && token?.hasReadingAccess !== true) {
       return NextResponse.redirect(new URL("/pricing", req.url));
     }
@@ -46,12 +46,12 @@ export async function middleware(req: NextRequest) {
 
   }
 
-  if (isStudent && !hasActiveSubscription && (isProtected || isAuth) && !isAllowedWithoutSubscription) {
+  if (isStudent && !hasStudentPlatformAccess && (isProtected || isAuth) && !isAllowedWithoutSubscription) {
     return NextResponse.redirect(new URL("/pricing", req.url));
   }
 
   if (isAuth && token) {
-    if (isStudent && !hasActiveSubscription) {
+    if (isStudent && !hasStudentPlatformAccess) {
       return NextResponse.redirect(new URL("/pricing", req.url));
     }
     return NextResponse.redirect(new URL("/dashboard", req.url));
