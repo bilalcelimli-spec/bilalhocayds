@@ -45,6 +45,8 @@ Opsiyonel olarak belirli gun icin `date` query parametresi verilebilir:
 /api/cron/daily-content?date=2026-03-22
 ```
 
+Production kurulum ve scheduler notlari icin [docs/daily-content-cron-deploy.md](/Users/bilalcelimli/Desktop/bilalhocayds/docs/daily-content-cron-deploy.md) dosyasina bak.
+
 ## PayTR Canliya Alma Checklist
 
 Detayli deployment notlari icin [docs/paytr-go-live-checklist.md](/Users/bilalcelimli/Desktop/bilalhocayds/docs/paytr-go-live-checklist.md) dosyasina bak.
