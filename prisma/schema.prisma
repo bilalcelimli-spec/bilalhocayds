@@ -134,6 +134,92 @@ enum ReviewPaymentStatus {
   REFUNDED
 }
 
+enum ReadingSourceType {
+  APPROVED_NEWS
+  EDUCATIONAL_ARTICLE
+  SCIENCE_TECH_HEALTH
+  MANUAL_UPLOAD
+  CURATED_DATABASE
+  PLATFORM_ORIGINAL
+}
+
+enum ReadingIngestionStatus {
+  RECEIVED
+  SOURCE_VALIDATED
+  RAW_EXTRACTED
+  CLEANED
+  LINGUISTIC_ANALYZED
+  PEDAGOGICALLY_TRANSFORMED
+  ACTIVITY_GENERATED
+  QA_REVIEWED
+  PUBLISHED
+  ARCHIVED
+  REJECTED
+}
+
+enum ReadingEditorialStatus {
+  DRAFT
+  AI_GENERATED
+  ADMIN_REVIEWED
+  PUBLISHED
+  ARCHIVED
+  REJECTED
+}
+
+enum ReadingPackageMode {
+  DAILY_GUIDED
+  EXAM_TRAINING
+  YDT_YDS_EXPERT
+}
+
+enum ReadingActivityType {
+  COMPREHENSION
+  VOCABULARY
+  YDS_YDT_LOGIC
+  CONNECTOR_COHESION
+  FOLLOW_UP_ANALYSIS
+}
+
+enum ReadingQuestionType {
+  MAIN_IDEA
+  DETAIL
+  INFERENCE
+  AUTHOR_ATTITUDE
+  PURPOSE
+  REFERENCE_WORD
+  TITLE_SELECTION
+  PARAGRAPH_FUNCTION
+  WORD_MEANING_IN_CONTEXT
+  SYNONYM_IN_CONTEXT
+  ANTONYM_RELEVANCE
+  COLLOCATION_SELECTION
+  WORD_FORM
+  CLOSEST_MEANING
+  PARAGRAPH_COMPLETION
+  SENTENCE_INSERTION
+  DISRUPTS_FLOW
+  CONNECTOR_SELECTION
+  DISCOURSE_RELATION
+  BEST_CONTINUATION
+  PARAPHRASE_RECOGNITION
+  SHORT_STRATEGY_REFLECTION
+}
+
+enum ReadingDifficultyBand {
+  FOUNDATION
+  DEVELOPING
+  EXAM_READY
+  EXPERT
+}
+
+enum ReadingAssignmentStatus {
+  ASSIGNED
+  IN_PROGRESS
+  SUBMITTED
+  REVIEWED
+  EXPIRED
+}
+
 model User {
   id             String          @id @default(cuid())
   name           String?
@@ -159,6 +245,8 @@ model User {
   teacherReviewBookings ExamReviewBooking[] @relation("ReviewBookingTeacher")
   reviewPayments ExamReviewPayment[]
   adminAuditLogs AdminAuditLog[]
+  readingAssignments StudentReadingAssignment[]
+  readingAttempts  StudentReadingAttempt[]
 }
 
 model StudentProfile {
@@ -322,6 +410,271 @@ model Reading {
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model ApprovedReadingSourceDomain {
+  id                String   @id @default(cuid())
+  domain            String   @unique
+  label             String
+  sourceType        ReadingSourceType
+  trustScore        Int      @default(50)
+  extractionStrategy String?
+  allowedTopicsJson Json?
+  blockedPatternsJson Json?
+  maxDailyPull      Int?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  sourceDocuments   ReadingSourceDocument[]
+  performanceSnapshots ReadingSourcePerformance[]
+}
+
+model ReadingSourceDocument {
+  id                String   @id @default(cuid())
+  sourceDomainId    String?
+  sourceType        ReadingSourceType
+  ingestionStatus   ReadingIngestionStatus @default(RECEIVED)
+  sourceUrl         String?
+  sourceName        String?
+  externalId        String?
+  rawHtml           String?  @db.Text
+  rawText           String?  @db.Text
+  extractedTitle    String?
+  extractedBody     String?  @db.Text
+  extractionMetaJson Json?
+  contentHash       String?  @unique
+  detectedLanguage  String?
+  rejectionReason   String?  @db.Text
+  createdById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  sourceDomain      ApprovedReadingSourceDomain? @relation(fields: [sourceDomainId], references: [id], onDelete: SetNull)
+  passageAssets     ReadingPassageAsset[]
+
+  @@index([sourceDomainId, ingestionStatus])
+  @@index([sourceType, ingestionStatus])
+}
+
+model ReadingPassageAsset {
+  id                  String   @id @default(cuid())
+  sourceDocumentId    String?
+  authoringMode       String
+  editorialStatus     ReadingEditorialStatus @default(DRAFT)
+  title               String
+  cleanedText         String   @db.Text
+  finalText           String   @db.Text
+  summary             String?  @db.Text
+  topic               String?
+  subtopic            String?
+  targetExamJson      Json?
+  cefrEstimate        String?
+  lexicalDensity      Float?
+  sentenceComplexity  Float?
+  connectorDensity    Float?
+  wordCount           Int
+  paragraphCount      Int
+  suitabilityJson     Json?
+  safetyStatus        String?
+  transformationNotesJson Json?
+  publishedAt         DateTime?
+  createdById         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  sourceDocument      ReadingSourceDocument? @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+  packages            ReadingPackage[]
+
+  @@index([editorialStatus, publishedAt])
+  @@index([topic, subtopic])
+}
+
+model ReadingPackage {
+  id                     String   @id @default(cuid())
+  passageAssetId         String
+  packageDate            DateTime?
+  mode                   ReadingPackageMode @default(DAILY_GUIDED)
+  targetExam             String
+  targetLevel            String?
+  personalizationProfileJson Json?
+  headerJson             Json
+  analyticsBlueprintJson Json?
+  status                 ReadingEditorialStatus @default(DRAFT)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  passageAsset           ReadingPassageAsset @relation(fields: [passageAssetId], references: [id], onDelete: Cascade)
+  activities             ReadingActivity[]
+  vocabularyTargets      ReadingVocabularyTarget[]
+  assignments            StudentReadingAssignment[]
+  attempts               StudentReadingAttempt[]
+
+  @@index([packageDate, mode])
+  @@index([targetExam, targetLevel])
+}
+
+model ReadingActivity {
+  id              String   @id @default(cuid())
+  readingPackageId String
+  activityType    ReadingActivityType
+  title           String
+  displayOrder    Int
+  configJson      Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  readingPackage  ReadingPackage @relation(fields: [readingPackageId], references: [id], onDelete: Cascade)
+  questions       ReadingQuestion[]
+
+  @@index([readingPackageId, displayOrder])
+}
+
+model ReadingQuestion {
+  id                    String   @id @default(cuid())
+  readingActivityId     String
+  questionType          ReadingQuestionType
+  relatedParagraphsJson Json?
+  prompt                String   @db.Text
+  choicesJson           Json?
+  correctAnswerJson     Json
+  distractorRationaleJson Json?
+  explanationJson       Json?
+  evidenceMapJson       Json?
+  skillTag              String
+  difficulty            ReadingDifficultyBand @default(DEVELOPING)
+  estimatedTimeSec      Int?
+  qualityScore          Float?
+  isApproved            Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  readingActivity       ReadingActivity @relation(fields: [readingActivityId], references: [id], onDelete: Cascade)
+  answers               StudentReadingAnswer[]
+  reviews               ReadingQuestionReview[]
+
+  @@index([readingActivityId])
+  @@index([questionType, skillTag])
+}
+
+model ReadingVocabularyTarget {
+  id                String   @id @default(cuid())
+  readingPackageId  String
+  word              String
+  lemma             String?
+  partOfSpeech      String?
+  definitionEn      String?  @db.Text
+  meaningTr         String?  @db.Text
+  exampleSentence   String?  @db.Text
+  collocation       String?
+  synonym           String?
+  antonym           String?
+  wordFamilyJson    Json?
+  memoryNote        String?  @db.Text
+  difficulty        ReadingDifficultyBand @default(DEVELOPING)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  readingPackage    ReadingPackage @relation(fields: [readingPackageId], references: [id], onDelete: Cascade)
+
+  @@index([readingPackageId])
+  @@index([word])
+}
+
+model StudentReadingAssignment {
+  id                       String   @id @default(cuid())
+  userId                   String
+  readingPackageId         String
+  assignedDate             DateTime @default(now())
+  assignmentReason         String?
+  personalizationSnapshotJson Json?
+  status                   ReadingAssignmentStatus @default(ASSIGNED)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  user                     User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readingPackage           ReadingPackage @relation(fields: [readingPackageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, readingPackageId])
+  @@index([userId, assignedDate])
+}
+
+model StudentReadingAttempt {
+  id                    String   @id @default(cuid())
+  userId                String
+  readingPackageId      String
+  mode                  ReadingPackageMode @default(DAILY_GUIDED)
+  startedAt             DateTime @default(now())
+  submittedAt           DateTime?
+  totalCorrect          Int      @default(0)
+  totalIncorrect        Int      @default(0)
+  totalBlank            Int      @default(0)
+  accuracy              Float?
+  totalTimeSec          Int?
+  analyticsJson         Json?
+  recommendationJson    Json?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user                  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readingPackage        ReadingPackage @relation(fields: [readingPackageId], references: [id], onDelete: Cascade)
+  answers               StudentReadingAnswer[]
+
+  @@index([userId, startedAt])
+  @@index([readingPackageId])
+}
+
+model StudentReadingAnswer {
+  id                    String   @id @default(cuid())
+  attemptId             String
+  questionId            String
+  selectedChoiceId      String?
+  typedAnswer           String?  @db.Text
+  isCorrect             Boolean?
+  timeSpentSec          Int?
+  changedCount          Int      @default(0)
+  confidenceLevel       Int?
+  answeredAt            DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  attempt               StudentReadingAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question              ReadingQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+  @@index([questionId])
+}
+
+model ReadingQuestionReview {
+  id                    String   @id @default(cuid())
+  questionId            String
+  reviewerUserId        String?
+  reviewType            String
+  note                  String?  @db.Text
+  actionTaken           String?
+  createdAt             DateTime @default(now())
+
+  question              ReadingQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId, reviewType])
+}
+
+model ReadingSourcePerformance {
+  id                    String   @id @default(cuid())
+  sourceDomainId        String
+  periodKey             String
+  packagesPublished     Int      @default(0)
+  avgCompletionRate     Float?
+  avgAccuracy           Float?
+  avgStudentRating      Float?
+  flaggedCount          Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  sourceDomain          ApprovedReadingSourceDomain @relation(fields: [sourceDomainId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceDomainId, periodKey])
+  @@index([periodKey])
 }
 
 model GrammarTopic {

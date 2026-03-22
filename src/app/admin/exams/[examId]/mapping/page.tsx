@@ -25,7 +25,16 @@ export default async function AdminExamMappingPage({ params }: PageProps) {
             <div className="mt-4 space-y-3">
               {workspace.activeVersion?.sections.length ? workspace.activeVersion.sections.map((section) => (
                 <div key={section.id} className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-zinc-300">
-                  {section.displayOrder}. {section.title} · {section._count.questions} soru · {section._count.passageGroups} passage group
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-white">{section.displayOrder}. {section.title}</span>
+                    <span>· {section.sectionType}</span>
+                    <span>· {section._count.questions} soru</span>
+                    <span>· {section._count.passageGroups} passage group</span>
+                  </div>
+                  {section.description ? <p className="mt-2 text-xs leading-6 text-zinc-500">{section.description}</p> : null}
+                  <p className="mt-2 text-xs leading-6 text-zinc-500">
+                    question range: {section.questionStartNumber ?? "-"} - {section.questionEndNumber ?? "-"}
+                  </p>
                 </div>
               )) : <div className="rounded-3xl border border-dashed border-white/10 bg-black/20 p-10 text-sm text-zinc-400">Henüz normalize section oluşmadı.</div>}
             </div>
@@ -35,7 +44,13 @@ export default async function AdminExamMappingPage({ params }: PageProps) {
             <div className="mt-4 space-y-3">
               {(workspace.activeVersion?.questions.slice(0, 8) ?? []).map((question) => (
                 <div key={question.id} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-zinc-300">
-                  #{question.questionNumber} · {question.section.title} · confidence: {question.parseConfidence ?? 0}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-white">#{question.questionNumber}</span>
+                    <span>· {question.section.title}</span>
+                    <span>· confidence: {(question.parseConfidence ?? 0).toFixed(2)}</span>
+                    <span>· answer: {question.correctAnswer}</span>
+                  </div>
+                  <p className="mt-2 line-clamp-3 text-xs leading-6 text-zinc-500">{question.questionText}</p>
                 </div>
               ))}
             </div>
