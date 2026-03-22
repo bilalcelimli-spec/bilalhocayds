@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import Link from "next/link";
-import { ArrowUpRight, KeyRound, ShieldCheck, Sparkles } from "lucide-react";
-import { LoginForm } from "@/src/components/common/login-form";
+import { ArrowUpRight, KeyRound, LockKeyhole, ShieldCheck } from "lucide-react";
 
-export default function LoginPage() {
+import { ResetPasswordForm } from "@/src/components/common/reset-password-form";
+
+export default function ResetPasswordPage() {
   return (
     <div className="relative overflow-hidden">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_top,rgba(212,168,67,0.14),transparent_55%)]" />
@@ -14,11 +16,11 @@ export default function LoginPage() {
           <div className="relative">
             <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">
               <span className="h-2 w-2 rounded-full bg-amber-400" />
-              Hoş Geldin
+              Yeni Sifre
             </div>
-            <h1 className="mt-6 max-w-xl text-4xl font-black leading-tight text-white md:text-5xl">Hesabına dön ve çalışma akışını kaldığı yerden sürdür</h1>
+            <h1 className="mt-6 max-w-xl text-4xl font-black leading-tight text-white md:text-5xl">Guvenli bir yeni sifre belirle</h1>
             <p className="mt-5 max-w-xl text-base leading-8 text-slate-300">
-              Bilal Hoca YDS hesabına giriş yap, AI destekli çalışma planına, canlı ders akışına ve ilerleme paneline tek merkezden yeniden bağlan.
+              Gecerli sifirlama baglantin varsa yeni sifreni tanimla ve hesabina tekrar erisim kazan.
             </p>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -28,19 +30,19 @@ export default function LoginPage() {
                     <ShieldCheck size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white">Güvenli erişim</p>
-                    <p className="mt-1 text-xs leading-6 text-slate-400">E-posta ve şifre ile doğrudan öğrenci paneline bağlan.</p>
+                    <p className="text-sm font-semibold text-white">Tek kullanimlik islem</p>
+                    <p className="mt-1 text-xs leading-6 text-slate-400">Baglanti kullanildiginda ayni token tekrar gecersiz olur.</p>
                   </div>
                 </div>
               </div>
               <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-5">
                 <div className="flex items-center gap-3">
                   <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
-                    <Sparkles size={18} />
+                    <LockKeyhole size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white">Kaldığın yerden devam</p>
-                    <p className="mt-1 text-xs leading-6 text-slate-400">Görevler, canlı ders erişimi ve plan durumu seni bekliyor.</p>
+                    <p className="text-sm font-semibold text-white">Eski sifre iptal edilir</p>
+                    <p className="mt-1 text-xs leading-6 text-slate-400">Guncelleme sonrasi sadece yeni sifren gecerli kalir.</p>
                   </div>
                 </div>
               </div>
@@ -52,18 +54,18 @@ export default function LoginPage() {
                   <KeyRound size={18} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300">Satın Alma Sonrası</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300">Onemli</p>
                   <p className="mt-2 text-sm leading-7 text-amber-100/85">
-                    Plan satın aldıysan, e-posta adresine otomatik şifren gönderildi. O şifreyle doğrudan giriş yapabilirsin.
+                    Sifre degisikligi tamamlandiginda ayni link tekrar kullanilamaz. Gerekirse yeni bir sifirlama talebi olustur.
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="mt-8 flex items-center gap-3 text-sm text-slate-300">
-              <span>Hesabın yok mu?</span>
-              <Link href="/register" className="inline-flex items-center gap-1 font-semibold text-white transition hover:text-amber-300">
-                Ücretsiz kayıt ol
+              <span>Giris ekranina donmek ister misin?</span>
+              <Link href="/login" className="inline-flex items-center gap-1 font-semibold text-white transition hover:text-amber-300">
+                Giris yap
                 <ArrowUpRight size={14} />
               </Link>
             </div>
@@ -75,20 +77,22 @@ export default function LoginPage() {
           <div className="pointer-events-none absolute -left-8 bottom-10 h-40 w-40 rounded-full bg-amber-400/10 blur-3xl" />
 
           <div className="relative">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Güvenli Giriş</p>
-            <h2 className="mt-3 text-3xl font-black text-white">Hesabına Gir</h2>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Sifre Guncelleme</p>
+            <h2 className="mt-3 text-3xl font-black text-white">Yeni Sifreni Tanimla</h2>
             <p className="mt-3 text-sm leading-7 text-slate-400">
-              E-posta ve şifrenle güvenli şekilde oturum aç. Giriş sonrası paneline yönlendirilirsin.
+              Baglanti gecerliyse asagidan yeni sifreni belirleyebilirsin.
             </p>
             <div className="mt-8">
-              <LoginForm />
+              <Suspense
+                fallback={
+                  <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6 text-sm leading-7 text-slate-300">
+                    Sifirlama ekrani hazirlaniyor...
+                  </div>
+                }
+              >
+                <ResetPasswordForm />
+              </Suspense>
             </div>
-            <p className="mt-5 text-center text-xs text-zinc-500">
-              Sifreni mi unuttun?{" "}
-              <Link href="/forgot-password" className="text-amber-400 transition hover:text-amber-300 hover:underline">
-                Sifirla
-              </Link>
-            </p>
           </div>
         </section>
       </div>

@@ -280,3 +280,67 @@ export async function sendWelcomeEmail({
     html,
   });
 }
+
+export async function sendPasswordResetEmail({
+  to,
+  fullName,
+  resetUrl,
+}: {
+  to: string;
+  fullName: string;
+  resetUrl: string;
+}) {
+  const transporter = createTransporter();
+  if (!transporter) {
+    console.warn("[mail] SMTP env vars not configured, skipping password reset email.");
+    return;
+  }
+
+  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "noreply@bilalhocayds.com";
+
+  const html = `
+<!DOCTYPE html>
+<html lang="tr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#09090b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 16px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <p style="font-size:13px;font-weight:700;letter-spacing:.15em;color:#fbbf24;text-transform:uppercase;margin:0;">Bilal Hoca YDS/YDT</p>
+    </div>
+    <div style="background:#18181b;border:1px solid #27272a;border-radius:20px;padding:32px;">
+      <div style="display:inline-block;background:#451a03;border:1px solid #92400e;border-radius:999px;padding:4px 14px;font-size:12px;font-weight:600;color:#fbbf24;margin-bottom:20px;">
+        Şifre Sıfırlama Talebi
+      </div>
+      <h1 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#fff;">Merhaba, ${fullName}!</h1>
+      <p style="margin:0 0 24px;font-size:15px;color:#a1a1aa;line-height:1.6;">
+        Hesabın için bir şifre sıfırlama talebi aldık. Yeni şifreni belirlemek için aşağıdaki butona tıklayabilirsin.
+      </p>
+
+      <a href="${resetUrl}" style="display:block;text-align:center;background:#f1d56d;color:#18181b;font-size:15px;font-weight:800;padding:14px 24px;border-radius:12px;text-decoration:none;margin-bottom:20px;">
+        Şifremi Sıfırla
+      </a>
+
+      <p style="margin:0 0 16px;font-size:13px;color:#71717a;line-height:1.7;">
+        Bu bağlantı 1 saat boyunca geçerlidir. Eğer bu talebi sen oluşturmadıysan bu e-postayı görmezden gelebilirsin.
+      </p>
+
+      <div style="background:#27272a;border-radius:12px;padding:16px 20px;">
+        <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fbbf24;">Buton çalışmazsa</p>
+        <a href="${resetUrl}" style="color:#fde68a;font-size:13px;word-break:break-all;">${resetUrl}</a>
+      </div>
+
+      <p style="font-size:12px;color:#52525b;line-height:1.6;margin:24px 0 0;">
+        Sorun yaşarsan <a href="mailto:${from}" style="color:#fbbf24;">${from}</a> adresine yazabilirsin.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  await transporter.sendMail({
+    from: `"Bilal Hoca YDS" <${from}>`,
+    to,
+    subject: "Şifre sıfırlama bağlantın hazır",
+    html,
+  });
+}

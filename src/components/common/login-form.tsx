@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -81,6 +82,11 @@ export function LoginForm() {
           >
             {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
           </button>
+        </div>
+        <div className="mt-3 flex justify-end">
+          <Link href="/forgot-password" className="text-sm font-medium text-amber-300 transition hover:text-amber-200 hover:underline">
+            Sifremi unuttum
+          </Link>
         </div>
       </div>
 
