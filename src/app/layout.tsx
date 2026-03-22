@@ -8,10 +8,8 @@ export const metadata: Metadata = {
   title: "Bilal Hoca YDS",
   description: "AI destekli YDS / YÖKDİL / YDT hazırlık platformu",
   icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/logo.png", type: "image/png", sizes: "500x500" },
-    ],
+    icon: [{ url: "/logo.png", type: "image/png", sizes: "500x500" }],
+    shortcut: [{ url: "/logo.png", type: "image/png", sizes: "500x500" }],
     apple: { url: "/logo.png", sizes: "500x500" },
   },
 };
