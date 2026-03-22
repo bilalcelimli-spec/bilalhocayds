@@ -44,7 +44,7 @@ type ReadingQuestion = {
   answer: string;
   explanation: string;
   whyOthersWrong: string[];
-  options?: string[];
+  options: string[];
 };
 
 type ReadingPassage = {
@@ -318,7 +318,7 @@ const readingPool: Omit<ReadingPassage, "questions" | "studyPlan">[] = [
     category: "Technology",
     title: "How AI Tutors Are Reshaping Classroom Time",
     passage:
-      "Schools in several countries are testing AI tutoring systems to support students outside regular class hours. Teachers report that the biggest benefit is not the speed of feedback, but the ability to identify recurring learning gaps. However, researchers warn that unequal access to devices could widen the achievement gap unless schools provide shared infrastructure. The current consensus is that AI tutors work best when they are combined with teacher-led instruction and regular progress checks.",
+      "Schools in several countries are testing AI tutoring systems to support students outside regular class hours. Early reports suggest that the strongest benefit is not simply faster feedback, but the ability to identify recurring learning gaps before they become serious. Teachers say that when learners receive short, targeted guidance at home, classroom time can be used for discussion, problem-solving, and individual follow-up. Yet researchers warn that unequal access to devices could widen the achievement gap if schools fail to provide shared infrastructure. They also argue that students still need clear human supervision, especially when software offers simplified explanations or incomplete examples. For that reason, many specialists recommend a blended model in which AI tools handle routine practice while teachers monitor progress, correct misunderstandings, and decide when intervention is necessary. The current consensus is that technology becomes most effective when it supports, rather than replaces, professional judgment in the classroom.",
     summary:
       "AI tutoring can improve support quality, but only under equitable access and teacher supervision.",
     keyVocabulary: ["recurring", "infrastructure", "consensus", "equitable", "supervision"],
@@ -328,7 +328,7 @@ const readingPool: Omit<ReadingPassage, "questions" | "studyPlan">[] = [
     category: "Economy",
     title: "Cities Expand Public Transport to Cut Urban Emissions",
     passage:
-      "Several metropolitan authorities announced long-term transport plans focused on rail upgrades and electric bus networks. Officials expect the shift to lower urban emissions and reduce commuting costs over time. Critics argue that implementation schedules are too optimistic and depend on uncertain funding cycles. Policy analysts note that phased investments with measurable milestones usually produce more stable outcomes than large one-time projects.",
+      "Several metropolitan authorities have announced long-term transport plans focused on rail upgrades and electric bus networks. Officials expect the shift to lower urban emissions, reduce traffic congestion, and gradually cut commuting costs for residents. Supporters argue that better public transport can also improve access to employment by connecting outer districts with commercial centers. Critics, however, say that implementation schedules are too optimistic and depend on uncertain funding cycles. They point out that maintenance costs, labor shortages, and political turnover often delay projects that initially appear straightforward. Policy analysts note that phased investments with measurable milestones usually produce more stable outcomes than large one-time projects because they allow governments to adjust priorities as conditions change. In their view, the real challenge is not announcing ambitious targets, but building financial and administrative systems strong enough to sustain the transition over many years.",
     summary:
       "Public transport expansion may reduce emissions, but funding realism and phased planning are key.",
     keyVocabulary: ["metropolitan", "implementation", "uncertain", "phased", "milestones"],
@@ -338,7 +338,7 @@ const readingPool: Omit<ReadingPassage, "questions" | "studyPlan">[] = [
     category: "Society",
     title: "Why Micro-Learning Habits Improve Long-Term Retention",
     passage:
-      "Education specialists increasingly recommend short, frequent study sessions instead of occasional intensive sessions. According to recent surveys, students who break content into focused blocks show stronger retention after four weeks. The approach is particularly effective when each session ends with active recall tasks. Experts stress that consistency matters more than duration, especially for language learners preparing for high-stakes exams.",
+      "Education specialists increasingly recommend short, frequent study sessions instead of occasional intensive ones. According to recent surveys, students who divide content into focused blocks often show stronger retention after four weeks than those who depend on last-minute cramming. Researchers explain that the brain benefits from repeated retrieval because each review session strengthens access to the same material from a slightly different angle. The method appears especially effective when every session ends with active recall tasks such as self-testing, summarizing from memory, or explaining ideas aloud. Experts stress that consistency matters more than duration, particularly for language learners preparing for high-stakes exams. A learner who studies for twenty minutes every day may build a more reliable foundation than one who studies for three hours only once a week. For this reason, many instructors now design revision plans around routines that are realistic, repeatable, and easy to maintain over time.",
     summary:
       "Frequent short sessions with recall tasks create better long-term retention than cramming.",
     keyVocabulary: ["retention", "intensive", "focused", "consistency", "high-stakes"],
@@ -348,7 +348,7 @@ const readingPool: Omit<ReadingPassage, "questions" | "studyPlan">[] = [
     category: "Science",
     title: "Heat-Resilient Crops Show Promise in Dry Regions",
     passage:
-      "Agricultural scientists have developed crop varieties that maintain yield under prolonged heat stress. Early field data suggest that these varieties can reduce seasonal losses in drought-prone regions. Still, the researchers caution that seed distribution and farmer training remain major bottlenecks. They emphasize that biological innovation must be paired with policy support and local adaptation strategies.",
+      "Agricultural scientists have developed crop varieties that maintain yield under prolonged heat stress. Early field data suggest that these varieties could reduce seasonal losses in drought-prone regions where traditional crops fail more frequently. Researchers say the most promising strains survive not because they eliminate environmental risk, but because they remain productive under unstable conditions that would normally damage growth. Even so, the team cautions that scientific success alone will not transform food systems. Seed distribution remains uneven, farmer training is limited in some districts, and local soil conditions may require separate adaptation strategies. Policy advisers add that farmers are more likely to adopt new varieties when credit access, insurance protection, and technical guidance are available at the same time. In other words, biological innovation may improve resilience, but only if it is supported by institutions capable of turning laboratory progress into practical agricultural change.",
     summary:
       "Heat-resilient crops could reduce losses, but distribution and training challenges remain.",
     keyVocabulary: ["prolonged", "yield", "drought-prone", "bottlenecks", "adaptation"],
@@ -358,7 +358,7 @@ const readingPool: Omit<ReadingPassage, "questions" | "studyPlan">[] = [
     category: "Innovation",
     title: "Small Firms Adopt Automation in Unexpected Workflows",
     passage:
-      "Automation tools are no longer limited to large enterprises with dedicated engineering teams. Interviews with small firms indicate that teams now automate repetitive communication and reporting tasks with minimal setup. Managers say the main benefit is reduced context-switching rather than staff reduction. Analysts caution that workflow redesign and clear accountability are necessary to avoid hidden operational risks.",
+      "Automation tools are no longer limited to large enterprises with dedicated engineering teams. Interviews with small firms indicate that employees now automate repetitive communication, invoicing, and reporting tasks with minimal setup. Managers say the main advantage is not staff reduction, but reduced context-switching, since workers can stay focused on higher-value decisions instead of routine updates. This shift is especially visible in teams that handle large numbers of emails, internal approvals, or client status reports. Analysts caution, however, that workflow redesign and clear accountability are necessary to avoid hidden operational risks. When no one is responsible for checking automated outputs, minor errors can spread quickly across multiple systems. Experts therefore argue that successful adoption depends on clear review protocols, practical staff training, and realistic expectations. In that sense, automation improves efficiency most reliably when it is treated as a management process rather than a purely technical installation.",
     summary:
       "Small firms gain efficiency from automation, but governance and workflow design are essential.",
     keyVocabulary: ["enterprises", "repetitive", "context-switching", "accountability", "operational"],
@@ -1110,11 +1110,12 @@ function createReadingQuestionFallbacks(
   passage: Omit<ReadingPassage, "questions" | "studyPlan">,
 ): ReadingQuestion[] {
   const keyword = passage.keyVocabulary[0] ?? "term";
+  const secondaryKeyword = passage.keyVocabulary[1] ?? "evidence";
   return [
     {
       id: `${passage.title}-main-idea`,
       type: "main-idea",
-      question: `Bu metnin temel savi nedir?`,
+      question: `Bu metnin ana fikrini en iyi hangi secenek ozetler?`,
       skillMeasured: "Main idea recognition",
       answer: passage.summary,
       explanation: `Dogru cevap, metindeki tum detaylari kapsayan ana dusunceyi verir: ${passage.summary}`,
@@ -1122,33 +1123,57 @@ function createReadingQuestionFallbacks(
         "Diger secenekler metindeki tekil detaylara indirgenir.",
         "Bazi secenekler metnin tonunu yanlis genellestirir.",
       ],
+      options: [
+        passage.summary,
+        `Metin yalnizca ${keyword} kavraminin teknik tanimini verir.`,
+        `Yazar konunun tamamen cozuldugunu ve ek adima gerek olmadigini savunur.`,
+        `Metin esas olarak tarihsel arka plani verir, guncel sonuclari tartismaz.`,
+      ],
     },
     {
       id: `${passage.title}-detail`,
       type: "detail",
       question: `Yazara gore uygulanabilirligi zorlastiran temel unsur hangisidir?`,
       skillMeasured: "Detail tracking",
-      answer: `Metinde vurgulanan ana sinirlilik, uygulama ve destek kosullarinin dikkatle yonetilmesi gerektigidir.`,
+      answer: `Uygulama ve destek kosullarinin dikkatle yonetilmesi gerektigi`,
       explanation: `Detail sorularinda metindeki sinirlayici ifade ve caution tonu birlikte okunmalidir.`,
       whyOthersWrong: ["Diger secenekler metinde gecse bile ana engel olarak sunulmaz."],
+      options: [
+        `Uygulama ve destek kosullarinin dikkatle yonetilmesi gerektigi`,
+        `Yazarin konuyla ilgili hicbir ornek vermedigi`,
+        `Metnin yalnizca bireysel tercihlere odaklandigi`,
+        `Sorunun kisa vadede tamamen ortadan kalktigi`,
+      ],
     },
     {
       id: `${passage.title}-inference`,
       type: "inference",
       question: `Metinden hangi sonuc dolayli olarak cikarilabilir?`,
       skillMeasured: "Inference skill",
-      answer: `Metindeki oneriler ihmal edilirse sonuclarin daha az istikrarli veya daha az etkili olmasi beklenir.`,
+      answer: `Destekleyici kosullar saglanmazsa olumlu sonuclarin sinirli kalabilecegi`,
       explanation: `Inference sorularinda metinde birebir yazilmayan ama mantiken cikan sonucu arariz.`,
       whyOthersWrong: ["Yanlis secenekler ya cok kesin ya da metin disi varsayim icerir."],
+      options: [
+        `Destekleyici kosullar saglanmazsa olumlu sonuclarin sinirli kalabilecegi`,
+        `Yazarin konuyu gereksiz ve etkisiz buldugu`,
+        `Metindeki her aktorun ayni gorusu paylastigi`,
+        `Kisa surede evrensel bir cozum bulunacagi`,
+      ],
     },
     {
       id: `${passage.title}-vocabulary`,
       type: "vocabulary",
       question: `Bu metinde ${keyword} kelimesi en yakin hangi anlamda kullanilmistir?`,
       skillMeasured: "Vocabulary in context",
-      answer: `${keyword} kelimesi baglamda metnin ana fikrini destekleyen islevsel bir akademik terim olarak kullanilmistir.`,
+      answer: `Baglamda islevsel ve anlam tasiyan bir akademik unsur olarak`,
       explanation: `Kelimeyi tek basina degil, bulundugu cumlenin anlamsal goreviyle okumak gerekir.`,
       whyOthersWrong: ["Sozlukte var olabilecek diger anlamlar bu baglama uymaz."],
+      options: [
+        `Baglamda islevsel ve anlam tasiyan bir akademik unsur olarak`,
+        `Sadece mizahi bir ayrinti olarak`,
+        `Tamamen tarihsel bir isim etiketi olarak`,
+        `Yazarin kisisel duygusunu gosteren gayriresmi bir ifade olarak`,
+      ],
     },
     {
       id: `${passage.title}-tone`,
@@ -1158,9 +1183,41 @@ function createReadingQuestionFallbacks(
       answer: `Temkinli ama yapici`,
       explanation: `Metin avantajlari kabul ederken sinirlari da gosterdigi icin tamamen iyimser veya tamamen elestirel degildir.`,
       whyOthersWrong: ["Asiri iyimser veya asiri olumsuz yorumlar metindeki dengeyi yansitmaz."],
-      options: ["Temkinli ama yapici", "Asiri elestirel", "Tamamen coskulu", "Alakasiz"],
+      options: ["Temkinli ama yapici", "Asiri elestirel", `Tamamen ${secondaryKeyword} odakli ve tarafsiz olmayan`, "Alakasiz"],
     },
   ];
+}
+
+function getPassageWordCount(text: string) {
+  return text
+    .split(/\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean).length;
+}
+
+function buildFallbackExpandedPassage(
+  passage: Omit<ReadingPassage, "questions" | "studyPlan">,
+  profile: AiStudentProfile,
+) {
+  const intro = `${passage.title} has become a useful topic for ${profile.examType} reading practice because it combines factual information with evaluative language.`;
+  const body = `${passage.passage} Specialists note that candidates perform better when they identify not only the central claim, but also the conditions that limit that claim. In exam settings, this distinction is important because distractors often repeat familiar vocabulary while changing the writer's actual position. Another relevant point is that supporting evidence in this kind of text rarely appears in a single sentence; instead, it is distributed across examples, cautions, and implied consequences. Readers therefore need to compare details carefully before selecting an answer.`;
+  const closing = `For serious exam preparation, the most effective strategy is to combine skimming for structure with closer reading for evidence. That approach helps students understand why the writer presents the issue as important, yet still incomplete or conditional.`;
+  const expanded = `${intro} ${body} ${closing}`.replace(/\s+/g, " ").trim();
+
+  if (getPassageWordCount(expanded) <= 250) {
+    return expanded;
+  }
+
+  return expanded
+    .split(/(?<=[.!?])\s+/)
+    .slice(0, 6)
+    .join(" ")
+    .trim();
+}
+
+function createPassageSummary(passage: string) {
+  const sentences = passage.split(/(?<=[.!?])\s+/).filter(Boolean);
+  return sentences.slice(0, 2).join(" ").trim();
 }
 
 function createReadingAnswerKey(passages: ReadingPassage[]): ReadingAnswerKeyItem[] {
@@ -1342,9 +1399,11 @@ async function createAiReadingPassage(
       "Use the master prompt principles and produce a JSON object only.",
       formatAiProfile({ ...profile, focusSkill: "reading" }),
       "Task:",
-      "Rewrite the source material into an original, exam-focused reading passage.",
+      "Rewrite the source material into an original, exam-focused reading passage in English.",
       "Preserve the core meaning, but produce a more coherent, pedagogically stronger, exam-style text.",
-      "The output must remain suitable for a daily reading module in a Turkish exam-prep platform.",
+      "The output must remain suitable for a Turkish exam-prep platform, but the title, summary, passage, and vocabulary must all be in English.",
+      "Passage length must be between 150 and 250 words.",
+      "The three daily passages should feel like different topic areas rather than variations of the same article.",
       `Source: ${passage.source}`,
       `Category: ${passage.category}`,
       `Original title: ${passage.title}`,
@@ -1352,6 +1411,7 @@ async function createAiReadingPassage(
       "Return JSON with this exact shape:",
       '{"title":"...","passage":"...","summary":"...","keyVocabulary":["word1","word2","word3","word4","word5"]}',
       "keyVocabulary must contain 5 useful exam-oriented words drawn from the passage.",
+      "Summary must be one short sentence in English.",
       "Do not return markdown.",
     ].join("\n\n"),
     temperature: 0.45,
@@ -1359,7 +1419,12 @@ async function createAiReadingPassage(
 
   const parsed = aiText ? extractJsonObject(aiText) : null;
   if (!parsed) {
-    return passage;
+    const fallbackPassage = buildFallbackExpandedPassage(passage, profile);
+    return {
+      ...passage,
+      passage: fallbackPassage,
+      summary: createPassageSummary(fallbackPassage),
+    };
   }
 
   const keyVocabulary = Array.isArray(parsed.keyVocabulary)
@@ -1373,13 +1438,13 @@ async function createAiReadingPassage(
     ...passage,
     title: typeof parsed.title === "string" && parsed.title.trim().length >= 8 ? parsed.title.trim() : passage.title,
     passage:
-      typeof parsed.passage === "string" && parsed.passage.trim().length >= 140
+      typeof parsed.passage === "string" && parsed.passage.trim().length >= 140 && getPassageWordCount(parsed.passage.trim()) >= 150
         ? parsed.passage.trim()
-        : passage.passage,
+        : buildFallbackExpandedPassage(passage, profile),
     summary:
       typeof parsed.summary === "string" && parsed.summary.trim().length >= 30
         ? parsed.summary.trim()
-        : passage.summary,
+        : createPassageSummary(buildFallbackExpandedPassage(passage, profile)),
     keyVocabulary: keyVocabulary.length >= 3 ? keyVocabulary : passage.keyVocabulary,
   };
 }
@@ -1394,14 +1459,16 @@ async function createAiReadingQuestions(
       "Use the master prompt principles and produce JSON only.",
       formatAiProfile({ ...profile, focusSkill: "reading" }),
       "Task:",
-      "Create 5 high-quality Turkish reading questions for the passage.",
+      "Create 5 high-quality Turkish multiple-choice reading questions for the passage.",
       "Question set must cover a balanced mix of main idea, detail, inference, vocabulary in context, and tone/attitude.",
+      "Every question must have exactly 4 options and exactly 1 correct answer.",
       "Return a JSON array only.",
-      'Each item must be: {"type":"main-idea|detail|inference|vocabulary|tone","question":"...","skillMeasured":"...","answer":"...","explanation":"...","whyOthersWrong":["..."],"options":["..."]}',
+      'Each item must be: {"type":"main-idea|detail|inference|vocabulary|tone","question":"...","skillMeasured":"...","answer":"...","explanation":"...","whyOthersWrong":["..."],"options":["A","B","C","D"]}',
       `Title: ${passage.title}`,
       `Passage: ${passage.passage}`,
       `Key vocabulary: ${passage.keyVocabulary.join(", ")}`,
       "Questions must feel like a serious YDS/YDT/IELTS exam-prep editor wrote them.",
+      "The answer field must exactly match one of the four options.",
     ].join("\n\n"),
     temperature: 0.45,
   });
@@ -1432,9 +1499,14 @@ async function createAiReadingQuestions(
         ? item.options
             .map((entry: unknown) => (typeof entry === "string" ? entry.trim() : ""))
             .filter((entry: string) => entry.length > 0)
-        : undefined;
+            .slice(0, 4)
+        : [];
 
       if (!allowedTypes.has(type) || question.length < 8 || answer.length < 4 || explanation.length < 8) {
+        return null;
+      }
+
+      if (options.length !== 4 || !options.includes(answer)) {
         return null;
       }
 
@@ -1446,7 +1518,7 @@ async function createAiReadingQuestions(
         answer,
         explanation,
         whyOthersWrong,
-        ...(options ? { options } : {}),
+        options,
       };
     })
     .filter((item): item is ReadingQuestion => Boolean(item));
@@ -1760,32 +1832,40 @@ export async function getDailyReadingModule(options?: {
     limit: 3,
   });
 
+  const fallbackCandidates = pickUnique(readingPool, readingPool.length, seed);
+  const rssCandidates = rssNews.map((item) => ({
+    source: item.source,
+    sourceUrl: item.url,
+    category: item.category,
+    title: item.title,
+    passage: item.summary,
+    summary: item.summary,
+    keyVocabulary: item.summary
+      .split(/\W+/)
+      .map((word) => word.toLowerCase())
+      .filter((word) => word.length >= 7)
+      .slice(0, 5),
+  }));
+
+  const rawCandidates = [...rssCandidates, ...fallbackCandidates].filter(
+    (item, index, array) =>
+      array.findIndex((candidate) => candidate.category.toLowerCase() === item.category.toLowerCase()) === index,
+  );
+
+  const selectedCandidates = rawCandidates.slice(0, 3);
+
   let passages: ReadingPassage[];
 
-  if (rssNews.length > 0) {
+  if (selectedCandidates.length > 0) {
     passages = await Promise.all(
-      rssNews.map(async (item) => {
-        const rawPassage = {
-          source: item.source,
-          sourceUrl: item.url,
-          category: item.category,
-          title: item.title,
-          passage: item.summary,
-          summary: item.summary,
-          keyVocabulary: item.summary
-            .split(/\W+/)
-            .map((word) => word.toLowerCase())
-            .filter((word) => word.length >= 7)
-            .slice(0, 5),
-        };
-
+      selectedCandidates.map(async (rawPassage) => {
         const basePassage = await createAiReadingPassage(rawPassage, profile);
 
         const questions = await createAiReadingQuestions(basePassage, profile);
         return {
           ...basePassage,
           questions,
-          studyPlan: createReadingPlan(item.source, profile),
+          studyPlan: createReadingPlan(rawPassage.source, profile),
         } satisfies ReadingPassage;
       })
     );

@@ -1,5 +1,6 @@
 import { Button } from "@/src/components/common/button";
 import { AiArticleReader } from "@/src/components/reading/ai-article-reader";
+import { ReadingExamPanel } from "@/src/components/reading/reading-exam-panel";
 import { authOptions } from "@/src/auth";
 import { getPublishedContentByModule } from "@/src/lib/content-creator-engine";
 import { getOrCreateStudentDailyContent } from "@/src/lib/student-daily-content";
@@ -20,10 +21,10 @@ export default async function ReadingPage() {
 		getPublishedContentByModule("reading", 3),
 	]);
 	const mainPassage = reading.passages[0];
-	const supportingPassages = reading.passages.slice(1);
 	const wordMeanings = Object.fromEntries(
 		vocabulary.items.map((item) => [item.word.toLowerCase(), item.trMeaning])
 	);
+	const totalQuestionCount = reading.passages.reduce((sum, passage) => sum + passage.questions.length, 0);
 
 	return (
 		<div className="mx-auto max-w-7xl px-6 py-10">
@@ -72,7 +73,7 @@ export default async function ReadingPage() {
 					<p className="text-sm text-slate-400">Kaynak Sayısı</p>
 					<h2 className="mt-2 text-3xl font-black text-white">{reading.passages.length}</h2>
 					<p className="mt-2 text-sm text-slate-300">
-						Günlük modülde farklı yayınlardan seçilen metinler.
+						Her gün 3 farklı konuda, İngilizce pasaj seti hazırlanır.
 					</p>
 				</div>
 
@@ -80,15 +81,15 @@ export default async function ReadingPage() {
 					<p className="text-sm text-slate-400">Tahmini Süre</p>
 					<h2 className="mt-2 text-3xl font-black text-white">30 dk</h2>
 					<p className="mt-2 text-sm text-slate-300">
-						Skim + detay okuma + soru analizi dahil planlı süre.
+						3 pasaj, çoktan seçmeli sınav ve analiz dahil hedef süre.
 					</p>
 				</div>
 
 				<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl">
 					<p className="text-sm text-slate-400">Soru Tipi</p>
-					<h2 className="mt-2 text-3xl font-black text-white">5 tip</h2>
+					<h2 className="mt-2 text-3xl font-black text-white">{totalQuestionCount} soru</h2>
 					<p className="mt-2 text-sm text-slate-300">
-						Main idea, detail, inference, vocabulary ve tone + answer key.
+						Her pasaj için 5 çoktan seçmeli soru ve tek doğru cevap yapısı.
 					</p>
 				</div>
 
@@ -135,57 +136,8 @@ export default async function ReadingPage() {
 				/>
 
 				<div className="grid gap-6 lg:grid-cols-3">
-					<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl lg:col-span-2">
-						<h2 className="text-xl font-bold text-white">Ana parça soru seti</h2>
-						<div className="mt-5 space-y-4">
-							{mainPassage.questions.map((task) => (
-								<div
-									key={task.question}
-									className="rounded-2xl border border-white/10 px-5 py-4"
-								>
-									<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-										<div>
-											<h3 className="text-lg font-bold text-white">{task.type.toUpperCase()}</h3>
-											<p className="mt-2 text-sm text-slate-300">{task.question}</p>
-											<p className="mt-3 text-xs font-semibold uppercase tracking-wide text-blue-300">{task.skillMeasured}</p>
-											<p className="mt-2 text-sm text-emerald-300">Cevap: {task.answer}</p>
-											<p className="mt-2 text-sm text-slate-300">{task.explanation}</p>
-											{task.whyOthersWrong.length > 0 ? (
-												<ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-slate-400">
-													{task.whyOthersWrong.map((item) => (
-														<li key={item}>{item}</li>
-													))}
-												</ul>
-											) : null}
-										</div>
-										<span className="inline-flex rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-300">
-											Answer Key
-										</span>
-									</div>
-								</div>
-							))}
-						</div>
-
-						<div className="mt-6 rounded-3xl border border-white/10 p-6">
-							<h3 className="text-lg font-bold text-white">Ek kaynaklar</h3>
-							<div className="mt-4 grid gap-4">
-								{supportingPassages.map((item) => (
-									<div key={item.title} className="rounded-2xl border border-white/10 p-4">
-										<p className="text-xs font-semibold uppercase text-slate-400">{item.source}</p>
-										<h4 className="mt-1 text-base font-bold text-white">{item.title}</h4>
-										<p className="mt-2 text-sm text-slate-300">{item.summary}</p>
-										<div className="mt-3 space-y-2">
-											{item.questions.slice(0, 2).map((question) => (
-												<div key={`${item.title}-${question.question}`} className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2">
-													<p className="text-[11px] font-semibold uppercase text-blue-300">{question.type}</p>
-													<p className="mt-1 text-xs text-slate-200">{question.question}</p>
-												</div>
-											))}
-										</div>
-									</div>
-								))}
-							</div>
-						</div>
+					<div className="lg:col-span-2">
+						<ReadingExamPanel passages={reading.passages} />
 					</div>
 
 					<div className="space-y-6">

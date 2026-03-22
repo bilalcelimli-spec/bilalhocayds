@@ -31,6 +31,56 @@ type StudentFeatureAccessState = {
   accessibleExamIds?: string[];
 };
 
+const TURKISH_CHARACTER_PATTERN = /[çğıöşüÇĞİÖŞÜ]/;
+
+function getWordCount(text: string) {
+  return text
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+}
+
+function isReadingContentValid(content: ReadingModuleResponse) {
+  if (!Array.isArray(content.passages) || content.passages.length !== 3) {
+    return false;
+  }
+
+  return content.passages.every((passage) => {
+    const wordCount = getWordCount(passage.passage);
+
+    if (wordCount < 150 || wordCount > 250) {
+      return false;
+    }
+
+    if (TURKISH_CHARACTER_PATTERN.test(passage.title) || TURKISH_CHARACTER_PATTERN.test(passage.passage)) {
+      return false;
+    }
+
+    if (!Array.isArray(passage.questions) || passage.questions.length === 0) {
+      return false;
+    }
+
+    return passage.questions.every((question) => {
+      if (!Array.isArray(question.options) || question.options.length !== 4) {
+        return false;
+      }
+
+      return question.options.includes(question.answer);
+    });
+  });
+}
+
+function isStoredContentStillValid<M extends DailyContentModule>(
+  moduleKey: M,
+  content: StudentDailyContentMap[M],
+) {
+  if (moduleKey === DailyContentModule.READING) {
+    return isReadingContentValid(content as ReadingModuleResponse);
+  }
+
+  return true;
+}
+
 function getIstanbulDayKey(date = new Date()) {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: ISTANBUL_TIME_ZONE,
@@ -130,7 +180,11 @@ export async function getOrCreateStudentDailyContent<M extends DailyContentModul
   });
 
   if (existing) {
-    return existing.contentJson as StudentDailyContentMap[M];
+    const storedContent = existing.contentJson as StudentDailyContentMap[M];
+
+    if (isStoredContentStillValid(moduleKey, storedContent)) {
+      return storedContent;
+    }
   }
 
   const generated = await generateStudentDailyContent(userId, moduleKey, date);
