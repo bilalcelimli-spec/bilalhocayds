@@ -6,7 +6,7 @@ import { ArrowRight, CheckCircle2, Clock3, FileText, LibraryBig } from "lucide-r
 import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
 import { ExamMarketplacePurchase } from "@/src/components/payment/exam-marketplace-purchase";
-import { examModule, examPurchase } from "@/src/lib/prisma";
+import { examPurchase, prisma } from "@/src/lib/prisma";
 
 type ExamQuestion = {
   prompt: string;
@@ -96,9 +96,25 @@ export default async function ExamPage() {
   if (!session) redirect("/login");
   if (session.user.role === "ADMIN") redirect("/admin");
 
-  const exams = await examModule.findMany({
+  const exams = await prisma.examModule.findMany({
     where: { isActive: true, isPublished: true },
     orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      examType: true,
+      cefrLevel: true,
+      questionCount: true,
+      durationMinutes: true,
+      description: true,
+      price: true,
+      isForSale: true,
+      marketplaceTitle: true,
+      marketplaceDescription: true,
+      coverImageUrl: true,
+      instructions: true,
+    },
   });
   const paidPurchases = session.user.email || session.user.id
     ? await examPurchase.findMany({
@@ -115,6 +131,24 @@ export default async function ExamPage() {
   const purchasedExamIds = new Set(paidPurchases.map((purchase) => purchase.examModuleId));
   const bundledExamIds = new Set(session.user.accessibleExamIds ?? []);
   const fullExamAccess = session.user.hasExamAccess || session.user.role === "TEACHER";
+  const accessibleExamIds = fullExamAccess
+    ? exams.map((exam) => exam.id)
+    : exams
+        .filter((exam) => bundledExamIds.has(exam.id) || purchasedExamIds.has(exam.id))
+        .map((exam) => exam.id);
+  const accessibleExamDetails = accessibleExamIds.length
+    ? await prisma.examModule.findMany({
+        where: { id: { in: accessibleExamIds } },
+        select: {
+          id: true,
+          instructions: true,
+          contentJson: true,
+        },
+      })
+    : [];
+  const accessibleExamDetailsMap = new Map(
+    accessibleExamDetails.map((exam) => [exam.id, exam]),
+  );
   const studentNavItems = [
     { label: "Dashboard", href: "/dashboard" },
     { label: "Siparişlerim", href: "/dashboard/orders" },
@@ -133,7 +167,7 @@ export default async function ExamPage() {
   ].filter(isDefined);
   const accessibleExamCount = fullExamAccess
     ? exams.length
-    : exams.filter((exam) => bundledExamIds.has(exam.id) || purchasedExamIds.has(exam.id)).length;
+    : accessibleExamIds.length;
 
   return (
     <DashboardShell
@@ -192,11 +226,12 @@ export default async function ExamPage() {
 
       <div className="grid gap-4 xl:grid-cols-2">
         {exams.map((exam) => {
-          const content = normalizeExamContent(exam.contentJson);
+          const hasAccess = fullExamAccess || bundledExamIds.has(exam.id) || purchasedExamIds.has(exam.id);
+          const examDetail = hasAccess ? accessibleExamDetailsMap.get(exam.id) : null;
+          const content = examDetail ? normalizeExamContent(examDetail.contentJson) : { sections: [], questions: [] };
           const previewQuestions = content.questions.length > 0
             ? content.questions.slice(0, 3)
             : content.sections.flatMap((section) => section.questions).slice(0, 3);
-          const hasAccess = fullExamAccess || bundledExamIds.has(exam.id) || purchasedExamIds.has(exam.id);
 
           return (
             <article key={exam.id} className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.22)]">
@@ -214,10 +249,10 @@ export default async function ExamPage() {
                 </div>
               </div>
 
-              {hasAccess && exam.instructions ? (
+              {hasAccess && examDetail?.instructions ? (
                 <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Talimatlar</p>
-                  <p className="mt-2 text-sm leading-7 text-zinc-300">{exam.instructions}</p>
+                  <p className="mt-2 text-sm leading-7 text-zinc-300">{examDetail.instructions}</p>
                 </div>
               ) : null}
 

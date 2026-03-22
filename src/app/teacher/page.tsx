@@ -57,16 +57,32 @@ export default async function TeacherPage() {
     prisma.liveClass.findFirst({
       where: { scheduledAt: { gte: now } },
       orderBy: { scheduledAt: "asc" },
+      select: {
+        title: true,
+        scheduledAt: true,
+        durationMinutes: true,
+        meetingLink: true,
+      },
     }),
     prisma.reading.findMany({
       where: { isActive: true },
       orderBy: { createdAt: "desc" },
       take: 5,
+      select: {
+        id: true,
+        title: true,
+        sourceName: true,
+        difficultyLevel: true,
+      },
     }),
     prisma.grammarTopic.findMany({
       where: { isActive: true },
       orderBy: { createdAt: "desc" },
       take: 4,
+      select: {
+        id: true,
+        title: true,
+      },
     }),
     prisma.examReviewBooking.findMany({
       where: {

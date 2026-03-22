@@ -1,5 +1,3 @@
-import { getDailyRssNews } from "@/src/lib/rss-news";
-
 type ExamType = "YDS" | "YDT" | "IELTS Academic" | "IELTS General";
 type StudentLevel = "A2" | "B1" | "B2" | "C1";
 type FocusSkill = "reading" | "vocabulary" | "mixed";
@@ -316,7 +314,7 @@ const vocabularyPool: VocabularySeed[] = [
 
 const readingPool: Omit<ReadingPassage, "questions" | "studyPlan">[] = [
   {
-    source: "BBC Future",
+    source: "AI Exam Studio",
     category: "Technology",
     title: "How AI Tutors Are Reshaping Classroom Time",
     passage:
@@ -326,7 +324,7 @@ const readingPool: Omit<ReadingPassage, "questions" | "studyPlan">[] = [
     keyVocabulary: ["recurring", "infrastructure", "consensus", "equitable", "supervision"],
   },
   {
-    source: "Reuters",
+    source: "AI Exam Studio",
     category: "Economy",
     title: "Cities Expand Public Transport to Cut Urban Emissions",
     passage:
@@ -336,7 +334,7 @@ const readingPool: Omit<ReadingPassage, "questions" | "studyPlan">[] = [
     keyVocabulary: ["metropolitan", "implementation", "uncertain", "phased", "milestones"],
   },
   {
-    source: "The Guardian",
+    source: "AI Exam Studio",
     category: "Society",
     title: "Why Micro-Learning Habits Improve Long-Term Retention",
     passage:
@@ -346,7 +344,7 @@ const readingPool: Omit<ReadingPassage, "questions" | "studyPlan">[] = [
     keyVocabulary: ["retention", "intensive", "focused", "consistency", "high-stakes"],
   },
   {
-    source: "Nature Briefing",
+    source: "AI Exam Studio",
     category: "Science",
     title: "Heat-Resilient Crops Show Promise in Dry Regions",
     passage:
@@ -356,7 +354,7 @@ const readingPool: Omit<ReadingPassage, "questions" | "studyPlan">[] = [
     keyVocabulary: ["prolonged", "yield", "drought-prone", "bottlenecks", "adaptation"],
   },
   {
-    source: "MIT Technology Review",
+    source: "AI Exam Studio",
     category: "Innovation",
     title: "Small Firms Adopt Automation in Unexpected Workflows",
     passage:
@@ -1268,6 +1266,22 @@ function getPassageWordCount(text: string) {
     .filter(Boolean).length;
 }
 
+function clampPassageLength(text: string, minimumWords: number, maximumWords: number) {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  const wordCount = getPassageWordCount(normalized);
+
+  if (wordCount >= minimumWords && wordCount <= maximumWords) {
+    return normalized;
+  }
+
+  if (wordCount > maximumWords) {
+    const words = normalized.split(/\s+/);
+    return `${words.slice(0, maximumWords).join(" ")}.`.replace(/\s+\./g, ".");
+  }
+
+  return `${normalized} Students who practise with timed review and short evidence checks usually improve both accuracy and decision speed in later exam sets.`;
+}
+
 function buildFallbackExpandedPassage(
   passage: Omit<ReadingPassage, "questions" | "studyPlan">,
   profile: AiStudentProfile,
@@ -1277,15 +1291,7 @@ function buildFallbackExpandedPassage(
   const closing = `For serious exam preparation, the most effective strategy is to combine skimming for structure with closer reading for evidence. That approach helps students understand why the writer presents the issue as important, yet still incomplete or conditional.`;
   const expanded = `${intro} ${body} ${closing}`.replace(/\s+/g, " ").trim();
 
-  if (getPassageWordCount(expanded) <= 250) {
-    return expanded;
-  }
-
-  return expanded
-    .split(/(?<=[.!?])\s+/)
-    .slice(0, 6)
-    .join(" ")
-    .trim();
+  return clampPassageLength(expanded, 200, 300);
 }
 
 function createPassageSummary(passage: string) {
@@ -1329,10 +1335,10 @@ async function createVocabularyReading(words: string[]) {
       formatAiProfile(profile),
       "Task:",
       "Create a daily exam-focused reading + vocabulary mini session for the selected words.",
-      "The reading passage must be original, natural, exam-oriented, and suitable for Turkish YDS learners at the specified level.",
+      "The reading passage must be original, natural, exam-oriented, and suitable for exam prep learners at the specified level.",
       "Write the title and the passage in English only.",
       "Do not use Turkish words or Turkish characters anywhere in the title or passage.",
-      "Keep the passage length around 160-220 words.",
+      "Keep the passage length between 200 and 260 words.",
       "Use all target words naturally in context.",
       `Target words: ${words.join(", ")}`,
       "Return JSON with this exact shape:",
@@ -1343,15 +1349,15 @@ async function createVocabularyReading(words: string[]) {
     temperature: 0.5,
   });
 
-  const fallback = `Students preparing for YDS often need a coherent routine to improve academic reading speed. In our program, learners allocate short sessions for vocabulary and use each new term in context. They first review prevalent themes in recent exam texts, then identify any implicit assumption behind the writer's argument. This method helps them justify answers with evidence instead of intuition. Even when time constraints make revision difficult, a substantial improvement is still feasible if students follow a consistent plan. Teachers also encourage learners to mitigate stress by using a brief checklist before each practice test. As a subsequent step, students compare their mistakes and build a comprehensive notebook to track progress. Although setbacks are inevitable, this strategy supports resilient study habits and leads to more confident performance.`;
+  const fallback = `Students preparing for academic English exams often need a coherent routine that connects vocabulary review with timed reading practice. In a well-structured session, learners first identify prevalent themes in a short passage and then trace how each paragraph supports the writer's main claim. This process becomes more effective when students notice an implicit assumption behind the argument instead of focusing only on isolated details. Teachers therefore encourage learners to justify every answer with textual evidence rather than instinct. Even when time constraints make revision difficult, substantial progress is still feasible if students follow a consistent cycle of preview, close reading, and review. As a subsequent step, they compare mistakes, highlight weak collocations, and build a comprehensive notebook that records why a wrong option looked attractive. Although setbacks are inevitable, this method develops resilient habits and prepares students for longer exam passages with greater confidence.`;
 
   const parsed = aiText ? extractJsonObject(aiText) : null;
   const title = typeof parsed?.title === "string" && isCleanEnglishContent(parsed.title, 8)
     ? sanitizeEnglishText(parsed.title)
     : "Daily Reading: Vocabulary in Context";
   const passage = typeof parsed?.passage === "string" && isCleanEnglishContent(parsed.passage, 120)
-    ? sanitizeEnglishText(parsed.passage)
-    : fallback;
+    ? clampPassageLength(sanitizeEnglishText(parsed.passage), 200, 260)
+    : clampPassageLength(fallback, 200, 260);
 
   return {
     title,
@@ -1474,15 +1480,16 @@ async function createAiReadingPassage(
       "Use the master prompt principles and produce a JSON object only.",
       formatAiProfile({ ...profile, focusSkill: "reading" }),
       "Task:",
-      "Rewrite the source material into an original, exam-focused reading passage in English.",
-      "Preserve the core meaning, but produce a more coherent, pedagogically stronger, exam-style text.",
-      "The output must remain suitable for a Turkish exam-prep platform, but the title, summary, passage, and vocabulary must all be in English.",
-      "Passage length must be between 150 and 250 words.",
-      "The three daily passages should feel like different topic areas rather than variations of the same article.",
-      `Source: ${passage.source}`,
-      `Category: ${passage.category}`,
-      `Original title: ${passage.title}`,
-      `Base material: ${passage.passage}`,
+      "Create an original exam-focused reading passage in English.",
+      "The passage must feel suitable for YDS, YDT, or IELTS-style preparation depending on the profile.",
+      "Do not adapt or summarize a news article. Write a fresh passage from scratch using only the topic/theme below as inspiration.",
+      "The title, summary, passage, and key vocabulary must all be in English.",
+      "Passage length must be between 200 and 300 words.",
+      "The three daily passages should feel like clearly different topic areas rather than variations of the same text.",
+      `Practice source label: ${profile.examType} Practice`,
+      `Topic category: ${passage.category}`,
+      `Topic hint: ${passage.title}`,
+      `Theme notes: ${passage.passage}`,
       "Return JSON with this exact shape:",
       '{"title":"...","passage":"...","summary":"...","keyVocabulary":["word1","word2","word3","word4","word5"]}',
       "keyVocabulary must contain 5 useful exam-oriented words drawn from the passage.",
@@ -1497,6 +1504,8 @@ async function createAiReadingPassage(
   if (!parsed) {
     return {
       ...passage,
+      source: `${profile.examType} Practice`,
+      sourceUrl: undefined,
       title: sanitizeEnglishText(passage.title),
       passage: fallbackPassage,
       summary: sanitizeEnglishText(createPassageSummary(fallbackPassage)),
@@ -1512,13 +1521,15 @@ async function createAiReadingPassage(
 
   return {
     ...passage,
+    source: `${profile.examType} Practice`,
+    sourceUrl: undefined,
     title:
       typeof parsed.title === "string" && isCleanEnglishContent(parsed.title, 8)
         ? sanitizeEnglishText(parsed.title)
         : sanitizeEnglishText(passage.title),
     passage:
-      typeof parsed.passage === "string" && isCleanEnglishContent(parsed.passage, 140) && getPassageWordCount(parsed.passage.trim()) >= 150
-        ? sanitizeEnglishText(parsed.passage)
+      typeof parsed.passage === "string" && isCleanEnglishContent(parsed.passage, 140) && getPassageWordCount(parsed.passage.trim()) >= 200
+        ? clampPassageLength(sanitizeEnglishText(parsed.passage), 200, 300)
         : fallbackPassage,
     summary:
       typeof parsed.summary === "string" && isCleanEnglishContent(parsed.summary, 30)
@@ -1911,69 +1922,30 @@ export async function getDailyReadingModule(options?: {
     ...options?.profile,
   });
 
-  const rssNews = await getDailyRssNews({
-    interestTags,
-    seed,
-    limit: 3,
+  const prioritizedPool = [...readingPool].sort((left, right) => {
+    const leftScore = interestTags.some((tag) => `${left.category} ${left.title}`.toLowerCase().includes(tag.toLowerCase())) ? 1 : 0;
+    const rightScore = interestTags.some((tag) => `${right.category} ${right.title}`.toLowerCase().includes(tag.toLowerCase())) ? 1 : 0;
+    return rightScore - leftScore;
   });
 
-  const fallbackCandidates = pickUnique(readingPool, readingPool.length, seed);
-  const rssCandidates = rssNews.map((item) => ({
-    source: item.source,
-    sourceUrl: item.url,
-    category: item.category,
-    title: item.title,
-    passage: item.summary,
-    summary: item.summary,
-    keyVocabulary: item.summary
-      .split(/\W+/)
-      .map((word) => word.toLowerCase())
-      .filter((word) => word.length >= 7)
-      .slice(0, 5),
-  }));
-
-  const rawCandidates = [...rssCandidates, ...fallbackCandidates].filter(
-    (item, index, array) =>
-      array.findIndex((candidate) => candidate.category.toLowerCase() === item.category.toLowerCase()) === index,
+  const selectedCandidates = pickUnique(prioritizedPool, 3, seed);
+  const passages = await Promise.all(
+    selectedCandidates.map(async (item) => {
+      const rewritten = await createAiReadingPassage(item, profile);
+      return {
+        ...rewritten,
+        questions: await createAiReadingQuestions(rewritten, profile),
+        studyPlan: createReadingPlan(profile.examType, profile),
+      } satisfies ReadingPassage;
+    })
   );
-
-  const selectedCandidates = rawCandidates.slice(0, 3);
-
-  let passages: ReadingPassage[];
-
-  if (selectedCandidates.length > 0) {
-    passages = await Promise.all(
-      selectedCandidates.map(async (rawPassage) => {
-        const basePassage = await createAiReadingPassage(rawPassage, profile);
-
-        const questions = await createAiReadingQuestions(basePassage, profile);
-        return {
-          ...basePassage,
-          questions,
-          studyPlan: createReadingPlan(rawPassage.source, profile),
-        } satisfies ReadingPassage;
-      })
-    );
-  } else {
-    const selected = pickUnique(readingPool, 3, seed);
-    passages = await Promise.all(
-      selected.map(async (item) => {
-        const rewritten = await createAiReadingPassage(item, profile);
-        return {
-          ...rewritten,
-          questions: await createAiReadingQuestions(rewritten, profile),
-          studyPlan: createReadingPlan(rewritten.source, profile),
-        } satisfies ReadingPassage;
-      })
-    );
-  }
 
   const topicLabel = passages[0]?.category ?? profile.topicPreferences[0] ?? "Academic Reading";
   const performanceEvaluation = createDefaultRubric({ ...profile, focusSkill: "reading" });
 
   return {
     generatedAt: date.toISOString(),
-    model: process.env.AI_API_KEY ? "hybrid-ai-rss" : "local-rss",
+    model: process.env.AI_API_KEY ? "hybrid-ai" : "local-ai",
     sessionTitle: createSessionTitle(profile, "reading", topicLabel),
     studentProfileSummary: createStudentProfileSummary(profile),
     dailyGoal: createDailyGoal(profile, "reading"),

@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, FileText, TimerReset } from "lucide-react";
+import { ArrowLeft, FileText, PencilLine, TimerReset } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { revalidatePath } from "next/cache";
@@ -69,6 +69,41 @@ function parseContentJson(rawValue: FormDataEntryValue | null): Prisma.InputJson
   } catch {
     return { raw };
   }
+}
+
+async function quickUpdateExamAction(formData: FormData) {
+  "use server";
+  await assertAdmin();
+
+  const id = String(formData.get("id") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const slugInput = String(formData.get("slug") ?? "").trim();
+
+  if (!id || !title) {
+    return;
+  }
+
+  await examModule.update({
+    where: { id },
+    data: {
+      title,
+      slug: toSlug(slugInput || title),
+      examType: String(formData.get("examType") ?? "General Practice").trim() || "General Practice",
+      cefrLevel: String(formData.get("cefrLevel") ?? "").trim() || null,
+      durationMinutes: parseNumber(formData.get("durationMinutes"), 45),
+      questionCount: parseNumber(formData.get("questionCount"), 20),
+      price: parseNumber(formData.get("price"), 0),
+      publicationStatus: String(formData.get("publicationStatus") ?? "DRAFT"),
+      isPublished: formData.get("isPublished") === "on",
+      isActive: formData.get("isActive") === "on",
+      isForSale: formData.get("isForSale") === "on",
+      aiExplanationEnabled: formData.get("aiExplanationEnabled") === "on",
+    },
+  });
+
+  revalidatePath("/admin/exams");
+  revalidatePath("/admin");
+  revalidatePath("/exam");
 }
 
 async function assertAdmin() {
@@ -259,7 +294,27 @@ export default async function AdminExamsPage() {
   const [exams, publishedCount, plans] = await Promise.all([
     prisma.examModule.findMany({
       orderBy: { updatedAt: "desc" },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        examType: true,
+        cefrLevel: true,
+        durationMinutes: true,
+        questionCount: true,
+        subtitle: true,
+        sourceLabel: true,
+        examSeries: true,
+        yearLabel: true,
+        estimatedDifficulty: true,
+        targetStudentLevel: true,
+        publicationStatus: true,
+        aiExplanationEnabled: true,
+        price: true,
+        isForSale: true,
+        isPublished: true,
+        isActive: true,
+        updatedAt: true,
         plans: {
           select: {
             plan: {
@@ -294,14 +349,8 @@ export default async function AdminExamsPage() {
     cefrLevel: string | null;
     durationMinutes: number;
     questionCount: number;
-    description: string | null;
-    instructions: string | null;
-    marketplaceTitle: string | null;
-    marketplaceDescription: string | null;
-    coverImageUrl: string | null;
     price: number | null;
     isForSale: boolean;
-    contentJson: Prisma.JsonValue;
     subtitle: string | null;
     sourceLabel: string | null;
     examSeries: string | null;
@@ -310,11 +359,8 @@ export default async function AdminExamsPage() {
     targetStudentLevel: string | null;
     publicationStatus: string;
     aiExplanationEnabled: boolean;
-    lessonReviewPrice: number | null;
-    lessonCurrency: string;
     isPublished: boolean;
     isActive: boolean;
-    createdAt: Date;
     updatedAt: Date;
     plans: Array<{ plan: { id: string; name: string; slug: string; isActive: boolean } }>;
   }>;
@@ -400,7 +446,7 @@ export default async function AdminExamsPage() {
         <div className="divide-y divide-white/5">
           {typedExams.map((exam) => (
             <div key={exam.id} className="px-5 py-4 transition hover:bg-white/[0.03]">
-              <form action={updateExamAction} className="space-y-3">
+              <form action={quickUpdateExamAction} className="space-y-3">
                 <input type="hidden" name="id" value={exam.id} />
                 <input type="hidden" name="examModuleId" value={exam.id} />
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -411,6 +457,7 @@ export default async function AdminExamsPage() {
                     <div className="min-w-0 flex-1">
                       <div className="mb-2 flex flex-wrap gap-2">
                         <Link href={`/admin/exams/${exam.id}`} className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-200 hover:bg-emerald-500/15">Workspace</Link>
+                        <Link href={`/admin/exams/${exam.id}/edit`} className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-200 hover:bg-amber-500/15">Edit</Link>
                         <Link href={`/admin/exams/${exam.id}/parse`} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300 hover:bg-white/10">Parse</Link>
                         <Link href={`/admin/exams/${exam.id}/mapping`} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300 hover:bg-white/10">Mapping</Link>
                         <Link href={`/admin/exams/${exam.id}/questions`} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300 hover:bg-white/10">Questions</Link>
@@ -451,9 +498,7 @@ export default async function AdminExamsPage() {
                   <input name="durationMinutes" type="number" min="1" defaultValue={exam.durationMinutes} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
                   <input name="questionCount" type="number" min="1" defaultValue={exam.questionCount} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
                   <input name="price" type="number" min="0" step="0.01" defaultValue={exam.price ?? 0} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
-                  <input name="lessonReviewPrice" type="number" min="0" step="0.01" defaultValue={exam.lessonReviewPrice ?? 0} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
-                  <input name="coverImageUrl" defaultValue={exam.coverImageUrl ?? ""} placeholder="Kapak görseli URL" className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
-                  <input name="lessonCurrency" defaultValue={exam.lessonCurrency ?? "TRY"} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
+                  <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-zinc-400">Full metadata and content editing moved to the Edit workspace.</div>
                   <select name="publicationStatus" defaultValue={exam.publicationStatus} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300">
                     <option value="DRAFT">Draft</option>
                     <option value="PARSING">Parsing</option>
@@ -468,16 +513,9 @@ export default async function AdminExamsPage() {
                   <label className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300"><input type="checkbox" name="aiExplanationEnabled" defaultChecked={exam.aiExplanationEnabled} /> AI açıklama</label>
                 </div>
 
-                <textarea name="description" defaultValue={exam.description ?? ""} rows={2} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-zinc-300" />
-                <textarea name="marketplaceTitle" defaultValue={exam.marketplaceTitle ?? ""} rows={2} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-zinc-300" />
-                <textarea name="instructions" defaultValue={exam.instructions ?? ""} rows={2} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-zinc-300" />
-                <textarea name="marketplaceDescription" defaultValue={exam.marketplaceDescription ?? ""} rows={2} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-zinc-300" />
-                <textarea
-                  name="contentJson"
-                  defaultValue={JSON.stringify(exam.contentJson, null, 2)}
-                  rows={10}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-mono text-xs text-zinc-300"
-                />
+                <div className="rounded-2xl border border-white/8 bg-black/20 px-4 py-3 text-xs text-zinc-400">
+                  Use the Edit workspace for description, instructions, marketplace copy, pricing details, and raw JSON content. This list stays lightweight for faster admin loading.
+                </div>
 
                 <div className="rounded-2xl border border-white/8 bg-black/20 px-4 py-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -538,6 +576,7 @@ export default async function AdminExamsPage() {
                   <span className="inline-flex items-center gap-1"><TimerReset size={12} /> {exam.durationMinutes} dk</span>
                   <span>{exam.questionCount} soru</span>
                   <span>{format(exam.updatedAt, "d MMM yyyy", { locale: tr })}</span>
+                  <Link href={`/admin/exams/${exam.id}/edit`} className="inline-flex items-center gap-1 rounded-lg border border-amber-500/20 px-2 py-1 text-amber-300 hover:bg-amber-500/10"><PencilLine size={12} /> Detaylı düzenle</Link>
                   <button type="submit" className="rounded-lg border border-white/10 px-2 py-1 text-zinc-300 hover:bg-white/10">Kaydet</button>
                 </div>
               </form>

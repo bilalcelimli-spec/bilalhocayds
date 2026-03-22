@@ -52,7 +52,7 @@ function isReadingContentValid(content: ReadingModuleResponse) {
   return content.passages.every((passage) => {
     const wordCount = getWordCount(passage.passage);
 
-    if (wordCount < 150 || wordCount > 250) {
+    if (wordCount < 200 || wordCount > 300) {
       return false;
     }
 

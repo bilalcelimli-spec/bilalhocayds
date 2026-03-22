@@ -1,6 +1,6 @@
 import { Button } from "@/src/components/common/button";
+import { GrammarPracticePanel } from "@/src/components/grammar/grammar-practice-panel";
 import { authOptions } from "@/src/auth";
-import { getPublishedContentByModule } from "@/src/lib/content-creator-engine";
 import { getOrCreateStudentDailyContent } from "@/src/lib/student-daily-content";
 import { DailyContentModule } from "@prisma/client";
 import { getServerSession } from "next-auth";
@@ -13,10 +13,7 @@ export default async function GrammarPage() {
 		return null;
 	}
 
-	const [grammar, publishedGrammarRuns] = await Promise.all([
-		getOrCreateStudentDailyContent(session.user.id, DailyContentModule.GRAMMAR),
-		getPublishedContentByModule("grammar", 3),
-	]);
+	const grammar = await getOrCreateStudentDailyContent(session.user.id, DailyContentModule.GRAMMAR);
 
 	const activityGroups = [
 		{ label: "Multiple Choice", items: grammar.activitySet.multipleChoice },
@@ -28,99 +25,54 @@ export default async function GrammarPage() {
 	];
 
 	return (
-		<div className="mx-auto max-w-7xl px-6 py-10">
+		<div className="mx-auto max-w-6xl px-6 py-10">
 			<div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
 				<div>
 					<span className="inline-flex rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-300">
 						AI Grammar Coach
 					</span>
 					<h1 className="mt-4 text-3xl font-black text-white md:text-4xl">
-						Hedef odakli gunluk grammar oturumu hazir
+						Daha minimal gunluk grammar calisma ekrani
 					</h1>
-					<p className="mt-3 max-w-2xl text-slate-300">
-						{grammar.studentGoalSnapshot}
-					</p>
+					<p className="mt-3 max-w-2xl text-slate-300">{grammar.studentGoalSnapshot}</p>
 				</div>
 
 				<div className="flex flex-wrap gap-3">
 					<Button href="/dashboard" variant="outline">
-						Dashboard&apos;a Dön
+						Dashboard&apos;a Don
 					</Button>
 					<Button href="/pricing">Tam Konu Paketi</Button>
 				</div>
 			</div>
 
-			<div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-				<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+			<div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+				<div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_12px_30px_rgba(0,0,0,0.18)]">
 					<p className="text-sm text-slate-400">Bugunku Konu</p>
 					<h2 className="mt-2 text-3xl font-black text-white">{grammar.focusTopic}</h2>
-					<p className="mt-2 text-sm text-slate-300">
-						{grammar.dailyGoal}
-					</p>
+					<p className="mt-2 text-sm text-slate-300">{grammar.dailyGoal}</p>
 				</div>
-
-				<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+				<div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_12px_30px_rgba(0,0,0,0.18)]">
 					<p className="text-sm text-slate-400">Activity Set</p>
 					<h2 className="mt-2 text-3xl font-black text-white">6 format</h2>
-					<p className="mt-2 text-sm text-slate-300">
-						Sinav tipi soru, donusum, hata tespiti ve mini production ayni oturumda.
-					</p>
+					<p className="mt-2 text-sm text-slate-300">Sinav tipi soru, donusum, hata tespiti ve mini production ayni oturumda.</p>
 				</div>
-
-				<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+				<div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_12px_30px_rgba(0,0,0,0.18)]">
 					<p className="text-sm text-slate-400">AI Modeli</p>
 					<h2 className="mt-2 text-3xl font-black text-white">{grammar.model}</h2>
-					<p className="mt-2 text-sm text-slate-300">
-						Modül tarihi: {new Date(grammar.generatedAt).toLocaleDateString("tr-TR")}
-					</p>
+					<p className="mt-2 text-sm text-slate-300">Modul tarihi: {new Date(grammar.generatedAt).toLocaleDateString("tr-TR")}</p>
 				</div>
-
-				<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+				<div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_12px_30px_rgba(0,0,0,0.18)]">
 					<p className="text-sm text-slate-400">Sonraki Adim</p>
 					<h2 className="mt-2 text-3xl font-black text-white">Net</h2>
-					<p className="mt-2 text-sm text-slate-300">
-						{grammar.personalizedNextStep}
-					</p>
+					<p className="mt-2 text-sm text-slate-300">{grammar.personalizedNextStep}</p>
 				</div>
 			</div>
 
-			<div className="mt-10 grid gap-6 lg:grid-cols-3">
-				<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl lg:col-span-2">
-					{publishedGrammarRuns.length ? (
-						<div className="mb-6 rounded-3xl border border-emerald-500/20 bg-emerald-500/[0.06] p-5">
-							<div className="flex flex-wrap items-center justify-between gap-3">
-								<div>
-									<p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300">Published From Content Engine</p>
-									<h2 className="mt-2 text-lg font-bold text-white">Modüle dağıtılan ek grammar setleri</h2>
-								</div>
-								{session.user.hasContentLibraryAccess ? (
-									<Button href="/dashboard/content-library" variant="secondary" size="sm">
-										Kütüphaneyi Aç
-									</Button>
-								) : null}
-							</div>
-							<div className="mt-4 space-y-3">
-								{publishedGrammarRuns.map((run) => (
-									<div key={run.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-										<p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">{run.itemType}</p>
-										<h3 className="mt-2 text-base font-bold text-white">{run.title}</h3>
-										<p className="mt-2 text-sm leading-7 text-slate-300">{run.generatedText?.slice(0, 260) ?? run.styleAnalysis ?? ""}</p>
-									</div>
-								))}
-							</div>
-						</div>
-					) : null}
-
-					<div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-						<div>
-							<h2 className="text-xl font-bold text-white">Concept Explanation</h2>
-							<p className="mt-1 text-sm text-slate-300">
-								{grammar.topicReason}
-							</p>
-						</div>
-						<Button variant="secondary" size="sm">
-							Practice Baslat
-						</Button>
+			<div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+				<div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_12px_30px_rgba(0,0,0,0.18)]">
+					<div>
+						<h2 className="text-xl font-bold text-white">Concept Explanation</h2>
+						<p className="mt-1 text-sm text-slate-300">{grammar.topicReason}</p>
 					</div>
 
 					<div className="mt-6 rounded-3xl bg-white/[0.04] p-6">
@@ -137,9 +89,7 @@ export default async function GrammarPage() {
 
 					<div className="mt-6 rounded-3xl bg-white/[0.04] p-6">
 						<h3 className="text-lg font-bold text-white">Model Examples</h3>
-						<p className="mt-3 text-sm leading-7 text-slate-300">
-							Kolaydan daha sinav odakli kullanima giden ornekler:
-						</p>
+						<p className="mt-3 text-sm leading-7 text-slate-300">Kolaydan daha sinav odakli kullanima giden ornekler:</p>
 						<div className="mt-4 space-y-3">
 							{grammar.modelExamples.map((example) => (
 								<div key={example.en} className="rounded-2xl border border-white/10 p-4">
@@ -151,46 +101,17 @@ export default async function GrammarPage() {
 						</div>
 					</div>
 
-					<div className="mt-6 space-y-4">
-						{activityGroups.map((group) => (
-							<div key={group.label} className="rounded-2xl border border-white/10 px-5 py-4">
-								<div className="flex items-center justify-between gap-3">
-									<h3 className="text-lg font-bold text-white">{group.label}</h3>
-									<span className="inline-flex rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-300">
-										{group.items.length} gorev
-									</span>
-								</div>
-								<div className="mt-4 space-y-4">
-									{group.items.map((item) => (
-										<div key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-											<p className="text-xs font-semibold uppercase tracking-wide text-blue-300">{item.title}</p>
-											<p className="mt-2 text-sm text-slate-200">{item.prompt}</p>
-											{item.options?.length ? (
-												<p className="mt-2 text-xs text-slate-500">Secenekler: {item.options.join(" / ")}</p>
-											) : null}
-											<p className="mt-3 text-sm font-semibold text-emerald-300">Cevap: {item.answer}</p>
-											<p className="mt-2 text-sm text-slate-300">{item.explanation}</p>
-											<p className="mt-2 text-xs text-slate-500">Test edilen nokta: {item.testedPoint}</p>
-											{item.sampleResponse ? (
-												<p className="mt-2 text-xs text-amber-200">Ornek yanit: {item.sampleResponse}</p>
-											) : null}
-										</div>
-									))}
-								</div>
-							</div>
-						))}
+					<div className="mt-6">
+						<GrammarPracticePanel groups={activityGroups} />
 					</div>
 				</div>
 
 				<div className="space-y-6">
-					<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+					<div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_12px_30px_rgba(0,0,0,0.18)]">
 						<h2 className="text-xl font-bold text-white">Strategy Notes</h2>
 						<div className="mt-5 space-y-3">
 							{grammar.strategyNotes.map((item, index) => (
-								<div
-									key={item}
-									className="flex items-start gap-3 rounded-2xl border border-white/15 px-4 py-4"
-								>
+								<div key={item} className="flex items-start gap-3 rounded-2xl border border-white/15 px-4 py-4">
 									<span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
 										{index + 1}
 									</span>
@@ -200,24 +121,22 @@ export default async function GrammarPage() {
 						</div>
 					</div>
 
-					<div className="rounded-3xl bg-blue-600 p-6 text-white shadow-[0_12px_40px_rgba(0,0,0,0.25)]">
-						<p className="text-sm font-semibold text-blue-100">Performance Evaluation</p>
-						<h3 className="mt-2 text-xl font-black">Hedef puana gore durum</h3>
-						<p className="mt-3 text-sm leading-7 text-blue-100">
-							{grammar.performanceEvaluation.summary}
-						</p>
-						<div className="mt-4 border-t border-blue-300/40 pt-4">
-							<p className="text-xs text-blue-100">Target Comment</p>
-							<p className="mt-2 text-sm text-blue-100">{grammar.performanceEvaluation.targetScoreComment}</p>
+					<div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-white shadow-[0_12px_30px_rgba(0,0,0,0.18)]">
+						<p className="text-sm font-semibold text-slate-300">Performance Evaluation</p>
+						<h3 className="mt-2 text-xl font-black text-white">Hedef puana gore durum</h3>
+						<p className="mt-3 text-sm leading-7 text-slate-300">{grammar.performanceEvaluation.summary}</p>
+						<div className="mt-4 border-t border-white/10 pt-4">
+							<p className="text-xs text-slate-500">Target Comment</p>
+							<p className="mt-2 text-sm text-slate-300">{grammar.performanceEvaluation.targetScoreComment}</p>
 							<div className="mt-4 space-y-3">
 								{grammar.performanceEvaluation.rubric.map((item) => (
-									<div key={item.label} className="rounded-2xl border border-blue-300/20 bg-blue-950/20 p-4">
+									<div key={item.label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
 										<div className="flex items-center justify-between gap-3">
 											<p className="text-sm font-semibold text-white">{item.label}</p>
 											<p className="text-sm font-black text-amber-200">{item.score}/10</p>
 										</div>
-										<p className="mt-2 text-xs text-blue-100">{item.comment}</p>
-										<p className="mt-2 text-xs text-blue-200/80">{item.recommendation}</p>
+										<p className="mt-2 text-xs text-slate-300">{item.comment}</p>
+										<p className="mt-2 text-xs text-slate-500">{item.recommendation}</p>
 									</div>
 								))}
 							</div>
