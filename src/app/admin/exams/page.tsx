@@ -45,6 +45,19 @@ function parseNumber(value: FormDataEntryValue | null, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function parseOptionalNumber(value: FormDataEntryValue | null) {
+  if (typeof value !== "string" || value.trim() === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseString(value: FormDataEntryValue | null) {
+  return typeof value === "string" ? value.trim() || null : null;
+}
+
 function parseContentJson(rawValue: FormDataEntryValue | null): Prisma.InputJsonValue {
   const raw = typeof rawValue === "string" ? rawValue.trim() : "";
   if (!raw) {
@@ -92,6 +105,16 @@ async function createExamAction(formData: FormData) {
       price: parseNumber(formData.get("price"), 0),
       isForSale: formData.get("isForSale") === "on",
       contentJson: parseContentJson(formData.get("contentJson")),
+      subtitle: parseString(formData.get("subtitle")),
+      sourceLabel: parseString(formData.get("sourceLabel")),
+      examSeries: parseString(formData.get("examSeries")),
+      yearLabel: parseString(formData.get("yearLabel")),
+      estimatedDifficulty: parseString(formData.get("estimatedDifficulty")),
+      targetStudentLevel: parseString(formData.get("targetStudentLevel")),
+      publicationStatus: String(formData.get("publicationStatus") ?? "DRAFT"),
+      aiExplanationEnabled: formData.get("aiExplanationEnabled") === "on",
+      lessonReviewPrice: parseOptionalNumber(formData.get("lessonReviewPrice")),
+      lessonCurrency: String(formData.get("lessonCurrency") ?? "TRY").trim() || "TRY",
       isPublished: formData.get("isPublished") === "on",
       isActive: formData.get("isActive") === "on",
     },
@@ -130,6 +153,16 @@ async function updateExamAction(formData: FormData) {
       price: parseNumber(formData.get("price"), 0),
       isForSale: formData.get("isForSale") === "on",
       contentJson: parseContentJson(formData.get("contentJson")),
+      subtitle: parseString(formData.get("subtitle")),
+      sourceLabel: parseString(formData.get("sourceLabel")),
+      examSeries: parseString(formData.get("examSeries")),
+      yearLabel: parseString(formData.get("yearLabel")),
+      estimatedDifficulty: parseString(formData.get("estimatedDifficulty")),
+      targetStudentLevel: parseString(formData.get("targetStudentLevel")),
+      publicationStatus: String(formData.get("publicationStatus") ?? "DRAFT"),
+      aiExplanationEnabled: formData.get("aiExplanationEnabled") === "on",
+      lessonReviewPrice: parseOptionalNumber(formData.get("lessonReviewPrice")),
+      lessonCurrency: String(formData.get("lessonCurrency") ?? "TRY").trim() || "TRY",
       isPublished: formData.get("isPublished") === "on",
       isActive: formData.get("isActive") === "on",
     },
@@ -269,6 +302,16 @@ export default async function AdminExamsPage() {
     price: number | null;
     isForSale: boolean;
     contentJson: Prisma.JsonValue;
+    subtitle: string | null;
+    sourceLabel: string | null;
+    examSeries: string | null;
+    yearLabel: string | null;
+    estimatedDifficulty: string | null;
+    targetStudentLevel: string | null;
+    publicationStatus: string;
+    aiExplanationEnabled: boolean;
+    lessonReviewPrice: number | null;
+    lessonCurrency: string;
     isPublished: boolean;
     isActive: boolean;
     createdAt: Date;
@@ -308,16 +351,32 @@ export default async function AdminExamsPage() {
         </p>
         <form action={createExamAction} className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <input name="title" required placeholder="Başlık" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
+          <input name="subtitle" placeholder="Alt başlık" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <input name="slug" placeholder="Slug (opsiyonel)" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
+          <input name="sourceLabel" placeholder="Kaynak etiketi" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <input name="examType" placeholder="Exam type" defaultValue="YDS Practice" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <input name="cefrLevel" placeholder="Seviye (B1/B2/C1/C2)" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
+          <input name="examSeries" placeholder="Seri / pack" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
+          <input name="yearLabel" placeholder="Yıl etiketi" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <input name="durationMinutes" type="number" min="1" defaultValue="45" placeholder="Süre" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <input name="questionCount" type="number" min="1" defaultValue="20" placeholder="Soru sayısı" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <input name="price" type="number" min="0" step="0.01" defaultValue="0" placeholder="Satış fiyatı" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
+          <input name="lessonReviewPrice" type="number" min="0" step="0.01" placeholder="30 dk review ücreti" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
+          <input name="estimatedDifficulty" placeholder="Tahmini zorluk" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
+          <input name="targetStudentLevel" placeholder="Hedef öğrenci seviyesi" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <input name="coverImageUrl" placeholder="Kapak görseli URL" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
+          <input name="lessonCurrency" defaultValue="TRY" placeholder="Para birimi" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
+          <select name="publicationStatus" defaultValue="DRAFT" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white">
+            <option value="DRAFT">Draft</option>
+            <option value="PARSING">Parsing</option>
+            <option value="REVIEW">Review</option>
+            <option value="READY">Ready</option>
+            <option value="PUBLISHED">Published</option>
+          </select>
           <label className="flex items-center gap-2 text-sm text-zinc-300"><input type="checkbox" name="isPublished" /> Yayınla</label>
           <label className="flex items-center gap-2 text-sm text-zinc-300"><input type="checkbox" name="isActive" defaultChecked /> Aktif</label>
           <label className="flex items-center gap-2 text-sm text-zinc-300"><input type="checkbox" name="isForSale" /> Marketplace&apos;te sat</label>
+          <label className="flex items-center gap-2 text-sm text-zinc-300"><input type="checkbox" name="aiExplanationEnabled" defaultChecked /> AI açıklama aktif</label>
           <textarea name="description" placeholder="Açıklama" rows={3} className="md:col-span-2 xl:col-span-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <textarea name="marketplaceTitle" placeholder="Marketplace başlığı (opsiyonel)" rows={3} className="md:col-span-2 xl:col-span-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <textarea name="instructions" placeholder="Talimatlar" rows={3} className="md:col-span-2 xl:col-span-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
@@ -350,11 +409,25 @@ export default async function AdminExamsPage() {
                       <FileText size={16} className="text-emerald-300" />
                     </div>
                     <div className="min-w-0 flex-1">
+                      <div className="mb-2 flex flex-wrap gap-2">
+                        <Link href={`/admin/exams/${exam.id}`} className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-200 hover:bg-emerald-500/15">Workspace</Link>
+                        <Link href={`/admin/exams/${exam.id}/parse`} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300 hover:bg-white/10">Parse</Link>
+                        <Link href={`/admin/exams/${exam.id}/mapping`} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300 hover:bg-white/10">Mapping</Link>
+                        <Link href={`/admin/exams/${exam.id}/questions`} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300 hover:bg-white/10">Questions</Link>
+                        <Link href={`/admin/exams/${exam.id}/preview`} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300 hover:bg-white/10">Preview</Link>
+                        <Link href={`/exam/${exam.slug}`} className="rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 text-xs text-cyan-200 hover:bg-cyan-500/15">Student Landing</Link>
+                      </div>
                       <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
                         <input name="title" defaultValue={exam.title} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-sm font-semibold text-zinc-200" />
+                        <input name="subtitle" defaultValue={exam.subtitle ?? ""} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
                         <input name="slug" defaultValue={exam.slug} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
+                        <input name="sourceLabel" defaultValue={exam.sourceLabel ?? ""} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
                         <input name="examType" defaultValue={exam.examType} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
                         <input name="cefrLevel" defaultValue={exam.cefrLevel ?? ""} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
+                        <input name="examSeries" defaultValue={exam.examSeries ?? ""} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
+                        <input name="yearLabel" defaultValue={exam.yearLabel ?? ""} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
+                        <input name="estimatedDifficulty" defaultValue={exam.estimatedDifficulty ?? ""} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
+                        <input name="targetStudentLevel" defaultValue={exam.targetStudentLevel ?? ""} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
                       </div>
                     </div>
                   </div>
@@ -368,6 +441,9 @@ export default async function AdminExamsPage() {
                     <span className={`rounded-lg px-2 py-1 text-xs font-medium ${exam.isActive ? "bg-blue-500/15 text-blue-300" : "bg-zinc-500/15 text-zinc-400"}`}>
                       {exam.isActive ? "Aktif" : "Pasif"}
                     </span>
+                    <span className="rounded-lg bg-white/10 px-2 py-1 text-xs font-medium text-zinc-300">
+                      {exam.publicationStatus}
+                    </span>
                   </div>
                 </div>
 
@@ -375,10 +451,21 @@ export default async function AdminExamsPage() {
                   <input name="durationMinutes" type="number" min="1" defaultValue={exam.durationMinutes} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
                   <input name="questionCount" type="number" min="1" defaultValue={exam.questionCount} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
                   <input name="price" type="number" min="0" step="0.01" defaultValue={exam.price ?? 0} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
+                  <input name="lessonReviewPrice" type="number" min="0" step="0.01" defaultValue={exam.lessonReviewPrice ?? 0} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
                   <input name="coverImageUrl" defaultValue={exam.coverImageUrl ?? ""} placeholder="Kapak görseli URL" className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
+                  <input name="lessonCurrency" defaultValue={exam.lessonCurrency ?? "TRY"} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
+                  <select name="publicationStatus" defaultValue={exam.publicationStatus} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300">
+                    <option value="DRAFT">Draft</option>
+                    <option value="PARSING">Parsing</option>
+                    <option value="REVIEW">Review</option>
+                    <option value="READY">Ready</option>
+                    <option value="PUBLISHED">Published</option>
+                    <option value="ARCHIVED">Archived</option>
+                  </select>
                   <label className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300"><input type="checkbox" name="isPublished" defaultChecked={exam.isPublished} /> Yayınlı</label>
                   <label className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300"><input type="checkbox" name="isActive" defaultChecked={exam.isActive} /> Aktif</label>
                   <label className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300"><input type="checkbox" name="isForSale" defaultChecked={exam.isForSale} /> Satışta</label>
+                  <label className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300"><input type="checkbox" name="aiExplanationEnabled" defaultChecked={exam.aiExplanationEnabled} /> AI açıklama</label>
                 </div>
 
                 <textarea name="description" defaultValue={exam.description ?? ""} rows={2} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-zinc-300" />

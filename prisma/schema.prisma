@@ -53,6 +53,87 @@ enum DailyContentModule {
   GRAMMAR
 }
 
+enum ExamAccessType {
+  FREE
+  PREMIUM
+  PLAN_INCLUDED
+}
+
+enum ExamPublicationStatus {
+  DRAFT
+  PARSING
+  REVIEW
+  READY
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ExamTakingMode {
+  ONE_BY_ONE
+  SECTION_BASED
+  OMR_FOCUSED
+}
+
+enum ExamSectionType {
+  VOCABULARY
+  GRAMMAR
+  CLOZE_TEST
+  SENTENCE_COMPLETION
+  TRANSLATION_EN_TO_TR
+  TRANSLATION_TR_TO_EN
+  PARAGRAPH_COMPLETION
+  READING_COMPREHENSION
+  DIALOGUE
+  CLOSEST_MEANING
+  OTHER
+}
+
+enum ParseJobStatus {
+  QUEUED
+  PROCESSING
+  NEEDS_REVIEW
+  COMPLETED
+  FAILED
+}
+
+enum QuestionStatus {
+  DRAFT
+  VERIFIED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ExplanationSourceType {
+  MANUAL
+  AI
+  HYBRID
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  AUTO_SUBMITTED
+  EXPIRED
+  CANCELLED
+}
+
+enum ReviewBookingStatus {
+  PENDING_PAYMENT
+  PAID
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum ReviewPaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
 model User {
   id             String          @id @default(cuid())
   name           String?
@@ -73,6 +154,11 @@ model User {
   studentFeatureAccess StudentFeatureAccess?
   studentFeatureExamAccesses StudentFeatureExamAccess[]
   dailyContents  StudentDailyContent[]
+  examAttempts   ExamAttempt[]
+  studentReviewBookings ExamReviewBooking[] @relation("ReviewBookingStudent")
+  teacherReviewBookings ExamReviewBooking[] @relation("ReviewBookingTeacher")
+  reviewPayments ExamReviewPayment[]
+  adminAuditLogs AdminAuditLog[]
 }
 
 model StudentProfile {
@@ -446,6 +532,30 @@ model ExamModule {
   price           Float?
   isForSale       Boolean  @default(false)
   contentJson     Json
+  subtitle        String?
+  sourceLabel     String?
+  examSeries      String?
+  yearLabel       String?
+  tags            String[] @default([])
+  estimatedDifficulty String?
+  targetStudentLevel String?
+  accessType      ExamAccessType @default(PREMIUM)
+  publicationStatus ExamPublicationStatus @default(DRAFT)
+  aiExplanationEnabled Boolean @default(true)
+  lessonReviewPrice Float?
+  lessonCurrency  String   @default("TRY")
+  bookingAvailabilityJson Json?
+  retakeRulesJson Json?
+  scoreVisibilityRulesJson Json?
+  explanationVisibilityJson Json?
+  randomizeQuestionOrder Boolean @default(false)
+  randomizeOptions Boolean @default(false)
+  showTimeWarnings Boolean @default(true)
+  autoSubmitOnTimeout Boolean @default(true)
+  allowPause      Boolean  @default(false)
+  takingMode      ExamTakingMode @default(OMR_FOCUSED)
+  pdfOriginalAssetId String?
+  activeVersionId String?
   isPublished     Boolean  @default(false)
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
@@ -454,6 +564,351 @@ model ExamModule {
   purchases       ExamPurchase[]
   plans           PlanExamModule[]
   studentAccesses StudentFeatureExamAccess[]
+  versions        ExamVersion[]
+  sections        ExamSection[]
+  passageGroups   ExamPassageGroup[]
+  questions       ExamQuestion[]
+  attempts        ExamAttempt[]
+  pricingRules    ExamPricingRule[]
+  reviewBookings  ExamReviewBooking[]
+}
+
+model ExamVersion {
+  id                String   @id @default(cuid())
+  examModuleId      String
+  versionNumber     Int
+  label             String?
+  sourcePdfAssetId  String?
+  parseJobStatus    ParseJobStatus @default(QUEUED)
+  parseConfidence   Float?
+  parsedSnapshotJson Json?
+  adminNotes        String?  @db.Text
+  isActive          Boolean  @default(false)
+  createdById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  examModule   ExamModule          @relation(fields: [examModuleId], references: [id], onDelete: Cascade)
+  assets       ExamAsset[]
+  parseJobs    ExamParseJob[]
+  sections     ExamSection[]
+  passageGroups ExamPassageGroup[]
+  questions    ExamQuestion[]
+  attempts     ExamAttempt[]
+
+  @@unique([examModuleId, versionNumber])
+  @@index([examModuleId, isActive])
+}
+
+model ExamAsset {
+  id              String   @id @default(cuid())
+  examVersionId   String
+  assetType       String
+  storageKey      String
+  originalFileName String?
+  mimeType        String
+  fileSizeBytes   Int?
+  checksum        String?
+  pageCount       Int?
+  width           Int?
+  height          Int?
+  metadataJson    Json?
+  createdAt       DateTime @default(now())
+
+  examVersion ExamVersion @relation(fields: [examVersionId], references: [id], onDelete: Cascade)
+
+  @@index([examVersionId, assetType])
+}
+
+model ExamParseJob {
+  id               String   @id @default(cuid())
+  examVersionId    String
+  status           ParseJobStatus @default(QUEUED)
+  provider         String?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  errorMessage     String?  @db.Text
+  rawOutputJson    Json?
+  lowConfidenceCount Int    @default(0)
+  createdById      String?
+  createdAt        DateTime @default(now())
+
+  examVersion ExamVersion @relation(fields: [examVersionId], references: [id], onDelete: Cascade)
+
+  @@index([examVersionId, status])
+}
+
+model ExamSection {
+  id                String   @id @default(cuid())
+  examModuleId      String
+  examVersionId     String
+  sectionType       ExamSectionType
+  title             String
+  description       String?  @db.Text
+  displayOrder      Int
+  questionStartNumber Int?
+  questionEndNumber Int?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  examModule    ExamModule      @relation(fields: [examModuleId], references: [id], onDelete: Cascade)
+  examVersion   ExamVersion     @relation(fields: [examVersionId], references: [id], onDelete: Cascade)
+  questions     ExamQuestion[]
+  passageGroups ExamPassageGroup[]
+
+  @@index([examModuleId, displayOrder])
+  @@index([examVersionId, displayOrder])
+}
+
+model ExamPassageGroup {
+  id              String   @id @default(cuid())
+  examModuleId    String
+  examVersionId   String
+  sectionId       String
+  title           String?
+  passageText     String?  @db.Text
+  imageAssetId    String?
+  sourcePageNumber Int?
+  sourceBoundsJson Json?
+  displayOrder    Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  examModule  ExamModule      @relation(fields: [examModuleId], references: [id], onDelete: Cascade)
+  examVersion ExamVersion     @relation(fields: [examVersionId], references: [id], onDelete: Cascade)
+  section     ExamSection     @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  questions   ExamQuestion[]
+
+  @@index([examVersionId, sectionId, displayOrder])
+}
+
+model ExamQuestion {
+  id                 String   @id @default(cuid())
+  examModuleId       String
+  examVersionId      String
+  sectionId          String
+  passageGroupId     String?
+  questionNumber     Int
+  displayOrder       Int
+  sectionType        ExamSectionType
+  questionText       String   @db.Text
+  optionA            String   @db.Text
+  optionB            String   @db.Text
+  optionC            String   @db.Text
+  optionD            String   @db.Text
+  optionE            String   @db.Text
+  correctAnswer      String
+  explanationSourceType ExplanationSourceType @default(AI)
+  manualExplanation  String?  @db.Text
+  imageAssetId       String?
+  sourcePageNumber   Int?
+  sourceBoundsJson   Json?
+  parseConfidence    Float?
+  status             QuestionStatus @default(DRAFT)
+  isVerified         Boolean  @default(false)
+  topicTags          String[] @default([])
+  difficultyLabel    String?
+  createdById        String?
+  updatedById        String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  examModule   ExamModule         @relation(fields: [examModuleId], references: [id], onDelete: Cascade)
+  examVersion  ExamVersion        @relation(fields: [examVersionId], references: [id], onDelete: Cascade)
+  section      ExamSection        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  passageGroup ExamPassageGroup?  @relation(fields: [passageGroupId], references: [id], onDelete: SetNull)
+  explanations ExamQuestionExplanation[]
+  attemptAnswers ExamAttemptAnswer[]
+
+  @@unique([examVersionId, questionNumber])
+  @@index([examModuleId, displayOrder])
+  @@index([examVersionId, sectionId, displayOrder])
+  @@index([passageGroupId])
+}
+
+model ExamAttempt {
+  id                  String   @id @default(cuid())
+  examModuleId        String
+  examVersionId       String
+  studentId           String
+  status              AttemptStatus @default(IN_PROGRESS)
+  startedAt           DateTime @default(now())
+  expiresAt           DateTime
+  submittedAt         DateTime?
+  autoSubmitted       Boolean  @default(false)
+  durationSecondsUsed Int?
+  correctCount        Int      @default(0)
+  incorrectCount      Int      @default(0)
+  blankCount          Int      @default(0)
+  score               Float?
+  netScore            Float?
+  accuracyPercentage  Float?
+  resultLockedAt      DateTime?
+  scoreSummaryJson    Json?
+  sectionPerformanceJson Json?
+  strongestSection    String?
+  weakestSection      String?
+  metadataJson        Json?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  examModule  ExamModule    @relation(fields: [examModuleId], references: [id], onDelete: Cascade)
+  examVersion ExamVersion   @relation(fields: [examVersionId], references: [id], onDelete: Restrict)
+  student     User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  answers     ExamAttemptAnswer[]
+  answerEvents ExamAttemptAnswerEvent[]
+  reviewBookings ExamReviewBooking[]
+
+  @@index([studentId, startedAt])
+  @@index([examModuleId, studentId])
+  @@index([status, expiresAt])
+}
+
+model ExamAttemptAnswer {
+  id                String   @id @default(cuid())
+  attemptId         String
+  questionId        String
+  selectedAnswer    String?
+  isFlaggedForReview Boolean @default(false)
+  isCorrect         Boolean?
+  firstAnsweredAt   DateTime?
+  lastAnsweredAt    DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  attempt  ExamAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question ExamQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+  @@index([questionId])
+}
+
+model ExamAttemptAnswerEvent {
+  id                String   @id @default(cuid())
+  attemptId         String
+  questionId        String
+  eventType         String
+  previousAnswer    String?
+  nextAnswer        String?
+  previousFlagState Boolean?
+  nextFlagState     Boolean?
+  clientTimestamp   DateTime?
+  serverTimestamp   DateTime @default(now())
+  metadataJson      Json?
+
+  attempt ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId, serverTimestamp])
+}
+
+model ExamQuestionExplanation {
+  id              String   @id @default(cuid())
+  examQuestionId  String
+  languageCode    String   @default("tr")
+  sourceType      ExplanationSourceType @default(AI)
+  promptVersion   String?
+  contentJson     Json
+  isActive        Boolean  @default(true)
+  generatedAt     DateTime?
+  editedById      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  question ExamQuestion @relation(fields: [examQuestionId], references: [id], onDelete: Cascade)
+
+  @@unique([examQuestionId, languageCode, promptVersion])
+  @@index([examQuestionId, isActive])
+}
+
+model ExamReviewBooking {
+  id                String   @id @default(cuid())
+  examModuleId      String
+  attemptId         String
+  studentId         String
+  teacherId         String?
+  status            ReviewBookingStatus @default(PENDING_PAYMENT)
+  durationMinutes   Int      @default(30)
+  priceAmount       Float
+  currency          String   @default("TRY")
+  selectedQuestionIds String[] @default([])
+  bookingScope      String   @default("FULL_WRONG_SET")
+  scheduledStartAt  DateTime?
+  scheduledEndAt    DateTime?
+  lessonNotes       String?  @db.Text
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  examModule ExamModule @relation(fields: [examModuleId], references: [id], onDelete: Cascade)
+  attempt    ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  student    User @relation("ReviewBookingStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  teacher    User? @relation("ReviewBookingTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
+  payments   ExamReviewPayment[]
+
+  @@index([studentId, status])
+  @@index([teacherId, scheduledStartAt])
+  @@index([attemptId])
+}
+
+model ExamReviewPayment {
+  id               String   @id @default(cuid())
+  bookingId        String
+  userId           String
+  provider         String
+  providerPaymentId String? @unique
+  status           ReviewPaymentStatus @default(PENDING)
+  amount           Float
+  currency         String
+  receiptUrl       String?
+  providerMessage  String?
+  paidAt           DateTime?
+  refundedAmount   Float?
+  metadataJson     Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  booking ExamReviewBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  user    User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, status])
+}
+
+model ExamPricingRule {
+  id            String   @id @default(cuid())
+  examModuleId  String?
+  ruleType      String
+  label         String?
+  amount        Float
+  currency      String   @default("TRY")
+  userSegment   String?
+  startsAt      DateTime?
+  endsAt        DateTime?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  examModule ExamModule? @relation(fields: [examModuleId], references: [id], onDelete: Cascade)
+
+  @@index([examModuleId, isActive])
+}
+
+model AdminAuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String
+  targetType  String
+  targetId    String
+  action      String
+  beforeJson  Json?
+  afterJson   Json?
+  metadataJson Json?
+  createdAt   DateTime @default(now())
+
+  actor User @relation(fields: [actorUserId], references: [id], onDelete: Cascade)
+
+  @@index([actorUserId, createdAt])
+  @@index([targetType, targetId])
 }
 
 model ExamPurchase {

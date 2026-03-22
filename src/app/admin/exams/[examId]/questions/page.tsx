@@ -1,0 +1,35 @@
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
+
+import { authOptions } from "@/src/auth";
+import { DashboardShell } from "@/src/components/dashboard/shell";
+import { AdminExamWorkspaceNav } from "@/src/components/exam/admin-exam-workspace-nav";
+import { getMockExamWorkspaceById } from "@/src/lib/mock-exam-workspace";
+
+type PageProps = { params: Promise<{ examId: string }> };
+
+export default async function AdminExamQuestionsPage({ params }: PageProps) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") redirect("/dashboard");
+  const { examId } = await params;
+  const exam = getMockExamWorkspaceById(examId);
+
+  return (
+    <DashboardShell navItems={[{ label: "Admin Dashboard", href: "/admin" }, { label: "Sınav Yönetimi", href: "/admin/exams" }]} roleLabel="Admin Paneli" title="Question Editor" subtitle="Normalized question bank editor" userName={session.user.name ?? undefined} userRole={session.user.role}>
+      <div className="space-y-6">
+        <AdminExamWorkspaceNav examId={examId} activeKey="questions" />
+        <div className="space-y-4">
+          {exam.questions.map((question) => (
+            <div key={question.id} className="rounded-3xl border border-white/10 bg-white/5 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-white">Soru {question.number} · {question.section}</p>
+                <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-zinc-400">Verified-ready draft</span>
+              </div>
+              <p className="mt-3 text-sm leading-7 text-zinc-300">{question.prompt}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </DashboardShell>
+  );
+}
