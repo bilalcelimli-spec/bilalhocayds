@@ -162,6 +162,8 @@ Core rules:
 - Feedback and strategy notes must sound like a real teacher and exam coach, not a template generator.
 - Keep outputs structured, publication-ready, and easy to embed in a learning platform.
 - When Turkish is requested, explanations should be clear, accurate, and pedagogically strong.
+- Reading passages, reading questions, answer choices, vocabulary mini-readings, and vocabulary activities must be written in English unless a task explicitly asks for translation fields.
+- Never output mojibake, replacement characters, broken apostrophes, or malformed punctuation such as Ã, â€, or �.
 `;
 
 const DEFAULT_AI_PROFILE: AiStudentProfile = {
@@ -1016,6 +1018,57 @@ function extractJsonObject(text: string) {
   }
 }
 
+const MOJIBAKE_PATTERN = /(?:Ã.|â€|â€“|â€”|â€˜|â€™|â€œ|â€�|Â|�)/;
+const TURKISH_CHARACTER_PATTERN = /[çğıöşüÇĞİÖŞÜ]/;
+
+function normalizeWhitespace(text: string) {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function repairMojibake(text: string) {
+  if (!text) {
+    return text;
+  }
+
+  let repaired = text
+    .replace(/â€™/g, "'")
+    .replace(/â€˜/g, "'")
+    .replace(/â€œ/g, '"')
+    .replace(/â€�/g, '"')
+    .replace(/â€“/g, "-")
+    .replace(/â€”/g, "-")
+    .replace(/Â/g, "")
+    .replace(/�/g, "");
+
+  if (MOJIBAKE_PATTERN.test(repaired)) {
+    try {
+      const decoded = Buffer.from(repaired, "latin1").toString("utf8");
+      if (!MOJIBAKE_PATTERN.test(decoded)) {
+        repaired = decoded;
+      }
+    } catch {
+      return normalizeWhitespace(repaired);
+    }
+  }
+
+  return normalizeWhitespace(repaired);
+}
+
+function sanitizeEnglishText(text: string) {
+  return repairMojibake(text)
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'");
+}
+
+function containsTurkish(text: string) {
+  return TURKISH_CHARACTER_PATTERN.test(text);
+}
+
+function isCleanEnglishContent(text: string, minimumLength = 1) {
+  const normalized = sanitizeEnglishText(text);
+  return normalized.length >= minimumLength && !containsTurkish(normalized) && !MOJIBAKE_PATTERN.test(normalized);
+}
+
 function getDaySeed(date: Date) {
   const key = `${date.getUTCFullYear()}-${date.getUTCMonth() + 1}-${date.getUTCDate()}`;
   let hash = 0;
@@ -1069,39 +1122,59 @@ function createVocabularyItemFallback(item: VocabularySeed): VocabularyItem {
 }
 
 function createVocabularyActivities(items: VocabularyItem[]): VocabularyActivity[] {
-  const [first, second, third] = items;
-  if (!first || !second || !third) return [];
+  const [first, second, third, fourth, fifth] = items;
+  if (!first || !second || !third || !fourth || !fifth) return [];
 
   return [
     {
       type: "fill-in-the-blanks",
-      title: "Context Fill",
+      title: "Exam Context Fill",
       prompt: `Choose the best word to complete the sentence: Students should ______ exam stress by using a fixed revision routine.`,
       answer: first.word,
-      explanation: `${first.word} cumlede stresi azaltma anlamiyla dogru baglam secimidir.`,
-      options: [first.word, second.word, third.word],
+      explanation: `${first.word} fits because the sentence requires a verb meaning reduce or make less severe.`,
+      options: [first.word, second.word, third.word, fourth.word],
     },
     {
       type: "synonym-selection",
-      title: "Synonym Check",
+      title: "Synonym Precision",
       prompt: `Which option is closest in meaning to ${second.word}?`,
       answer: second.synonym,
-      explanation: `${second.synonym} bu kelimenin sinav baglaminda en yakin es anlamidir.`,
-      options: [second.synonym, first.word, third.word, second.antonym ?? "unrelated"],
+      explanation: `${second.synonym} preserves the academic meaning of ${second.word} in exam-style usage.`,
+      options: [second.synonym, first.word, third.word, second.antonym ?? "irrelevant"],
     },
     {
       type: "collocation-completion",
       title: "Collocation Builder",
       prompt: `Complete the collocation with the target word: ${third.collocation.replace(third.word, "______")}`,
       answer: third.word,
-      explanation: `${third.collocation} sinav reading metinlerinde dogal bir kullanimdir.`,
+      explanation: `${third.collocation} is a natural academic collocation that may appear in exam passages.`,
     },
     {
-      type: "mini-translation",
-      title: "Mini Translation",
-      prompt: `Translate naturally into English: "Bu gorus uzmanlar arasinda yaygin hale geldi."`,
-      answer: `This view has become prevalent among experts.`,
-      explanation: `prevalent kelimesi "yaygin" anlamini akademik baglamda dogal sekilde verir.`,
+      type: "context-meaning",
+      title: "Meaning in Context",
+      prompt: `In the sentence "The committee needed a ${fourth.word} framework before expanding the policy," what does ${fourth.word} most nearly suggest?`,
+      answer: fourth.englishDefinition,
+      explanation: `The context points to the precise academic sense of ${fourth.word}, not a vague everyday meaning.`,
+      options: [
+        fourth.englishDefinition,
+        "a completely emotional reaction",
+        "a temporary speaking error",
+        "a purely personal preference",
+      ],
+    },
+    {
+      type: "word-formation",
+      title: "Word Family Shift",
+      prompt: `Rewrite the idea by changing the target word into a suitable family member: "The team remained ${fifth.word} during the crisis."`,
+      answer: fifth.wordFamily[1] ?? fifth.word,
+      explanation: `This task checks whether you can move from the base form to another member of the same word family without losing meaning.`,
+    },
+    {
+      type: "rewrite",
+      title: "Sentence Upgrade",
+      prompt: `Rewrite this sentence in more academic English by using ${first.word}: "The policy reduced the damage caused by sudden price changes."`,
+      answer: `The policy helped ${first.word} the damage caused by sudden price changes.`,
+      explanation: `The goal is to replace a basic verb phrase with a more exam-appropriate academic choice.`,
     },
   ];
 }
@@ -1115,75 +1188,75 @@ function createReadingQuestionFallbacks(
     {
       id: `${passage.title}-main-idea`,
       type: "main-idea",
-      question: `Bu metnin ana fikrini en iyi hangi secenek ozetler?`,
+      question: "Which option best summarizes the main idea of the passage?",
       skillMeasured: "Main idea recognition",
       answer: passage.summary,
-      explanation: `Dogru cevap, metindeki tum detaylari kapsayan ana dusunceyi verir: ${passage.summary}`,
+      explanation: `The correct option captures the central claim of the passage without narrowing it to a single detail: ${passage.summary}`,
       whyOthersWrong: [
-        "Diger secenekler metindeki tekil detaylara indirgenir.",
-        "Bazi secenekler metnin tonunu yanlis genellestirir.",
+        "The distractors focus on isolated details rather than the writer's full argument.",
+        "Some options overstate the writer's tone or certainty.",
       ],
       options: [
         passage.summary,
-        `Metin yalnizca ${keyword} kavraminin teknik tanimini verir.`,
-        `Yazar konunun tamamen cozuldugunu ve ek adima gerek olmadigini savunur.`,
-        `Metin esas olarak tarihsel arka plani verir, guncel sonuclari tartismaz.`,
+        `The passage mainly provides a technical definition of ${keyword}.`,
+        "The writer argues that the issue has already been fully resolved.",
+        "The passage is mostly historical and avoids current consequences.",
       ],
     },
     {
       id: `${passage.title}-detail`,
       type: "detail",
-      question: `Yazara gore uygulanabilirligi zorlastiran temel unsur hangisidir?`,
+      question: "According to the writer, what makes implementation more difficult?",
       skillMeasured: "Detail tracking",
-      answer: `Uygulama ve destek kosullarinin dikkatle yonetilmesi gerektigi`,
-      explanation: `Detail sorularinda metindeki sinirlayici ifade ve caution tonu birlikte okunmalidir.`,
-      whyOthersWrong: ["Diger secenekler metinde gecse bile ana engel olarak sunulmaz."],
+      answer: "Implementation depends on support conditions being managed carefully.",
+      explanation: "A close reading of the limiting statements shows that the writer is cautious about the conditions required for success.",
+      whyOthersWrong: ["The other options may appear in the passage, but they are not presented as the main obstacle."],
       options: [
-        `Uygulama ve destek kosullarinin dikkatle yonetilmesi gerektigi`,
-        `Yazarin konuyla ilgili hicbir ornek vermedigi`,
-        `Metnin yalnizca bireysel tercihlere odaklandigi`,
-        `Sorunun kisa vadede tamamen ortadan kalktigi`,
+        "Implementation depends on support conditions being managed carefully.",
+        "The writer offers no examples related to the issue.",
+        "The passage focuses only on individual preferences.",
+        "The problem is expected to disappear in the short term.",
       ],
     },
     {
       id: `${passage.title}-inference`,
       type: "inference",
-      question: `Metinden hangi sonuc dolayli olarak cikarilabilir?`,
+      question: "Which inference can be drawn from the passage?",
       skillMeasured: "Inference skill",
-      answer: `Destekleyici kosullar saglanmazsa olumlu sonuclarin sinirli kalabilecegi`,
-      explanation: `Inference sorularinda metinde birebir yazilmayan ama mantiken cikan sonucu arariz.`,
-      whyOthersWrong: ["Yanlis secenekler ya cok kesin ya da metin disi varsayim icerir."],
+      answer: "Positive outcomes may remain limited if the supporting conditions are not in place.",
+      explanation: "The passage implies this result even if it does not state it in exactly the same words.",
+      whyOthersWrong: ["The distractors are either too absolute or rely on assumptions outside the passage."],
       options: [
-        `Destekleyici kosullar saglanmazsa olumlu sonuclarin sinirli kalabilecegi`,
-        `Yazarin konuyu gereksiz ve etkisiz buldugu`,
-        `Metindeki her aktorun ayni gorusu paylastigi`,
-        `Kisa surede evrensel bir cozum bulunacagi`,
+        "Positive outcomes may remain limited if the supporting conditions are not in place.",
+        "The writer considers the issue unnecessary and ineffective.",
+        "Every stakeholder in the passage shares exactly the same view.",
+        "A universal solution will be found very soon.",
       ],
     },
     {
       id: `${passage.title}-vocabulary`,
       type: "vocabulary",
-      question: `Bu metinde ${keyword} kelimesi en yakin hangi anlamda kullanilmistir?`,
+      question: `As used in the passage, what does ${keyword} most nearly mean?`,
       skillMeasured: "Vocabulary in context",
-      answer: `Baglamda islevsel ve anlam tasiyan bir akademik unsur olarak`,
-      explanation: `Kelimeyi tek basina degil, bulundugu cumlenin anlamsal goreviyle okumak gerekir.`,
-      whyOthersWrong: ["Sozlukte var olabilecek diger anlamlar bu baglama uymaz."],
+      answer: "an academic element with a functional meaning in context",
+      explanation: "The correct answer comes from the word's role in the sentence, not from an unrelated dictionary sense.",
+      whyOthersWrong: ["The other meanings may exist elsewhere, but they do not match this specific context."],
       options: [
-        `Baglamda islevsel ve anlam tasiyan bir akademik unsur olarak`,
-        `Sadece mizahi bir ayrinti olarak`,
-        `Tamamen tarihsel bir isim etiketi olarak`,
-        `Yazarin kisisel duygusunu gosteren gayriresmi bir ifade olarak`,
+        "an academic element with a functional meaning in context",
+        "a humorous side remark",
+        "a purely historical label",
+        "an informal phrase showing the writer's personal emotions",
       ],
     },
     {
       id: `${passage.title}-tone`,
       type: "tone",
-      question: `Yazarin tonu en iyi nasil tanimlanir?`,
+      question: "How would you best describe the writer's tone?",
       skillMeasured: "Writer attitude",
-      answer: `Temkinli ama yapici`,
-      explanation: `Metin avantajlari kabul ederken sinirlari da gosterdigi icin tamamen iyimser veya tamamen elestirel degildir.`,
-      whyOthersWrong: ["Asiri iyimser veya asiri olumsuz yorumlar metindeki dengeyi yansitmaz."],
-      options: ["Temkinli ama yapici", "Asiri elestirel", `Tamamen ${secondaryKeyword} odakli ve tarafsiz olmayan`, "Alakasiz"],
+      answer: "cautious but constructive",
+      explanation: "The writer acknowledges benefits while also highlighting limits, so the tone is balanced rather than extreme.",
+      whyOthersWrong: ["The extreme options fail to reflect the balanced stance of the passage."],
+      options: ["cautious but constructive", "overly critical", `narrowly obsessed with ${secondaryKeyword}`, "irrelevant"],
     },
   ];
 }
@@ -1257,6 +1330,8 @@ async function createVocabularyReading(words: string[]) {
       "Task:",
       "Create a daily exam-focused reading + vocabulary mini session for the selected words.",
       "The reading passage must be original, natural, exam-oriented, and suitable for Turkish YDS learners at the specified level.",
+      "Write the title and the passage in English only.",
+      "Do not use Turkish words or Turkish characters anywhere in the title or passage.",
       "Keep the passage length around 160-220 words.",
       "Use all target words naturally in context.",
       `Target words: ${words.join(", ")}`,
@@ -1271,11 +1346,11 @@ async function createVocabularyReading(words: string[]) {
   const fallback = `Students preparing for YDS often need a coherent routine to improve academic reading speed. In our program, learners allocate short sessions for vocabulary and use each new term in context. They first review prevalent themes in recent exam texts, then identify any implicit assumption behind the writer's argument. This method helps them justify answers with evidence instead of intuition. Even when time constraints make revision difficult, a substantial improvement is still feasible if students follow a consistent plan. Teachers also encourage learners to mitigate stress by using a brief checklist before each practice test. As a subsequent step, students compare their mistakes and build a comprehensive notebook to track progress. Although setbacks are inevitable, this strategy supports resilient study habits and leads to more confident performance.`;
 
   const parsed = aiText ? extractJsonObject(aiText) : null;
-  const title = typeof parsed?.title === "string" && parsed.title.trim().length >= 8
-    ? parsed.title.trim()
+  const title = typeof parsed?.title === "string" && isCleanEnglishContent(parsed.title, 8)
+    ? sanitizeEnglishText(parsed.title)
     : "Daily Reading: Vocabulary in Context";
-  const passage = typeof parsed?.passage === "string" && parsed.passage.trim().length >= 120
-    ? parsed.passage.trim()
+  const passage = typeof parsed?.passage === "string" && isCleanEnglishContent(parsed.passage, 120)
+    ? sanitizeEnglishText(parsed.passage)
     : fallback;
 
   return {
@@ -1340,18 +1415,18 @@ async function createAiVocabularyExamples(items: VocabularySeed[], profile: AiSt
               })
               .filter((example: { en: string; tr: string } | null): example is { en: string; tr: string } => Boolean(example))
           : [];
-        const englishDefinition = typeof entry?.englishDefinition === "string" ? entry.englishDefinition.trim() : "";
-        const synonym = typeof entry?.synonym === "string" ? entry.synonym.trim() : "";
-        const antonym = typeof entry?.antonym === "string" ? entry.antonym.trim() : null;
-        const collocation = typeof entry?.collocation === "string" ? entry.collocation.trim() : "";
+        const englishDefinition = typeof entry?.englishDefinition === "string" ? sanitizeEnglishText(entry.englishDefinition) : "";
+        const synonym = typeof entry?.synonym === "string" ? sanitizeEnglishText(entry.synonym) : "";
+        const antonym = typeof entry?.antonym === "string" ? sanitizeEnglishText(entry.antonym) : null;
+        const collocation = typeof entry?.collocation === "string" ? sanitizeEnglishText(entry.collocation) : "";
         const wordFamily = Array.isArray(entry?.wordFamily)
           ? entry.wordFamily
-              .map((value: unknown) => (typeof value === "string" ? value.trim() : ""))
+              .map((value: unknown) => (typeof value === "string" ? sanitizeEnglishText(value) : ""))
               .filter((value: string) => value.length > 0)
               .slice(0, 4)
           : [];
-        const examNote = typeof entry?.examNote === "string" ? entry.examNote.trim() : "";
-        const commonMistake = typeof entry?.commonMistake === "string" ? entry.commonMistake.trim() : "";
+        const examNote = typeof entry?.examNote === "string" ? repairMojibake(entry.examNote) : "";
+        const commonMistake = typeof entry?.commonMistake === "string" ? repairMojibake(entry.commonMistake) : "";
 
         return word && examples.length > 0
           ? [word, { englishDefinition, synonym, antonym, collocation, wordFamily, examNote, commonMistake, examples: examples.slice(0, 2) }]
@@ -1418,12 +1493,13 @@ async function createAiReadingPassage(
   });
 
   const parsed = aiText ? extractJsonObject(aiText) : null;
+  const fallbackPassage = buildFallbackExpandedPassage(passage, profile);
   if (!parsed) {
-    const fallbackPassage = buildFallbackExpandedPassage(passage, profile);
     return {
       ...passage,
+      title: sanitizeEnglishText(passage.title),
       passage: fallbackPassage,
-      summary: createPassageSummary(fallbackPassage),
+      summary: sanitizeEnglishText(createPassageSummary(fallbackPassage)),
     };
   }
 
@@ -1436,15 +1512,18 @@ async function createAiReadingPassage(
 
   return {
     ...passage,
-    title: typeof parsed.title === "string" && parsed.title.trim().length >= 8 ? parsed.title.trim() : passage.title,
+    title:
+      typeof parsed.title === "string" && isCleanEnglishContent(parsed.title, 8)
+        ? sanitizeEnglishText(parsed.title)
+        : sanitizeEnglishText(passage.title),
     passage:
-      typeof parsed.passage === "string" && parsed.passage.trim().length >= 140 && getPassageWordCount(parsed.passage.trim()) >= 150
-        ? parsed.passage.trim()
-        : buildFallbackExpandedPassage(passage, profile),
+      typeof parsed.passage === "string" && isCleanEnglishContent(parsed.passage, 140) && getPassageWordCount(parsed.passage.trim()) >= 150
+        ? sanitizeEnglishText(parsed.passage)
+        : fallbackPassage,
     summary:
-      typeof parsed.summary === "string" && parsed.summary.trim().length >= 30
-        ? parsed.summary.trim()
-        : createPassageSummary(buildFallbackExpandedPassage(passage, profile)),
+      typeof parsed.summary === "string" && isCleanEnglishContent(parsed.summary, 30)
+        ? sanitizeEnglishText(parsed.summary)
+        : sanitizeEnglishText(createPassageSummary(fallbackPassage)),
     keyVocabulary: keyVocabulary.length >= 3 ? keyVocabulary : passage.keyVocabulary,
   };
 }
@@ -1459,9 +1538,11 @@ async function createAiReadingQuestions(
       "Use the master prompt principles and produce JSON only.",
       formatAiProfile({ ...profile, focusSkill: "reading" }),
       "Task:",
-      "Create 5 high-quality Turkish multiple-choice reading questions for the passage.",
+      "Create 5 high-quality English multiple-choice reading questions for the passage.",
       "Question set must cover a balanced mix of main idea, detail, inference, vocabulary in context, and tone/attitude.",
       "Every question must have exactly 4 options and exactly 1 correct answer.",
+      "Write the question stems, answer choices, correct answers, and explanations in English.",
+      "Do not use Turkish words or Turkish characters anywhere.",
       "Return a JSON array only.",
       'Each item must be: {"type":"main-idea|detail|inference|vocabulary|tone","question":"...","skillMeasured":"...","answer":"...","explanation":"...","whyOthersWrong":["..."],"options":["A","B","C","D"]}',
       `Title: ${passage.title}`,
@@ -1486,23 +1567,27 @@ async function createAiReadingQuestions(
   const normalized = parsed
     .map((item): ReadingQuestion | null => {
       const type = typeof item?.type === "string" ? item.type : "detail";
-      const question = typeof item?.question === "string" ? item.question.trim() : "";
-      const answer = typeof item?.answer === "string" ? item.answer.trim() : "";
-      const explanation = typeof item?.explanation === "string" ? item.explanation.trim() : "";
-      const skillMeasured = typeof item?.skillMeasured === "string" ? item.skillMeasured.trim() : type;
+      const question = typeof item?.question === "string" ? sanitizeEnglishText(item.question) : "";
+      const answer = typeof item?.answer === "string" ? sanitizeEnglishText(item.answer) : "";
+      const explanation = typeof item?.explanation === "string" ? sanitizeEnglishText(item.explanation) : "";
+      const skillMeasured = typeof item?.skillMeasured === "string" ? sanitizeEnglishText(item.skillMeasured) : type;
       const whyOthersWrong = Array.isArray(item?.whyOthersWrong)
         ? item.whyOthersWrong
-            .map((entry: unknown) => (typeof entry === "string" ? entry.trim() : ""))
+            .map((entry: unknown) => (typeof entry === "string" ? sanitizeEnglishText(entry) : ""))
             .filter((entry: string) => entry.length > 0)
         : [];
       const options = Array.isArray(item?.options)
         ? item.options
-            .map((entry: unknown) => (typeof entry === "string" ? entry.trim() : ""))
+            .map((entry: unknown) => (typeof entry === "string" ? sanitizeEnglishText(entry) : ""))
             .filter((entry: string) => entry.length > 0)
             .slice(0, 4)
         : [];
 
       if (!allowedTypes.has(type) || question.length < 8 || answer.length < 4 || explanation.length < 8) {
+        return null;
+      }
+
+      if ([question, answer, explanation, skillMeasured, ...whyOthersWrong, ...options].some((value) => !isCleanEnglishContent(value, 1))) {
         return null;
       }
 
@@ -1897,10 +1982,10 @@ export async function getDailyReadingModule(options?: {
     answerKey: createReadingAnswerKey(passages),
     strategyNotes: createStrategyNotes(profile, "reading"),
     performanceGuide: {
-      skimFirst: "Ilk okumada detay yerine paragraf fonksiyonunu bul.",
-      markSignals: "However, therefore, despite gibi sinyal kelimeleri isaretle.",
-      answerOrder: "Detay sorularinda metin sirasina gore ilerle.",
-      reviewWindow: "Yanlis sorulari 24 saat icinde tekrar coz.",
+      skimFirst: "During the first read, identify paragraph function before chasing details.",
+      markSignals: "Mark signals such as however, therefore, despite, and in contrast.",
+      answerOrder: "Move in passage order when answering detail questions.",
+      reviewWindow: "Rework incorrect items within 24 hours.",
     },
     performanceEvaluation,
     personalizedNextStep: createNextStep(profile, "reading"),

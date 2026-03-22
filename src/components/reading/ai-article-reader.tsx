@@ -136,7 +136,7 @@ export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticl
                   type="button"
                   onClick={() => onWordClick(token)}
                   className="mx-0.5 rounded-md border-b border-dashed border-fuchsia-500/60 bg-fuchsia-50 px-1 text-fuchsia-800 transition hover:bg-fuchsia-100"
-                  title="Kelimelerime ekle"
+                  title="Add to my words"
                 >
                   {token}
                 </button>
@@ -147,10 +147,10 @@ export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticl
 
         <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-500">
           <span className="inline-flex items-center gap-2">
-            <span className="inline-block h-2 w-2 rounded-full bg-fuchsia-500" /> Bilinmeyen kelime (tikla)
+            <span className="inline-block h-2 w-2 rounded-full bg-fuchsia-500" /> Highlighted target word
           </span>
           <span className="inline-flex items-center gap-2">
-            <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /> Kelimelerimde takip et
+            <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /> Track it in My Words
           </span>
         </div>
       </div>
@@ -162,21 +162,21 @@ export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticl
             onClick={() => setActiveTab("activities")}
             className={`rounded-xl px-2 py-2 transition ${activeTab === "activities" ? "bg-slate-900 text-white" : "hover:bg-slate-100"}`}
           >
-            Etkinlik
+            Activities
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("words")}
             className={`rounded-xl px-2 py-2 transition ${activeTab === "words" ? "bg-slate-900 text-white" : "hover:bg-slate-100"}`}
           >
-            Kelimelerim
+            My Words
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("notes")}
             className={`rounded-xl px-2 py-2 transition ${activeTab === "notes" ? "bg-slate-900 text-white" : "hover:bg-slate-100"}`}
           >
-            Notlar
+            Notes
           </button>
         </div>
 
@@ -188,7 +188,7 @@ export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticl
 
               return (
                 <div key={`${question.prompt}-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="text-sm font-semibold text-slate-800">Bosluk Doldurma</p>
+                  <p className="text-sm font-semibold text-slate-800">Gap Fill</p>
                   <p className="mt-2 text-sm leading-7 text-slate-700">{question.prompt}</p>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     {question.options.map((option) => (
@@ -204,7 +204,7 @@ export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticl
                   </div>
                   {selected && (
                     <p className={`mt-2 text-xs font-semibold ${isCorrect ? "text-emerald-700" : "text-rose-700"}`}>
-                      {isCorrect ? "Dogru cevap" : `Dogru cevap: ${question.answer}`}
+                      {isCorrect ? "Correct" : `Correct answer: ${question.answer}`}
                     </p>
                   )}
                 </div>
@@ -217,14 +217,14 @@ export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticl
           <div className="mt-4 space-y-3">
             {savedWords.length === 0 && (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500">
-                Metindeki vurgulu kelimelere tiklayarak kelime listeni olustur.
+                Click the highlighted words in the passage to build your personal word list.
               </div>
             )}
 
             {savedWords.map((word) => (
               <div key={word} className="rounded-2xl border border-slate-200 bg-white p-4">
                 <p className="text-sm font-bold uppercase tracking-wide text-slate-800">{word}</p>
-                <p className="mt-1 text-xs text-slate-600">{wordMeanings[word] ?? "Anlam bu gunluk listede yok"}</p>
+                <p className="mt-1 text-xs text-slate-600">{wordMeanings[word] ?? "Meaning not available in today's list"}</p>
               </div>
             ))}
           </div>
@@ -232,14 +232,14 @@ export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticl
 
         {activeTab === "notes" && (
           <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-sm font-semibold text-slate-800">Kisa okuma notlari</p>
+            <p className="text-sm font-semibold text-slate-800">Reading Notes</p>
             <textarea
               value={note}
               onChange={(event) => setNote(event.target.value)}
               className="mt-3 h-48 w-full resize-none rounded-xl border border-slate-200 p-3 text-sm text-slate-700 outline-none focus:border-fuchsia-400"
-              placeholder="Ana fikir, destekleyici detaylar ve yeni kelimelerle notlarini yaz..."
+              placeholder="Write the main idea, supporting details, and useful new vocabulary here..."
             />
-            <p className="mt-2 text-xs text-slate-500">Not uzunlugu: {note.trim().length} karakter</p>
+            <p className="mt-2 text-xs text-slate-500">Note length: {note.trim().length} characters</p>
           </div>
         )}
       </aside>

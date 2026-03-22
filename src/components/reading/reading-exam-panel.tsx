@@ -58,19 +58,19 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Reading Exam Lab</p>
-          <h2 className="mt-2 text-2xl font-black text-white">3 pasaj, 15 çoktan seçmeli soru</h2>
+          <h2 className="mt-2 text-2xl font-black text-white">3 passages, 15 multiple-choice questions</h2>
           <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-300">
-            Her pasaj farklı bir konuya odaklanır. Sorular ana fikir, detay, çıkarım, kelime ve ton analizi dengesini koruyacak şekilde tasarlandı.
+            Each passage targets a different topic area. The question set balances main idea, detail, inference, vocabulary in context, and tone.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-200">
-            {answeredCount}/{questionList.length} işaretlendi
+            {answeredCount}/{questionList.length} answered
           </div>
           {submitted ? (
             <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-300">
-              Skor: %{score}
+              Score: %{score}
             </div>
           ) : null}
           <button
@@ -78,7 +78,7 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
             onClick={() => setSubmitted((current) => !current)}
             className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-200"
           >
-            {submitted ? "Yanıtları Gizle" : "Cevapları Değerlendir"}
+            {submitted ? "Hide Results" : "Check Answers"}
           </button>
         </div>
       </div>
@@ -108,7 +108,7 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
                   <div key={question.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">
-                        Soru {questionIndex + 1} · {question.type}
+                        Question {questionIndex + 1} · {question.type}
                       </p>
                       <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                         {question.skillMeasured}
@@ -153,10 +153,10 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
                       <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
                         <p className={`text-sm font-semibold ${isCorrect ? "text-emerald-300" : isWrong ? "text-rose-300" : "text-amber-300"}`}>
                           {isCorrect
-                            ? "Doğru işaretlendi"
+                            ? "Correct"
                             : isWrong
-                              ? `Yanlış. Doğru cevap: ${question.answer}`
-                              : `Doğru cevap: ${question.answer}`}
+                              ? `Incorrect. Correct answer: ${question.answer}`
+                              : `Correct answer: ${question.answer}`}
                         </p>
                         <p className="mt-2 text-sm leading-7 text-slate-300">{question.explanation}</p>
                         {question.whyOthersWrong.length > 0 ? (

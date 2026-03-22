@@ -12,6 +12,8 @@ import {
 import { prisma } from "@/src/lib/prisma";
 
 const ISTANBUL_TIME_ZONE = "Europe/Istanbul";
+const TURKISH_CHARACTER_PATTERN = /[çğıöşüÇĞİÖŞÜ]/;
+const MOJIBAKE_PATTERN = /(?:Ã.|â€|â€“|â€”|â€˜|â€™|â€œ|â€�|Â|�)/;
 
 type StudentDailyContentMap = {
   [DailyContentModule.VOCABULARY]: VocabularyResponse;
@@ -31,7 +33,9 @@ type StudentFeatureAccessState = {
   accessibleExamIds?: string[];
 };
 
-const TURKISH_CHARACTER_PATTERN = /[çğıöşüÇĞİÖŞÜ]/;
+function isCorruptedText(text: string) {
+  return TURKISH_CHARACTER_PATTERN.test(text) || MOJIBAKE_PATTERN.test(text);
+}
 
 function getWordCount(text: string) {
   return text
@@ -52,7 +56,11 @@ function isReadingContentValid(content: ReadingModuleResponse) {
       return false;
     }
 
-    if (TURKISH_CHARACTER_PATTERN.test(passage.title) || TURKISH_CHARACTER_PATTERN.test(passage.passage)) {
+    if (
+      isCorruptedText(passage.title) ||
+      isCorruptedText(passage.passage) ||
+      isCorruptedText(passage.summary)
+    ) {
       return false;
     }
 
@@ -61,12 +69,54 @@ function isReadingContentValid(content: ReadingModuleResponse) {
     }
 
     return passage.questions.every((question) => {
+      if (
+        isCorruptedText(question.question) ||
+        isCorruptedText(question.answer) ||
+        isCorruptedText(question.explanation) ||
+        isCorruptedText(question.skillMeasured) ||
+        question.whyOthersWrong.some((item) => isCorruptedText(item))
+      ) {
+        return false;
+      }
+
       if (!Array.isArray(question.options) || question.options.length !== 4) {
+        return false;
+      }
+
+      if (question.options.some((option) => isCorruptedText(option))) {
         return false;
       }
 
       return question.options.includes(question.answer);
     });
+  });
+}
+
+function isVocabularyContentValid(content: VocabularyResponse) {
+  if (!Array.isArray(content.items) || content.items.length < 5) {
+    return false;
+  }
+
+  if (content.reading) {
+    if (isCorruptedText(content.reading.title) || isCorruptedText(content.reading.passage)) {
+      return false;
+    }
+  }
+
+  if (!Array.isArray(content.activities) || content.activities.length < 4) {
+    return false;
+  }
+
+  return content.activities.every((activity) => {
+    if (isCorruptedText(activity.title) || isCorruptedText(activity.prompt) || isCorruptedText(activity.answer)) {
+      return false;
+    }
+
+    if (activity.options?.some((option) => isCorruptedText(option))) {
+      return false;
+    }
+
+    return true;
   });
 }
 
@@ -76,6 +126,10 @@ function isStoredContentStillValid<M extends DailyContentModule>(
 ) {
   if (moduleKey === DailyContentModule.READING) {
     return isReadingContentValid(content as ReadingModuleResponse);
+  }
+
+  if (moduleKey === DailyContentModule.VOCABULARY) {
+    return isVocabularyContentValid(content as VocabularyResponse);
   }
 
   return true;

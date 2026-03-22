@@ -8,10 +8,10 @@ import { getServerSession } from "next-auth";
 export const dynamic = "force-dynamic";
 
 const studySteps = [
-	"10 kelimeyi sesli tekrar ederek oku",
-	"Her kelime için en az bir bağlamsal ipucu çıkar",
-	"AI örnek cümlesini incele ve kendi cümleni yaz",
-	"Gün sonunda mini quiz ile tekrar et",
+	"Read the 10 target words aloud and notice stress patterns.",
+	"Find at least one context clue for each word before checking the meaning.",
+	"Study the AI example sentence and write one new sentence of your own.",
+	"Finish with a short retrieval quiz at the end of the session.",
 ];
 
 export default async function VocabularyPage() {
@@ -134,11 +134,11 @@ export default async function VocabularyPage() {
 						<div>
 							<h2 className="text-xl font-bold text-white">Bugünün 10 akademik kelimesi</h2>
 							<p className="mt-1 text-sm text-slate-300">
-								Her kartta kelime, seviye, Türkçe anlam, örnek cümle ve çeviri yer alır.
+								Each card includes the target word, CEFR level, Turkish meaning, and example usage.
 							</p>
 						</div>
 						<Button variant="secondary" size="sm">
-							Mini Quiz Başlat
+							Start Mini Quiz
 						</Button>
 					</div>
 
@@ -183,7 +183,7 @@ export default async function VocabularyPage() {
 
 				<div className="space-y-6">
 					<div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl">
-						<h2 className="text-xl font-bold text-white">Çalışma akışı</h2>
+						<h2 className="text-xl font-bold text-white">Study Flow</h2>
 						<div className="mt-5 space-y-3">
 							{studySteps.map((step, index) => (
 								<div
@@ -201,7 +201,7 @@ export default async function VocabularyPage() {
 
 					<div className="rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-400/15 to-zinc-900/70 p-6 text-white shadow-[0_12px_40px_rgba(212,168,67,0.12)]">
 						<p className="text-sm font-semibold text-amber-200">Strategy Notes</p>
-						<h3 className="mt-2 text-xl font-black">Kelimeyi sinav refleksine donustur</h3>
+						<h3 className="mt-2 text-xl font-black">Turn vocabulary into exam reflex</h3>
 						<div className="mt-3 space-y-2 text-sm leading-7 text-slate-200">
 							{vocab.strategyNotes.map((item) => (
 								<p key={item}>{item}</p>
@@ -214,9 +214,9 @@ export default async function VocabularyPage() {
 			{reading ? (
 				<div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.12)]">
 					<div className="flex flex-wrap items-center justify-between gap-3">
-						<h2 className="text-xl font-bold text-white">Günlük AI okuma parçası</h2>
+						<h2 className="text-xl font-bold text-white">Daily AI Reading</h2>
 						<span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-300">
-							Günün kelimeleri bu metinde geçiyor
+							Today's target words appear inside this passage
 						</span>
 					</div>
 					<h3 className="mt-3 text-lg font-semibold text-slate-100">{reading.title}</h3>
@@ -236,7 +236,7 @@ export default async function VocabularyPage() {
 
 			<div className="mt-8 grid gap-6 lg:grid-cols-2">
 				<div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.12)]">
-					<h2 className="text-xl font-bold text-white">Vocabulary Activities</h2>
+					<h2 className="text-xl font-bold text-white">Exam Activities</h2>
 					<div className="mt-5 space-y-4">
 						{vocab.activities.map((activity) => (
 							<div key={`${activity.type}-${activity.prompt}`} className="rounded-2xl border border-white/10 bg-zinc-900/40 p-4">
@@ -249,7 +249,7 @@ export default async function VocabularyPage() {
 										))}
 									</div>
 								) : null}
-								<p className="mt-3 text-sm text-emerald-300">Cevap: {activity.answer}</p>
+								<p className="mt-3 text-sm text-emerald-300">Answer: {activity.answer}</p>
 								<p className="mt-2 text-xs text-slate-400">{activity.explanation}</p>
 							</div>
 						))}

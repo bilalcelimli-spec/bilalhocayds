@@ -31,6 +31,41 @@ const rssSources: RssSource[] = [
   },
 ];
 
+const MOJIBAKE_PATTERN = /(?:Ã.|â€|â€“|â€”|â€˜|â€™|â€œ|â€�|Â|�)/;
+
+function normalizeWhitespace(text: string) {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function repairMojibake(text: string) {
+  if (!text) {
+    return text;
+  }
+
+  let repaired = text
+    .replace(/â€™/g, "'")
+    .replace(/â€˜/g, "'")
+    .replace(/â€œ/g, '"')
+    .replace(/â€�/g, '"')
+    .replace(/â€“/g, "-")
+    .replace(/â€”/g, "-")
+    .replace(/Â/g, "")
+    .replace(/�/g, "");
+
+  if (MOJIBAKE_PATTERN.test(repaired)) {
+    try {
+      const decoded = Buffer.from(repaired, "latin1").toString("utf8");
+      if (!MOJIBAKE_PATTERN.test(decoded)) {
+        repaired = decoded;
+      }
+    } catch {
+      return normalizeWhitespace(repaired);
+    }
+  }
+
+  return normalizeWhitespace(repaired);
+}
+
 function decodeXmlEntities(text: string) {
   return text
     .replace(/&amp;/g, "&")
@@ -42,7 +77,7 @@ function decodeXmlEntities(text: string) {
 }
 
 function stripHtml(text: string) {
-  return decodeXmlEntities(text.replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim();
+  return repairMojibake(decodeXmlEntities(text.replace(/<[^>]*>/g, " ")));
 }
 
 function getTag(block: string, tagName: string) {
