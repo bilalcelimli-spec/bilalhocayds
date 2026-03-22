@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 const protectedRoutes = ["/dashboard", "/teacher", "/vocabulary", "/reading", "/grammar"];
 const adminRoutes = ["/admin"];
 const authRoutes = ["/login", "/register"];
-const studentAllowedWithoutSubscription = ["/pricing", "/payment/success", "/payment/failure", "/login", "/dashboard/live-recordings"];
+const studentAllowedWithoutSubscription = ["/pricing", "/payment/success", "/payment/failure", "/login", "/dashboard", "/dashboard/live-recordings", "/exam"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

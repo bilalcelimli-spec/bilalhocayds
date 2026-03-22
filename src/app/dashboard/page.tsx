@@ -83,7 +83,7 @@ export default async function DashboardPage() {
     session.user.hasVocabAccess ? { label: "Vocabulary", href: "/vocabulary" } : null,
     session.user.hasReadingAccess ? { label: "Reading", href: "/reading" } : null,
     session.user.hasGrammarAccess ? { label: "Grammar", href: "/grammar" } : null,
-    hasAnyExamAccess ? { label: "Sınav", href: "/exam" } : null,
+    { label: "Sınav", href: "/exam" },
     session.user.hasLiveClassesAccess ? { label: "Canlı Dersler", href: "/live-classes" } : null,
     { label: "Fiyatlandırma", href: "/pricing" },
   ].filter(isDefined);
@@ -118,16 +118,14 @@ export default async function DashboardPage() {
           stat: "1 konu",
         }
       : null,
-    hasAnyExamAccess
-      ? {
-          title: "Sınav",
-          desc: "API ile eklenen deneme sınavlarını süreli çöz",
-          href: "/exam",
-          Icon: FileText,
-          gradient: "from-emerald-600 to-emerald-700",
-          stat: hasBundledExamAccess && !session.user.hasExamAccess ? `${session.user.accessibleExamIds?.length ?? 0} set` : "Deneme seti",
-        }
-      : null,
+    {
+      title: "Sınav",
+      desc: hasAnyExamAccess ? "API ile eklenen deneme sınavlarını süreli çöz" : "Deneme sınavı modülünü aç veya tekil sınav satın al",
+      href: "/exam",
+      Icon: FileText,
+      gradient: "from-emerald-600 to-emerald-700",
+      stat: hasAnyExamAccess ? (hasBundledExamAccess && !session.user.hasExamAccess ? `${session.user.accessibleExamIds?.length ?? 0} set` : "Deneme seti") : "Kilitli",
+    },
     session.user.hasLiveClassesAccess
       ? {
           title: "Canlı Ders",
