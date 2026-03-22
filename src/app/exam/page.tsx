@@ -19,18 +19,9 @@ type NormalizedExamContent = {
   questions: ExamQuestion[];
 };
 
-const studentNavItems = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Siparişlerim", href: "/dashboard/orders" },
-  { label: "Canlı Ders Kayıtları", href: "/dashboard/live-recordings" },
-  { label: "Paylaşılan İçerikler", href: "/dashboard/content-library" },
-  { label: "Vocabulary", href: "/vocabulary" },
-  { label: "Reading", href: "/reading" },
-  { label: "Grammar", href: "/grammar" },
-  { label: "Sınav", href: "/exam" },
-  { label: "Canlı Dersler", href: "/live-classes" },
-  { label: "Fiyatlandırma", href: "/pricing" },
-];
+function isDefined<T>(value: T | null): value is T {
+  return value !== null;
+}
 
 function parseQuestions(value: unknown): ExamQuestion[] {
   if (!Array.isArray(value)) {
@@ -124,6 +115,22 @@ export default async function ExamPage() {
   const purchasedExamIds = new Set(paidPurchases.map((purchase) => purchase.examModuleId));
   const bundledExamIds = new Set(session.user.accessibleExamIds ?? []);
   const fullExamAccess = session.user.hasExamAccess || session.user.role === "TEACHER";
+  const studentNavItems = [
+    { label: "Dashboard", href: "/dashboard" },
+    { label: "Siparişlerim", href: "/dashboard/orders" },
+    session.user.hasLiveRecordingsAccess
+      ? { label: "Canlı Ders Kayıtları", href: "/dashboard/live-recordings" }
+      : null,
+    session.user.hasContentLibraryAccess
+      ? { label: "Paylaşılan İçerikler", href: "/dashboard/content-library" }
+      : null,
+    session.user.hasVocabAccess ? { label: "Vocabulary", href: "/vocabulary" } : null,
+    session.user.hasReadingAccess ? { label: "Reading", href: "/reading" } : null,
+    session.user.hasGrammarAccess ? { label: "Grammar", href: "/grammar" } : null,
+    { label: "Sınav", href: "/exam" },
+    session.user.hasLiveClassesAccess ? { label: "Canlı Dersler", href: "/live-classes" } : null,
+    { label: "Fiyatlandırma", href: "/pricing" },
+  ].filter(isDefined);
   const accessibleExamCount = fullExamAccess
     ? exams.length
     : exams.filter((exam) => bundledExamIds.has(exam.id) || purchasedExamIds.has(exam.id)).length;

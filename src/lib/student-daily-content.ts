@@ -23,6 +23,12 @@ type StudentFeatureAccessState = {
   hasVocabAccess?: boolean;
   hasReadingAccess?: boolean;
   hasGrammarAccess?: boolean;
+  hasExamAccess?: boolean;
+  hasLiveClassesAccess?: boolean;
+  hasLiveRecordingsAccess?: boolean;
+  hasContentLibraryAccess?: boolean;
+  hasAIPlannerAccess?: boolean;
+  accessibleExamIds?: string[];
 };
 
 function getIstanbulDayKey(date = new Date()) {
@@ -156,12 +162,13 @@ export async function getOrCreateStudentDailyContent<M extends DailyContentModul
 export async function ensureTodayStudentDailyContent(
   userId: string,
   accessState: StudentFeatureAccessState,
+  date = new Date(),
 ) {
   const tasks: Array<Promise<[DailyContentModule, StudentDailyContentMap[DailyContentModule]]>> = [];
 
   if (accessState.hasVocabAccess) {
     tasks.push(
-      getOrCreateStudentDailyContent(userId, DailyContentModule.VOCABULARY).then((content) => [
+      getOrCreateStudentDailyContent(userId, DailyContentModule.VOCABULARY, date).then((content) => [
         DailyContentModule.VOCABULARY,
         content,
       ]),
@@ -170,7 +177,7 @@ export async function ensureTodayStudentDailyContent(
 
   if (accessState.hasReadingAccess) {
     tasks.push(
-      getOrCreateStudentDailyContent(userId, DailyContentModule.READING).then((content) => [
+      getOrCreateStudentDailyContent(userId, DailyContentModule.READING, date).then((content) => [
         DailyContentModule.READING,
         content,
       ]),
@@ -179,7 +186,7 @@ export async function ensureTodayStudentDailyContent(
 
   if (accessState.hasGrammarAccess) {
     tasks.push(
-      getOrCreateStudentDailyContent(userId, DailyContentModule.GRAMMAR).then((content) => [
+      getOrCreateStudentDailyContent(userId, DailyContentModule.GRAMMAR, date).then((content) => [
         DailyContentModule.GRAMMAR,
         content,
       ]),
@@ -207,6 +214,124 @@ export async function ensureTodayStudentDailyContent(
 
     return accumulator;
   }, {});
+}
+
+export async function getEffectiveStudentAccess(userId: string): Promise<StudentFeatureAccessState> {
+  const now = new Date();
+  const [activeSubscription, manualFeatureAccess, manualExamAccesses] = await Promise.all([
+    prisma.subscription.findFirst({
+      where: {
+        userId,
+        status: { in: ["ACTIVE", "TRIALING"] },
+        startDate: { lte: now },
+        OR: [{ endDate: null }, { endDate: { gte: now } }],
+      },
+      orderBy: { createdAt: "desc" },
+      select: {
+        plan: {
+          select: {
+            includesReading: true,
+            includesGrammar: true,
+            includesVocab: true,
+            includesExam: true,
+            includesLiveClass: true,
+            includesAIPlanner: true,
+            examModules: {
+              select: {
+                examModuleId: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.studentFeatureAccess.findUnique({
+      where: { userId },
+      select: {
+        hasReadingAccess: true,
+        hasGrammarAccess: true,
+        hasVocabAccess: true,
+        hasExamAccess: true,
+        hasLiveClassesAccess: true,
+        hasLiveRecordingsAccess: true,
+        hasContentLibraryAccess: true,
+        hasAIPlannerAccess: true,
+      },
+    }),
+    prisma.studentFeatureExamAccess.findMany({
+      where: { userId },
+      select: { examModuleId: true },
+    }),
+  ]);
+
+  if (manualFeatureAccess) {
+    return {
+      hasReadingAccess: manualFeatureAccess.hasReadingAccess,
+      hasGrammarAccess: manualFeatureAccess.hasGrammarAccess,
+      hasVocabAccess: manualFeatureAccess.hasVocabAccess,
+      hasExamAccess: manualFeatureAccess.hasExamAccess,
+      hasLiveClassesAccess: manualFeatureAccess.hasLiveClassesAccess,
+      hasLiveRecordingsAccess: manualFeatureAccess.hasLiveRecordingsAccess,
+      hasContentLibraryAccess: manualFeatureAccess.hasContentLibraryAccess,
+      hasAIPlannerAccess: manualFeatureAccess.hasAIPlannerAccess,
+      accessibleExamIds: manualExamAccesses.map((item) => item.examModuleId),
+    };
+  }
+
+  return {
+    hasReadingAccess: Boolean(activeSubscription?.plan.includesReading),
+    hasGrammarAccess: Boolean(activeSubscription?.plan.includesGrammar),
+    hasVocabAccess: Boolean(activeSubscription?.plan.includesVocab),
+    hasExamAccess: Boolean(activeSubscription?.plan.includesExam),
+    hasLiveClassesAccess: Boolean(activeSubscription?.plan.includesLiveClass),
+    hasLiveRecordingsAccess: Boolean(activeSubscription?.plan.includesLiveClass),
+    hasContentLibraryAccess: Boolean(activeSubscription),
+    hasAIPlannerAccess: Boolean(activeSubscription?.plan.includesAIPlanner),
+    accessibleExamIds: activeSubscription?.plan.examModules.map((item) => item.examModuleId) ?? [],
+  };
+}
+
+export async function generateDailyContentForEligibleStudents(date = new Date()) {
+  const students = await prisma.user.findMany({
+    where: { role: "STUDENT" },
+    select: { id: true, email: true },
+  });
+
+  const results = await Promise.all(
+    students.map(async (student) => {
+      const accessState = await getEffectiveStudentAccess(student.id);
+      const hasAnyDailyModuleAccess = Boolean(
+        accessState.hasVocabAccess || accessState.hasReadingAccess || accessState.hasGrammarAccess,
+      );
+
+      if (!hasAnyDailyModuleAccess) {
+        return {
+          userId: student.id,
+          email: student.email,
+          generated: [],
+        };
+      }
+
+      const generated = await ensureTodayStudentDailyContent(student.id, accessState, date);
+
+      return {
+        userId: student.id,
+        email: student.email,
+        generated: [
+          generated.vocabulary ? DailyContentModule.VOCABULARY : null,
+          generated.reading ? DailyContentModule.READING : null,
+          generated.grammar ? DailyContentModule.GRAMMAR : null,
+        ].filter((value): value is DailyContentModule => value !== null),
+      };
+    }),
+  );
+
+  return {
+    dayKey: getIstanbulDayKey(date),
+    totalStudents: students.length,
+    generatedStudents: results.filter((result) => result.generated.length > 0).length,
+    results,
+  };
 }
 
 export { getIstanbulDayKey };

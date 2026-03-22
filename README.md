@@ -27,6 +27,22 @@ PAYTR_MERCHANT_ID=your-merchant-id
 PAYTR_MERCHANT_KEY=your-merchant-key
 PAYTR_MERCHANT_SALT=your-merchant-salt
 PAYTR_IFRAME_BASE_URL=https://www.paytr.com/odeme/guvenli/
+CRON_SECRET=change-me
+```
+
+## Gunluk Icerik Cron
+
+Gunluk vocabulary, reading ve grammar iceriklerini ogrenci girisi olmadan onceden uretmek icin sunucu tarafinda su endpoint kullanilir:
+
+```bash
+POST /api/cron/daily-content
+Authorization: Bearer $CRON_SECRET
+```
+
+Opsiyonel olarak belirli gun icin `date` query parametresi verilebilir:
+
+```bash
+/api/cron/daily-content?date=2026-03-22
 ```
 
 ## PayTR Canliya Alma Checklist

@@ -1486,8 +1486,9 @@ function createNextStep(profile: AiStudentProfile, skill: FocusSkill) {
   return `Yarin ayni seviyede bir metinde ${profile.weakAreas[0]} ve paraphrase recognition uzerine ikinci bir set cozmeyi hedefle.`;
 }
 
-function extractTargetScoreValue(goal: string) {
-  const match = goal.match(/(\d+(?:\.\d+)?)/);
+function extractTargetScoreValue(goal?: string | null) {
+  const normalizedGoal = typeof goal === "string" ? goal : "";
+  const match = normalizedGoal.match(/(\d+(?:\.\d+)?)/);
   return match ? Number(match[1]) : null;
 }
 
