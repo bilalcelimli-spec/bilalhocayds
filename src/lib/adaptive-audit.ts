@@ -46,6 +46,27 @@ function parseAdaptiveMetadata(value: Prisma.JsonValue | null | undefined) {
   return adaptiveState as Record<string, unknown>;
 }
 
+type AdaptiveAttemptPreview = {
+  id: string;
+  status: string;
+  startedAt: string;
+  submittedAt: string | null;
+  correctCount: number;
+  incorrectCount: number;
+  blankCount: number;
+  netScore: number | null;
+  accuracyPercentage: number | null;
+  durationSecondsUsed: number | null;
+  exam: { id: string; title: string; slug: string; examType: string };
+  student: { id: string; name: string | null; email: string };
+  currentLevel: string;
+  currentConfidence: number;
+  topicTheme: string;
+  skillType: string;
+  questionCount: number;
+  history: Array<Record<string, unknown>>;
+};
+
 export async function getAdaptiveAdminDashboardData() {
   const [recentAttempts, recentAuditLogs] = await Promise.all([
     prisma.examAttempt.findMany({
@@ -101,18 +122,17 @@ export async function getAdaptiveAdminDashboardData() {
     }),
   ]);
 
-  const adaptiveAttempts = recentAttempts
-    .map((attempt) => {
+  const adaptiveAttempts: AdaptiveAttemptPreview[] = recentAttempts.flatMap((attempt) => {
       const adaptiveState = parseAdaptiveMetadata(attempt.metadataJson);
       if (!adaptiveState) {
-        return null;
+        return [];
       }
 
       const history = Array.isArray(adaptiveState.history)
         ? adaptiveState.history.filter((item) => item && typeof item === "object") as Array<Record<string, unknown>>
         : [];
 
-      return {
+      return [{
         id: attempt.id,
         status: attempt.status,
         startedAt: attempt.startedAt.toISOString(),
@@ -131,9 +151,8 @@ export async function getAdaptiveAdminDashboardData() {
         skillType: String(adaptiveState.skillType ?? "GRAMMAR"),
         questionCount: history.length,
         history,
-      };
-    })
-    .filter(Boolean);
+      }];
+    });
 
   const completedAttempts = adaptiveAttempts.filter((attempt) => attempt.status !== "IN_PROGRESS");
   const avgAccuracy = completedAttempts.length

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { BarChart3, BrainCircuit, FileJson, Gauge, PenTool, Route, Sparkles } from "lucide-react";
+import { BarChart3, BrainCircuit, FileJson, Gauge, PenTool, Route, Sparkles, type LucideIcon } from "lucide-react";
 
 type AdaptiveAttemptPreview = {
   id: string;
@@ -88,6 +88,15 @@ const writingDefaults = {
   feedbackLanguage: "tr",
 };
 
+const summaryCards: Array<{ label: string; value: (summary: LabProps["summary"]) => string; Icon: LucideIcon }> = [
+  { label: "Adaptive Attempt", value: (summary) => String(summary.totalAdaptiveAttempts), Icon: BrainCircuit },
+  { label: "Tamamlanan", value: (summary) => String(summary.completedAdaptiveAttempts), Icon: Gauge },
+  { label: "Aktif", value: (summary) => String(summary.inProgressAdaptiveAttempts), Icon: Route },
+  { label: "Ortalama Accuracy", value: (summary) => `%${summary.averageAccuracy}`, Icon: BarChart3 },
+  { label: "Ortalama Soru", value: (summary) => String(summary.averageQuestionCount), Icon: FileJson },
+  { label: "Audit Event", value: (summary) => String(summary.auditEventCount), Icon: Sparkles },
+];
+
 export function AdaptiveLab({ summary, levelDistribution, recentAdaptiveAttempts, recentAuditLogs }: LabProps) {
   const [questionPayload, setQuestionPayload] = useState(JSON.stringify(questionDefaults, null, 2));
   const [routerPayload, setRouterPayload] = useState(JSON.stringify(routerDefaults, null, 2));
@@ -126,20 +135,13 @@ export function AdaptiveLab({ summary, levelDistribution, recentAdaptiveAttempts
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-        {[
-          ["Adaptive Attempt", String(summary.totalAdaptiveAttempts), BrainCircuit],
-          ["Tamamlanan", String(summary.completedAdaptiveAttempts), Gauge],
-          ["Aktif", String(summary.inProgressAdaptiveAttempts), Route],
-          ["Ortalama Accuracy", `%${summary.averageAccuracy}`, BarChart3],
-          ["Ortalama Soru", String(summary.averageQuestionCount), FileJson],
-          ["Audit Event", String(summary.auditEventCount), Sparkles],
-        ].map(([label, value, Icon]) => (
+        {summaryCards.map(({ label, value, Icon }) => (
           <div key={label} className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
             <div className="flex items-center justify-between">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">{label}</p>
               <Icon size={16} className="text-emerald-300" />
             </div>
-            <p className="mt-4 text-3xl font-black text-white">{value}</p>
+            <p className="mt-4 text-3xl font-black text-white">{value(summary)}</p>
           </div>
         ))}
       </div>

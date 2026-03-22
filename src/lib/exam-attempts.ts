@@ -939,6 +939,7 @@ export async function submitAdaptiveExamAnswer(userId: string, attemptId: string
   const now = new Date();
   const firstAnsweredAt = currentAnswer.firstAnsweredAt ?? now;
   const responseTimeSeconds = Math.max(0, Math.floor((now.getTime() - currentAnswer.createdAt.getTime()) / 1000));
+  const adaptiveState = metadata.adaptiveState;
 
   await prisma.$transaction([
     prisma.examAttemptAnswer.update({
@@ -967,7 +968,7 @@ export async function submitAdaptiveExamAnswer(userId: string, attemptId: string
     }),
   ]);
 
-  const nextHistory = metadata.adaptiveState.history.map((entry) =>
+  const nextHistory = adaptiveState.history.map((entry) =>
     entry.questionId === input.questionId
       ? {
           ...entry,
@@ -981,20 +982,20 @@ export async function submitAdaptiveExamAnswer(userId: string, attemptId: string
     itemsAnsweredCount: answeredHistory.length,
     elapsedMinutes: Math.max(0, (Date.now() - attempt.startedAt.getTime()) / 60000),
     maxMinutes: attempt.examModule.durationMinutes,
-    currentEstimatedLevel: metadata.adaptiveState.currentLevel,
+    currentEstimatedLevel: adaptiveState.currentLevel,
     recentHistory: answeredHistory.slice(-5).map((entry) => ({
       itemCefr: entry.level,
       correct: Boolean(entry.correct),
       responseTimeSeconds: entry.responseTimeSeconds,
-      discriminationHint: entry.level === metadata.adaptiveState.currentLevel ? "high" : "medium",
+      discriminationHint: entry.level === adaptiveState.currentLevel ? "high" : "medium",
     })),
-    levelConfidenceScore: metadata.adaptiveState.currentConfidence,
+    levelConfidenceScore: adaptiveState.currentConfidence,
     stopRules: {
-      minItemsBeforeStop: metadata.adaptiveState.minItemsBeforeStop,
-      targetConfidenceToStop: metadata.adaptiveState.targetConfidenceToStop,
+      minItemsBeforeStop: adaptiveState.minItemsBeforeStop,
+      targetConfidenceToStop: adaptiveState.targetConfidenceToStop,
       maxConsecutiveCorrectForLevelUp: 3,
       maxConsecutiveWrongForLevelDown: 2,
-      maxQuestions: metadata.adaptiveState.maxQuestions,
+      maxQuestions: adaptiveState.maxQuestions,
     },
   });
 
@@ -1002,7 +1003,7 @@ export async function submitAdaptiveExamAnswer(userId: string, attemptId: string
   const nextMetadata: AttemptMetadata = {
     ...metadata,
     adaptiveState: {
-      ...metadata.adaptiveState,
+      ...adaptiveState,
       status: shouldEnd ? "COMPLETED" : "READY_FOR_QUESTION",
       currentLevel: decisionResult.decision.recommendedNextCefrLevel,
       currentConfidence: decisionResult.decision.confidenceScoreOfCurrentLevel,
@@ -1027,8 +1028,8 @@ export async function submitAdaptiveExamAnswer(userId: string, attemptId: string
     beforeJson: {
       questionId: currentAnswer.questionId,
       previousAnswer: currentAnswer.selectedAnswer,
-      previousLevel: metadata.adaptiveState.currentLevel,
-      previousConfidence: metadata.adaptiveState.currentConfidence,
+      previousLevel: adaptiveState.currentLevel,
+      previousConfidence: adaptiveState.currentConfidence,
     },
     afterJson: {
       selectedAnswer,

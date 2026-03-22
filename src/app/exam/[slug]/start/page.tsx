@@ -15,6 +15,16 @@ export default async function MockExamStartPage({ params }: PageProps) {
   const workspace = await getStudentExamWorkspace(slug, session.user.id);
   if (!workspace) notFound();
 
+  const examTitle = workspace.exam.title;
+  const examTitleLower = examTitle.toLowerCase();
+  const examCefrLevel = (workspace.exam.cefrLevel ?? "").toUpperCase();
+  const initialCefrLevel = (["A2", "B1", "B2", "C1"] as const).includes(examCefrLevel as "A2" | "B1" | "B2" | "C1")
+    ? (examCefrLevel as "A2" | "B1" | "B2" | "C1")
+    : undefined;
+  const adaptiveSkillType = examTitleLower.includes("reading") ? "READING" : "GRAMMAR";
+  const adaptiveQuestionFormat = examTitleLower.includes("reading") ? "reading_mcq" : "sentence_completion";
+  const adaptiveTopicTheme = workspace.exam.sourceLabel ?? examTitle;
+
   async function startAction() {
     "use server";
 
@@ -39,12 +49,10 @@ export default async function MockExamStartPage({ params }: PageProps) {
       slug,
       deliveryMode: "ADAPTIVE",
       adaptiveConfig: {
-        skillType: workspace.exam.title.toLowerCase().includes("reading") ? "READING" : "GRAMMAR",
-        initialCefrLevel: (["A2", "B1", "B2", "C1"] as const).includes((workspace.exam.cefrLevel ?? "").toUpperCase() as "A2" | "B1" | "B2" | "C1")
-          ? ((workspace.exam.cefrLevel ?? "").toUpperCase() as "A2" | "B1" | "B2" | "C1")
-          : undefined,
-        topicTheme: workspace.exam.sourceLabel ?? workspace.exam.title,
-        questionFormat: workspace.exam.title.toLowerCase().includes("reading") ? "reading_mcq" : "sentence_completion",
+        skillType: adaptiveSkillType,
+        initialCefrLevel,
+        topicTheme: adaptiveTopicTheme,
+        questionFormat: adaptiveQuestionFormat,
       },
     });
     redirect(`/exam/${slug}/attempt/${attempt.id}`);
