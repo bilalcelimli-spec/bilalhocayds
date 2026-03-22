@@ -1,8 +1,8 @@
 import { Button } from "@/src/components/common/button";
 import { authOptions } from "@/src/auth";
-import { createAiProfileOverridesFromStudentContext, getDailyVocabulary } from "@/src/lib/ai-content";
 import { getPublishedContentByModule } from "@/src/lib/content-creator-engine";
-import { prisma } from "@/src/lib/prisma";
+import { getOrCreateStudentDailyContent } from "@/src/lib/student-daily-content";
+import { DailyContentModule } from "@prisma/client";
 import { getServerSession } from "next-auth";
 
 export const dynamic = "force-dynamic";
@@ -16,29 +16,12 @@ const studySteps = [
 
 export default async function VocabularyPage() {
 	const session = await getServerSession(authOptions);
-	const profile = session?.user?.id
-		? await prisma.studentProfile.findUnique({
-				where: { userId: session.user.id },
-				select: {
-					interestTags: true,
-					targetExam: true,
-					targetScore: true,
-					currentLevel: true,
-					dailyGoalMinutes: true,
-				},
-		  })
-		: null;
+	if (!session?.user?.id) {
+		return null;
+	}
+
 	const [vocab, publishedVocabularyRuns] = await Promise.all([
-		getDailyVocabulary({
-			profile: createAiProfileOverridesFromStudentContext({
-				targetExam: profile?.targetExam,
-				currentLevel: profile?.currentLevel,
-				targetScore: profile?.targetScore,
-				dailyGoalMinutes: profile?.dailyGoalMinutes,
-				interestTags: profile?.interestTags,
-				focusSkill: "vocabulary",
-			}),
-		}),
+		getOrCreateStudentDailyContent(session.user.id, DailyContentModule.VOCABULARY),
 		getPublishedContentByModule("vocabulary", 3),
 	]);
 	const todayWords = vocab.items;
@@ -129,9 +112,11 @@ export default async function VocabularyPage() {
 									<p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300">Published From Content Engine</p>
 									<h2 className="mt-2 text-lg font-bold text-white">Modüle dağıtılan ek vocabulary setleri</h2>
 								</div>
-								<Button href="/dashboard/content-library" variant="secondary" size="sm">
-									Kütüphaneyi Aç
-								</Button>
+								{session.user.hasContentLibraryAccess ? (
+									<Button href="/dashboard/content-library" variant="secondary" size="sm">
+										Kütüphaneyi Aç
+									</Button>
+								) : null}
 							</div>
 							<div className="mt-4 grid gap-3 md:grid-cols-3">
 								{publishedVocabularyRuns.map((run) => (

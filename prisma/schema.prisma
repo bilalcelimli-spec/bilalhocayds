@@ -47,6 +47,12 @@ enum ContentGenerationStatus {
   FAILED
 }
 
+enum DailyContentModule {
+  VOCABULARY
+  READING
+  GRAMMAR
+}
+
 model User {
   id             String          @id @default(cuid())
   name           String?
@@ -66,6 +72,7 @@ model User {
   examPurchases  ExamPurchase[]
   studentFeatureAccess StudentFeatureAccess?
   studentFeatureExamAccesses StudentFeatureExamAccess[]
+  dailyContents  StudentDailyContent[]
 }
 
 model StudentProfile {
@@ -112,6 +119,22 @@ model StudentFeatureExamAccess {
   @@unique([userId, examModuleId])
   @@index([userId])
   @@index([examModuleId])
+}
+
+model StudentDailyContent {
+  id          String             @id @default(cuid())
+  userId      String
+  dayKey      String
+  moduleKey   DailyContentModule
+  contentJson Json
+  generatedAt DateTime           @default(now())
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dayKey, moduleKey])
+  @@index([userId, dayKey])
 }
 
 model TeacherProfile {

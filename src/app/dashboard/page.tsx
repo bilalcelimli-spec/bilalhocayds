@@ -16,69 +16,11 @@ import {
 
 import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
+import { ensureTodayStudentDailyContent } from "@/src/lib/student-daily-content";
 
-const studentNavItems = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Siparişlerim", href: "/dashboard/orders" },
-  { label: "Canlı Ders Kayıtları", href: "/dashboard/live-recordings" },
-  { label: "Paylaşılan İçerikler", href: "/dashboard/content-library" },
-  { label: "Vocabulary", href: "/vocabulary" },
-  { label: "Reading", href: "/reading" },
-  { label: "Grammar", href: "/grammar" },
-  { label: "Sınav", href: "/exam" },
-  { label: "Canlı Dersler", href: "/live-classes" },
-  { label: "Fiyatlandırma", href: "/pricing" },
-];
-
-const todayTasks = [
-  { id: 1, label: "20 kelime kartını tamamla", module: "Vocabulary", done: false },
-  { id: 2, label: "1 reading metnini oku ve soruları çöz", module: "Reading", done: false },
-  { id: 3, label: "Relative Clauses konusunu tekrar et", module: "Grammar", done: false },
-  { id: 4, label: "1 süreli mini deneme çöz", module: "Exam", done: false },
-];
-
-const moduleCards = [
-  {
-    title: "Vocabulary",
-    desc: "Bugün 20 akademik kelime seni bekliyor",
-    href: "/vocabulary",
-    Icon: Languages,
-    gradient: "from-blue-600 to-blue-700",
-    stat: "20 kart",
-  },
-  {
-    title: "Reading",
-    desc: "Günlük AI makale ve comprehension seti",
-    href: "/reading",
-    Icon: BookOpen,
-    gradient: "from-indigo-600 to-indigo-700",
-    stat: "1 metin",
-  },
-  {
-    title: "Grammar",
-    desc: "Zayıf noktalara odaklı AI alıştırması",
-    href: "/grammar",
-    Icon: GraduationCap,
-    gradient: "from-violet-600 to-violet-700",
-    stat: "1 konu",
-  },
-  {
-    title: "Sınav",
-    desc: "API ile eklenen deneme sınavlarını süreli çöz",
-    href: "/exam",
-    Icon: FileText,
-    gradient: "from-emerald-600 to-emerald-700",
-    stat: "Deneme seti",
-  },
-  {
-    title: "Canlı Ders",
-    desc: "Haftalık Bilal Hoca canlı oturumu",
-    href: "/live-classes",
-    Icon: Video,
-    gradient: "from-teal-600 to-teal-700",
-    stat: "Cmt 20:00",
-  },
-];
+function isDefined<T>(value: T | null): value is T {
+  return value !== null;
+}
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -92,6 +34,111 @@ export default async function DashboardPage() {
     hour < 12 ? "Günaydın" : hour < 17 ? "İyi günler" : "İyi akşamlar";
   const hasBundledExamAccess = (session.user.accessibleExamIds?.length ?? 0) > 0;
   const hasAnyExamAccess = session.user.hasExamAccess || hasBundledExamAccess;
+  const dailyContent = session.user.id
+    ? await ensureTodayStudentDailyContent(session.user.id, session.user)
+    : {};
+  const todayTasks = [
+    session.user.hasVocabAccess && dailyContent.vocabulary
+      ? {
+          id: 1,
+          label: `${dailyContent.vocabulary.items.length} kelime kartını tamamla`,
+          module: "Vocabulary",
+          done: false,
+        }
+      : null,
+    session.user.hasReadingAccess && dailyContent.reading
+      ? {
+          id: 2,
+          label: `${dailyContent.reading.passages[0]?.questions.length ?? 0} reading sorusunu çöz`,
+          module: "Reading",
+          done: false,
+        }
+      : null,
+    session.user.hasGrammarAccess && dailyContent.grammar
+      ? {
+          id: 3,
+          label: `${dailyContent.grammar.focusTopic} konusunu tekrar et`,
+          module: "Grammar",
+          done: false,
+        }
+      : null,
+    hasAnyExamAccess
+      ? {
+          id: 4,
+          label: "1 süreli mini deneme çöz",
+          module: "Exam",
+          done: false,
+        }
+      : null,
+  ].filter(isDefined);
+  const studentNavItems = [
+    { label: "Dashboard", href: "/dashboard" },
+    { label: "Siparişlerim", href: "/dashboard/orders" },
+    session.user.hasLiveRecordingsAccess
+      ? { label: "Canlı Ders Kayıtları", href: "/dashboard/live-recordings" }
+      : null,
+    session.user.hasContentLibraryAccess
+      ? { label: "Paylaşılan İçerikler", href: "/dashboard/content-library" }
+      : null,
+    session.user.hasVocabAccess ? { label: "Vocabulary", href: "/vocabulary" } : null,
+    session.user.hasReadingAccess ? { label: "Reading", href: "/reading" } : null,
+    session.user.hasGrammarAccess ? { label: "Grammar", href: "/grammar" } : null,
+    hasAnyExamAccess ? { label: "Sınav", href: "/exam" } : null,
+    session.user.hasLiveClassesAccess ? { label: "Canlı Dersler", href: "/live-classes" } : null,
+    { label: "Fiyatlandırma", href: "/pricing" },
+  ].filter(isDefined);
+  const moduleCards = [
+    session.user.hasVocabAccess && dailyContent.vocabulary
+      ? {
+          title: "Vocabulary",
+          desc: dailyContent.vocabulary.sessionTitle,
+          href: "/vocabulary",
+          Icon: Languages,
+          gradient: "from-blue-600 to-blue-700",
+          stat: `${dailyContent.vocabulary.items.length} kart`,
+        }
+      : null,
+    session.user.hasReadingAccess && dailyContent.reading
+      ? {
+          title: "Reading",
+          desc: dailyContent.reading.passages[0]?.title ?? "Günlük AI makale ve comprehension seti",
+          href: "/reading",
+          Icon: BookOpen,
+          gradient: "from-indigo-600 to-indigo-700",
+          stat: `${dailyContent.reading.passages.length} metin`,
+        }
+      : null,
+    session.user.hasGrammarAccess && dailyContent.grammar
+      ? {
+          title: "Grammar",
+          desc: dailyContent.grammar.focusTopic,
+          href: "/grammar",
+          Icon: GraduationCap,
+          gradient: "from-violet-600 to-violet-700",
+          stat: "1 konu",
+        }
+      : null,
+    hasAnyExamAccess
+      ? {
+          title: "Sınav",
+          desc: "API ile eklenen deneme sınavlarını süreli çöz",
+          href: "/exam",
+          Icon: FileText,
+          gradient: "from-emerald-600 to-emerald-700",
+          stat: hasBundledExamAccess && !session.user.hasExamAccess ? `${session.user.accessibleExamIds?.length ?? 0} set` : "Deneme seti",
+        }
+      : null,
+    session.user.hasLiveClassesAccess
+      ? {
+          title: "Canlı Ders",
+          desc: "Haftalık Bilal Hoca canlı oturumu",
+          href: "/live-classes",
+          Icon: Video,
+          gradient: "from-teal-600 to-teal-700",
+          stat: "Cmt 20:00",
+        }
+      : null,
+  ].filter(isDefined);
 
   return (
     <DashboardShell
@@ -104,9 +151,9 @@ export default async function DashboardPage() {
     >
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: "Bugünkü Kelimeler", value: "20", Icon: Languages, color: "text-blue-300", tone: "border-blue-500/20 bg-blue-500/8" },
-          { label: "Reading Görevi", value: "1", Icon: BookOpen, color: "text-indigo-300", tone: "border-indigo-500/20 bg-indigo-500/8" },
-          { label: "Grammar Alıştırması", value: "1", Icon: GraduationCap, color: "text-violet-300", tone: "border-violet-500/20 bg-violet-500/8" },
+          { label: "Bugünkü Kelimeler", value: dailyContent.vocabulary ? String(dailyContent.vocabulary.items.length) : "Kapalı", Icon: Languages, color: "text-blue-300", tone: "border-blue-500/20 bg-blue-500/8" },
+          { label: "Reading Görevi", value: dailyContent.reading ? String(dailyContent.reading.passages.length) : "Kapalı", Icon: BookOpen, color: "text-indigo-300", tone: "border-indigo-500/20 bg-indigo-500/8" },
+          { label: "Grammar Alıştırması", value: dailyContent.grammar ? dailyContent.grammar.focusTopic : "Kapalı", Icon: GraduationCap, color: "text-violet-300", tone: "border-violet-500/20 bg-violet-500/8" },
           { label: "Sınav Hedefi", value: hasAnyExamAccess ? hasBundledExamAccess && !session.user.hasExamAccess ? `${session.user.accessibleExamIds?.length ?? 0} set açık` : "Açık" : "Kilitli", Icon: FileText, color: "text-emerald-300", tone: "border-emerald-500/20 bg-emerald-500/8" },
         ].map((s) => (
           <div
@@ -131,7 +178,7 @@ export default async function DashboardPage() {
           <div className="mb-5 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-white">Bugünkü Görevler</h2>
-              <p className="mt-0.5 text-xs uppercase tracking-[0.18em] text-zinc-500">4 görev · Tahmini 90 dk</p>
+              <p className="mt-0.5 text-xs uppercase tracking-[0.18em] text-zinc-500">{todayTasks.length} görev · Tahmini 90 dk</p>
             </div>
             <div className="flex items-center gap-1.5 rounded-2xl border border-orange-500/20 bg-orange-500/10 px-3 py-2">
               <Flame size={13} className="text-orange-400" />
@@ -186,6 +233,7 @@ export default async function DashboardPage() {
             </div>
           </div>
 
+          {session.user.hasLiveClassesAccess ? (
           <div className="rounded-[30px] border border-teal-500/20 bg-teal-500/8 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.18)]">
             <div className="mb-2 flex items-center gap-2">
               <Video size={14} className="text-teal-400" />
@@ -202,6 +250,7 @@ export default async function DashboardPage() {
               Detayları gör <ArrowRight size={12} />
             </Link>
           </div>
+          ) : null}
         </div>
       </div>
 
@@ -209,9 +258,7 @@ export default async function DashboardPage() {
       <div>
         <h2 className="mb-4 text-lg font-bold text-white">Modüllere Git</h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {moduleCards
-            .filter((m) => m.href !== "/exam" || hasAnyExamAccess)
-            .map((m) => (
+          {moduleCards.map((m) => (
             <Link
               key={m.href}
               href={m.href}
@@ -236,6 +283,44 @@ export default async function DashboardPage() {
           ))}
         </div>
       </div>
+
+      {dailyContent.vocabulary || dailyContent.reading || dailyContent.grammar ? (
+        <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-bold text-white">Bugün senin için hazırlandı</h2>
+              <p className="mt-1 text-sm text-zinc-400">İçerikler gün içinde sabit kalır, ertesi gün otomatik olarak yenilenir.</p>
+            </div>
+            <span className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-300">
+              Otomatik günlük üretim aktif
+            </span>
+          </div>
+
+          <div className="mt-5 grid gap-4 lg:grid-cols-3">
+            {dailyContent.vocabulary ? (
+              <Link href="/vocabulary" className="rounded-[24px] border border-blue-500/20 bg-blue-500/8 p-5 transition hover:border-blue-400/40">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-300">Vocabulary</p>
+                <h3 className="mt-2 text-lg font-bold text-white">{dailyContent.vocabulary.items[0]?.word ?? "Bugünün seti hazır"}</h3>
+                <p className="mt-2 text-sm text-zinc-300">{dailyContent.vocabulary.items.slice(0, 3).map((item) => item.word).join(", ")}</p>
+              </Link>
+            ) : null}
+            {dailyContent.reading ? (
+              <Link href="/reading" className="rounded-[24px] border border-indigo-500/20 bg-indigo-500/8 p-5 transition hover:border-indigo-400/40">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-300">Reading</p>
+                <h3 className="mt-2 text-lg font-bold text-white">{dailyContent.reading.passages[0]?.title ?? "Günlük okuma hazır"}</h3>
+                <p className="mt-2 text-sm text-zinc-300">{dailyContent.reading.passages[0]?.summary ?? dailyContent.reading.dailyGoal}</p>
+              </Link>
+            ) : null}
+            {dailyContent.grammar ? (
+              <Link href="/grammar" className="rounded-[24px] border border-violet-500/20 bg-violet-500/8 p-5 transition hover:border-violet-400/40">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300">Grammar</p>
+                <h3 className="mt-2 text-lg font-bold text-white">{dailyContent.grammar.focusTopic}</h3>
+                <p className="mt-2 text-sm text-zinc-300">{dailyContent.grammar.topicReason}</p>
+              </Link>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       {!hasAnyExamAccess ? (
         <div className="rounded-[30px] border border-emerald-500/20 bg-gradient-to-r from-emerald-900/25 via-teal-900/15 to-cyan-900/15 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.18)] sm:p-6">
@@ -267,6 +352,7 @@ export default async function DashboardPage() {
         </div>
       ) : null}
 
+      {session.user.hasReadingAccess ? (
       <div className="rounded-[30px] border border-fuchsia-500/20 bg-gradient-to-r from-fuchsia-900/25 via-indigo-900/15 to-cyan-900/15 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.18)] sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-4">
@@ -294,6 +380,7 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </div>
+      ) : null}
     </DashboardShell>
   );
 }

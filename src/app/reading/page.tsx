@@ -1,39 +1,22 @@
 import { Button } from "@/src/components/common/button";
 import { AiArticleReader } from "@/src/components/reading/ai-article-reader";
-import { createAiProfileOverridesFromStudentContext, getDailyReadingModule, getDailyVocabulary } from "@/src/lib/ai-content";
 import { authOptions } from "@/src/auth";
 import { getPublishedContentByModule } from "@/src/lib/content-creator-engine";
-import { prisma } from "@/src/lib/prisma";
+import { getOrCreateStudentDailyContent } from "@/src/lib/student-daily-content";
+import { DailyContentModule } from "@prisma/client";
 import { getServerSession } from "next-auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReadingPage() {
 	const session = await getServerSession(authOptions);
-	const profile = session?.user?.id
-		? await prisma.studentProfile.findUnique({
-				where: { userId: session.user.id },
-				select: {
-					interestTags: true,
-					targetExam: true,
-					targetScore: true,
-					currentLevel: true,
-					dailyGoalMinutes: true,
-				},
-		  })
-		: null;
-	const aiProfile = createAiProfileOverridesFromStudentContext({
-		targetExam: profile?.targetExam,
-		currentLevel: profile?.currentLevel,
-		targetScore: profile?.targetScore,
-		dailyGoalMinutes: profile?.dailyGoalMinutes,
-		interestTags: profile?.interestTags,
-		focusSkill: "reading",
-	});
+	if (!session?.user?.id) {
+		return null;
+	}
 
 	const [reading, vocabulary, publishedReadingRuns] = await Promise.all([
-		getDailyReadingModule({ interestTags: profile?.interestTags ?? [], profile: aiProfile }),
-		getDailyVocabulary({ profile: { ...aiProfile, focusSkill: "vocabulary" } }),
+		getOrCreateStudentDailyContent(session.user.id, DailyContentModule.READING),
+		getOrCreateStudentDailyContent(session.user.id, DailyContentModule.VOCABULARY),
 		getPublishedContentByModule("reading", 3),
 	]);
 	const mainPassage = reading.passages[0];
@@ -126,9 +109,11 @@ export default async function ReadingPage() {
 								<p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300">Published From Content Engine</p>
 								<h2 className="mt-2 text-xl font-bold text-white">Admin onaylı ek reading içerikleri</h2>
 							</div>
-							<Button href="/dashboard/content-library" variant="secondary" size="sm">
-								Tümünü Gör
-							</Button>
+							{session.user.hasContentLibraryAccess ? (
+								<Button href="/dashboard/content-library" variant="secondary" size="sm">
+									Tümünü Gör
+								</Button>
+							) : null}
 						</div>
 						<div className="mt-5 grid gap-4 lg:grid-cols-3">
 							{publishedReadingRuns.map((run) => (
