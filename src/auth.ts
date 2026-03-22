@@ -6,6 +6,8 @@ import { z } from "zod";
 
 import { prisma } from "@/src/lib/prisma";
 
+const TOKEN_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+
 const credentialsSchema = z.object({
   email: z.email(),
   password: z.string().min(8),
@@ -35,6 +37,136 @@ function hasAnyManualStudentAccess(input: {
   );
 }
 
+async function buildTokenClaims(userId: string, role: string) {
+  if (role !== "STUDENT") {
+    return {
+      role,
+      hasActiveSubscription: true,
+      hasStudentPlatformAccess: true,
+      subscriptionEndsAt: null,
+      hasReadingAccess: true,
+      hasGrammarAccess: true,
+      hasVocabAccess: true,
+      hasExamAccess: true,
+      hasLiveClassesAccess: true,
+      hasLiveRecordingsAccess: true,
+      hasContentLibraryAccess: true,
+      hasAIPlannerAccess: true,
+      accessibleExamIds: [],
+    };
+  }
+
+  const now = new Date();
+  const [activeSubscription, manualFeatureAccess, manualExamAccesses] = await Promise.all([
+    prisma.subscription.findFirst({
+      where: {
+        userId,
+        status: { in: ["ACTIVE", "TRIALING"] },
+        startDate: { lte: now },
+        OR: [{ endDate: null }, { endDate: { gte: now } }],
+      },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        endDate: true,
+        plan: {
+          select: {
+            includesReading: true,
+            includesGrammar: true,
+            includesVocab: true,
+            includesExam: true,
+            includesLiveClass: true,
+            includesAIPlanner: true,
+            examModules: {
+              select: {
+                examModuleId: true,
+              },
+            },
+          },
+        },
+      },
+    } as never) as Promise<{
+      id: string;
+      endDate: Date | null;
+      plan: {
+        includesReading: boolean;
+        includesGrammar: boolean;
+        includesVocab: boolean;
+        includesExam: boolean;
+        includesLiveClass: boolean;
+        includesAIPlanner: boolean;
+        examModules: Array<{ examModuleId: string }>;
+      };
+    } | null>,
+    prisma.studentFeatureAccess.findUnique({
+      where: { userId },
+      select: {
+        hasReadingAccess: true,
+        hasGrammarAccess: true,
+        hasVocabAccess: true,
+        hasExamAccess: true,
+        hasLiveClassesAccess: true,
+        hasLiveRecordingsAccess: true,
+        hasContentLibraryAccess: true,
+        hasAIPlannerAccess: true,
+      },
+    }),
+    prisma.studentFeatureExamAccess.findMany({
+      where: { userId },
+      select: { examModuleId: true },
+    }),
+  ]);
+
+  const hasManualFeatureAccess = Boolean(manualFeatureAccess);
+  const manualAccessibleExamIds = manualExamAccesses.map(
+    (item: { examModuleId: string }) => item.examModuleId,
+  );
+  const subscriptionAccessibleExamIds =
+    activeSubscription?.plan.examModules.map((item: { examModuleId: string }) => item.examModuleId) ?? [];
+  const effectiveStudentAccess = hasManualFeatureAccess
+    ? {
+        hasReadingAccess: Boolean(manualFeatureAccess?.hasReadingAccess),
+        hasGrammarAccess: Boolean(manualFeatureAccess?.hasGrammarAccess),
+        hasVocabAccess: Boolean(manualFeatureAccess?.hasVocabAccess),
+        hasExamAccess: Boolean(manualFeatureAccess?.hasExamAccess),
+        hasLiveClassesAccess: Boolean(manualFeatureAccess?.hasLiveClassesAccess),
+        hasLiveRecordingsAccess: Boolean(manualFeatureAccess?.hasLiveRecordingsAccess),
+        hasContentLibraryAccess: Boolean(manualFeatureAccess?.hasContentLibraryAccess),
+        hasAIPlannerAccess: Boolean(manualFeatureAccess?.hasAIPlannerAccess),
+        accessibleExamIds: manualAccessibleExamIds,
+      }
+    : {
+        hasReadingAccess: Boolean(activeSubscription?.plan.includesReading),
+        hasGrammarAccess: Boolean(activeSubscription?.plan.includesGrammar),
+        hasVocabAccess: Boolean(activeSubscription?.plan.includesVocab),
+        hasExamAccess: Boolean(activeSubscription?.plan.includesExam),
+        hasLiveClassesAccess: Boolean(activeSubscription?.plan.includesLiveClass),
+        hasLiveRecordingsAccess: Boolean(activeSubscription?.plan.includesLiveClass),
+        hasContentLibraryAccess: Boolean(activeSubscription),
+        hasAIPlannerAccess: Boolean(activeSubscription?.plan.includesAIPlanner),
+        accessibleExamIds: subscriptionAccessibleExamIds,
+      };
+  const hasStudentPlatformAccess = hasManualFeatureAccess
+    ? hasAnyManualStudentAccess(effectiveStudentAccess)
+    : Boolean(activeSubscription);
+
+  return {
+    role,
+    hasActiveSubscription: Boolean(activeSubscription),
+    hasStudentPlatformAccess,
+    subscriptionEndsAt: activeSubscription?.endDate?.toISOString() ?? null,
+    hasReadingAccess: effectiveStudentAccess.hasReadingAccess,
+    hasGrammarAccess: effectiveStudentAccess.hasGrammarAccess,
+    hasVocabAccess: effectiveStudentAccess.hasVocabAccess,
+    hasExamAccess: effectiveStudentAccess.hasExamAccess,
+    hasLiveClassesAccess: effectiveStudentAccess.hasLiveClassesAccess,
+    hasLiveRecordingsAccess: effectiveStudentAccess.hasLiveRecordingsAccess,
+    hasContentLibraryAccess: effectiveStudentAccess.hasContentLibraryAccess,
+    hasAIPlannerAccess: effectiveStudentAccess.hasAIPlannerAccess,
+    accessibleExamIds: effectiveStudentAccess.accessibleExamIds,
+  };
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   session: {
@@ -58,8 +190,17 @@ export const authOptions: NextAuthOptions = {
         }
 
         const { email, password } = parsedCredentials.data;
+        const normalizedEmail = email.trim().toLowerCase();
         const user = await prisma.user.findUnique({
-          where: { email },
+          where: { email: normalizedEmail },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            image: true,
+            password: true,
+            role: true,
+          },
         });
 
         if (!user?.password) {
@@ -77,6 +218,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           image: user.image,
+          role: user.role,
         };
       },
     }),
@@ -85,141 +227,47 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.sub = user.id;
+        const userRole = (user as { role?: unknown }).role;
+        token.role = typeof userRole === "string" ? userRole : token.role;
       }
 
-      if (!token.email) {
+      if (!token.sub) {
+        return token;
+      }
+
+      const now = Date.now();
+      const shouldRefreshClaims =
+        Boolean(user) ||
+        typeof token.accessHydratedAt !== "number" ||
+        now - token.accessHydratedAt > TOKEN_REFRESH_INTERVAL_MS ||
+        typeof token.role !== "string";
+
+      if (!shouldRefreshClaims) {
         return token;
       }
 
       const dbUser = await prisma.user.findUnique({
-        where: { email: token.email },
+        where: { id: token.sub },
         select: { id: true, role: true },
       });
 
       if (dbUser) {
         token.sub = dbUser.id;
-        token.role = dbUser.role;
-
-        if (dbUser.role === "STUDENT") {
-          const now = new Date();
-          const [activeSubscription, manualFeatureAccess, manualExamAccesses] = await Promise.all([
-            prisma.subscription.findFirst({
-              where: {
-                userId: dbUser.id,
-                status: { in: ["ACTIVE", "TRIALING"] },
-                startDate: { lte: now },
-                OR: [{ endDate: null }, { endDate: { gte: now } }],
-              },
-              orderBy: { createdAt: "desc" },
-              select: {
-                id: true,
-                endDate: true,
-                plan: {
-                  select: {
-                    includesReading: true,
-                    includesGrammar: true,
-                    includesVocab: true,
-                    includesExam: true,
-                    includesLiveClass: true,
-                    includesAIPlanner: true,
-                    examModules: {
-                      select: {
-                        examModuleId: true,
-                      },
-                    },
-                  },
-                },
-              },
-            } as never) as Promise<{
-              id: string;
-              endDate: Date | null;
-              plan: {
-                includesReading: boolean;
-                includesGrammar: boolean;
-                includesVocab: boolean;
-                includesExam: boolean;
-                includesLiveClass: boolean;
-                includesAIPlanner: boolean;
-                examModules: Array<{ examModuleId: string }>;
-              };
-            } | null>,
-            prisma.studentFeatureAccess.findUnique({
-              where: { userId: dbUser.id },
-              select: {
-                hasReadingAccess: true,
-                hasGrammarAccess: true,
-                hasVocabAccess: true,
-                hasExamAccess: true,
-                hasLiveClassesAccess: true,
-                hasLiveRecordingsAccess: true,
-                hasContentLibraryAccess: true,
-                hasAIPlannerAccess: true,
-              },
-            }),
-            prisma.studentFeatureExamAccess.findMany({
-              where: { userId: dbUser.id },
-              select: { examModuleId: true },
-            }),
-          ]);
-
-          const hasManualFeatureAccess = Boolean(manualFeatureAccess);
-          const manualAccessibleExamIds = manualExamAccesses.map(
-            (item: { examModuleId: string }) => item.examModuleId,
-          );
-          const subscriptionAccessibleExamIds = activeSubscription?.plan.examModules.map((item: { examModuleId: string }) => item.examModuleId) ?? [];
-          const effectiveStudentAccess = hasManualFeatureAccess
-            ? {
-                hasReadingAccess: Boolean(manualFeatureAccess?.hasReadingAccess),
-                hasGrammarAccess: Boolean(manualFeatureAccess?.hasGrammarAccess),
-                hasVocabAccess: Boolean(manualFeatureAccess?.hasVocabAccess),
-                hasExamAccess: Boolean(manualFeatureAccess?.hasExamAccess),
-                hasLiveClassesAccess: Boolean(manualFeatureAccess?.hasLiveClassesAccess),
-                hasLiveRecordingsAccess: Boolean(manualFeatureAccess?.hasLiveRecordingsAccess),
-                hasContentLibraryAccess: Boolean(manualFeatureAccess?.hasContentLibraryAccess),
-                hasAIPlannerAccess: Boolean(manualFeatureAccess?.hasAIPlannerAccess),
-                accessibleExamIds: manualAccessibleExamIds,
-              }
-            : {
-                hasReadingAccess: Boolean(activeSubscription?.plan.includesReading),
-                hasGrammarAccess: Boolean(activeSubscription?.plan.includesGrammar),
-                hasVocabAccess: Boolean(activeSubscription?.plan.includesVocab),
-                hasExamAccess: Boolean(activeSubscription?.plan.includesExam),
-                hasLiveClassesAccess: Boolean(activeSubscription?.plan.includesLiveClass),
-                hasLiveRecordingsAccess: Boolean(activeSubscription?.plan.includesLiveClass),
-                hasContentLibraryAccess: Boolean(activeSubscription),
-                hasAIPlannerAccess: Boolean(activeSubscription?.plan.includesAIPlanner),
-                accessibleExamIds: subscriptionAccessibleExamIds,
-              };
-          const hasStudentPlatformAccess = hasManualFeatureAccess
-            ? hasAnyManualStudentAccess(effectiveStudentAccess)
-            : Boolean(activeSubscription);
-
-          token.hasActiveSubscription = Boolean(activeSubscription);
-          token.hasStudentPlatformAccess = hasStudentPlatformAccess;
-          token.subscriptionEndsAt = activeSubscription?.endDate?.toISOString() ?? null;
-          token.hasReadingAccess = effectiveStudentAccess.hasReadingAccess;
-          token.hasGrammarAccess = effectiveStudentAccess.hasGrammarAccess;
-          token.hasVocabAccess = effectiveStudentAccess.hasVocabAccess;
-          token.hasExamAccess = effectiveStudentAccess.hasExamAccess;
-          token.hasLiveClassesAccess = effectiveStudentAccess.hasLiveClassesAccess;
-          token.hasLiveRecordingsAccess = effectiveStudentAccess.hasLiveRecordingsAccess;
-          token.hasContentLibraryAccess = effectiveStudentAccess.hasContentLibraryAccess;
-          token.hasAIPlannerAccess = effectiveStudentAccess.hasAIPlannerAccess;
-          token.accessibleExamIds = effectiveStudentAccess.accessibleExamIds;
-        } else {
-          token.hasActiveSubscription = true;
-          token.hasStudentPlatformAccess = true;
-          token.subscriptionEndsAt = null;
-          token.hasReadingAccess = true;
-          token.hasGrammarAccess = true;
-          token.hasVocabAccess = true;
-          token.hasExamAccess = true;
-          token.hasLiveClassesAccess = true;
-          token.hasLiveRecordingsAccess = true;
-          token.hasContentLibraryAccess = true;
-          token.hasAIPlannerAccess = true;
-          token.accessibleExamIds = [];
-        }
+        const claims = await buildTokenClaims(dbUser.id, dbUser.role);
+        token.role = claims.role;
+        token.hasActiveSubscription = claims.hasActiveSubscription;
+        token.hasStudentPlatformAccess = claims.hasStudentPlatformAccess;
+        token.subscriptionEndsAt = claims.subscriptionEndsAt;
+        token.hasReadingAccess = claims.hasReadingAccess;
+        token.hasGrammarAccess = claims.hasGrammarAccess;
+        token.hasVocabAccess = claims.hasVocabAccess;
+        token.hasExamAccess = claims.hasExamAccess;
+        token.hasLiveClassesAccess = claims.hasLiveClassesAccess;
+        token.hasLiveRecordingsAccess = claims.hasLiveRecordingsAccess;
+        token.hasContentLibraryAccess = claims.hasContentLibraryAccess;
+        token.hasAIPlannerAccess = claims.hasAIPlannerAccess;
+        token.accessibleExamIds = claims.accessibleExamIds;
+        token.accessHydratedAt = now;
       } else {
         token.hasActiveSubscription = false;
         token.hasStudentPlatformAccess = false;
@@ -233,6 +281,7 @@ export const authOptions: NextAuthOptions = {
         token.hasContentLibraryAccess = false;
         token.hasAIPlannerAccess = false;
         token.accessibleExamIds = [];
+        token.accessHydratedAt = now;
       }
 
       return token;

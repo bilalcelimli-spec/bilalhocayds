@@ -16,7 +16,7 @@ import {
 
 import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
-import { ensureTodayStudentDailyContent } from "@/src/lib/student-daily-content";
+import { getTodayStudentDailyContentSnapshot } from "@/src/lib/student-daily-content";
 
 function isDefined<T>(value: T | null): value is T {
   return value !== null;
@@ -35,7 +35,7 @@ export default async function DashboardPage() {
   const hasBundledExamAccess = (session.user.accessibleExamIds?.length ?? 0) > 0;
   const hasAnyExamAccess = session.user.hasExamAccess || hasBundledExamAccess;
   const dailyContent = session.user.id
-    ? await ensureTodayStudentDailyContent(session.user.id, session.user)
+    ? await getTodayStudentDailyContentSnapshot(session.user.id, session.user)
     : {};
   const todayTasks = [
     session.user.hasVocabAccess && dailyContent.vocabulary
@@ -45,6 +45,13 @@ export default async function DashboardPage() {
           module: "Vocabulary",
           done: false,
         }
+      : session.user.hasVocabAccess
+        ? {
+            id: 1,
+            label: "Vocabulary oturumunu başlat",
+            module: "Vocabulary",
+            done: false,
+          }
       : null,
     session.user.hasReadingAccess && dailyContent.reading
       ? {
@@ -53,6 +60,13 @@ export default async function DashboardPage() {
           module: "Reading",
           done: false,
         }
+      : session.user.hasReadingAccess
+        ? {
+            id: 2,
+            label: "Reading oturumunu başlat",
+            module: "Reading",
+            done: false,
+          }
       : null,
     session.user.hasGrammarAccess && dailyContent.grammar
       ? {
@@ -61,6 +75,13 @@ export default async function DashboardPage() {
           module: "Grammar",
           done: false,
         }
+      : session.user.hasGrammarAccess
+        ? {
+            id: 3,
+            label: "Grammar oturumunu başlat",
+            module: "Grammar",
+            done: false,
+          }
       : null,
     hasAnyExamAccess
       ? {
@@ -97,6 +118,15 @@ export default async function DashboardPage() {
           gradient: "from-blue-600 to-blue-700",
           stat: `${dailyContent.vocabulary.items.length} kart`,
         }
+      : session.user.hasVocabAccess
+        ? {
+            title: "Vocabulary",
+            desc: "Bugünkü kelime oturumunu açarak içeriği oluştur.",
+            href: "/vocabulary",
+            Icon: Languages,
+            gradient: "from-blue-600 to-blue-700",
+            stat: "Hazırla",
+          }
       : null,
     session.user.hasReadingAccess && dailyContent.reading
       ? {
@@ -107,6 +137,15 @@ export default async function DashboardPage() {
           gradient: "from-indigo-600 to-indigo-700",
           stat: `${dailyContent.reading.passages.length} metin`,
         }
+      : session.user.hasReadingAccess
+        ? {
+            title: "Reading",
+            desc: "Günlük reading paketini açarak anında üret.",
+            href: "/reading",
+            Icon: BookOpen,
+            gradient: "from-indigo-600 to-indigo-700",
+            stat: "Hazırla",
+          }
       : null,
     session.user.hasGrammarAccess && dailyContent.grammar
       ? {
@@ -117,6 +156,15 @@ export default async function DashboardPage() {
           gradient: "from-violet-600 to-violet-700",
           stat: "1 konu",
         }
+      : session.user.hasGrammarAccess
+        ? {
+            title: "Grammar",
+            desc: "Bugünkü grammar oturumunu başlat.",
+            href: "/grammar",
+            Icon: GraduationCap,
+            gradient: "from-violet-600 to-violet-700",
+            stat: "Hazırla",
+          }
       : null,
     {
       title: "Sınav",
@@ -149,9 +197,9 @@ export default async function DashboardPage() {
     >
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: "Bugünkü Kelimeler", value: dailyContent.vocabulary ? String(dailyContent.vocabulary.items.length) : "Kapalı", Icon: Languages, color: "text-blue-300", tone: "border-blue-500/20 bg-blue-500/8" },
-          { label: "Reading Görevi", value: dailyContent.reading ? String(dailyContent.reading.passages.length) : "Kapalı", Icon: BookOpen, color: "text-indigo-300", tone: "border-indigo-500/20 bg-indigo-500/8" },
-          { label: "Grammar Alıştırması", value: dailyContent.grammar ? dailyContent.grammar.focusTopic : "Kapalı", Icon: GraduationCap, color: "text-violet-300", tone: "border-violet-500/20 bg-violet-500/8" },
+          { label: "Bugünkü Kelimeler", value: session.user.hasVocabAccess ? (dailyContent.vocabulary ? String(dailyContent.vocabulary.items.length) : "Hazırla") : "Kapalı", Icon: Languages, color: "text-blue-300", tone: "border-blue-500/20 bg-blue-500/8" },
+          { label: "Reading Görevi", value: session.user.hasReadingAccess ? (dailyContent.reading ? String(dailyContent.reading.passages.length) : "Hazırla") : "Kapalı", Icon: BookOpen, color: "text-indigo-300", tone: "border-indigo-500/20 bg-indigo-500/8" },
+          { label: "Grammar Alıştırması", value: session.user.hasGrammarAccess ? (dailyContent.grammar ? dailyContent.grammar.focusTopic : "Hazırla") : "Kapalı", Icon: GraduationCap, color: "text-violet-300", tone: "border-violet-500/20 bg-violet-500/8" },
           { label: "Sınav Hedefi", value: hasAnyExamAccess ? hasBundledExamAccess && !session.user.hasExamAccess ? `${session.user.accessibleExamIds?.length ?? 0} set açık` : "Açık" : "Kilitli", Icon: FileText, color: "text-emerald-300", tone: "border-emerald-500/20 bg-emerald-500/8" },
         ].map((s) => (
           <div

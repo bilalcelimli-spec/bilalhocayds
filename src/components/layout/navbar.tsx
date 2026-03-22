@@ -1,15 +1,16 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-import { getServerSession } from "next-auth";
+import { useSession } from "next-auth/react";
 import { Sparkles } from "lucide-react";
 
-import { authOptions } from "@/src/auth";
 import { Button } from "@/src/components/common/button";
 import { MobileNavMenu } from "@/src/components/layout/mobile-nav-menu";
 import { NavSignOutButton } from "@/src/components/layout/nav-sign-out-button";
 
-export async function Navbar() {
-  const session = await getServerSession(authOptions);
+export function Navbar() {
+  const { data: session } = useSession();
   const dashboardHref =
     session?.user?.role === "ADMIN"
       ? "/admin"

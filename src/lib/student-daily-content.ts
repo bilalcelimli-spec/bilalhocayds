@@ -324,6 +324,69 @@ export async function ensureTodayStudentDailyContent(
   }, {});
 }
 
+export async function getTodayStudentDailyContentSnapshot(
+  userId: string,
+  accessState: StudentFeatureAccessState,
+  date = new Date(),
+) {
+  const moduleKeys: DailyContentModule[] = [];
+
+  if (accessState.hasVocabAccess) {
+    moduleKeys.push(DailyContentModule.VOCABULARY);
+  }
+
+  if (accessState.hasReadingAccess) {
+    moduleKeys.push(DailyContentModule.READING);
+  }
+
+  if (accessState.hasGrammarAccess) {
+    moduleKeys.push(DailyContentModule.GRAMMAR);
+  }
+
+  if (moduleKeys.length === 0) {
+    return {};
+  }
+
+  const dayKey = getIstanbulDayKey(date);
+  const rows = await prisma.studentDailyContent.findMany({
+    where: {
+      userId,
+      dayKey,
+      moduleKey: { in: moduleKeys },
+    },
+    select: {
+      moduleKey: true,
+      contentJson: true,
+    },
+  });
+
+  return rows.reduce<{
+    vocabulary?: VocabularyResponse;
+    reading?: ReadingModuleResponse;
+    grammar?: GrammarModuleResponse;
+  }>((accumulator, row) => {
+    if (row.moduleKey === DailyContentModule.VOCABULARY) {
+      const content = row.contentJson as VocabularyResponse;
+      if (isVocabularyContentValid(content)) {
+        accumulator.vocabulary = content;
+      }
+    }
+
+    if (row.moduleKey === DailyContentModule.READING) {
+      const content = row.contentJson as ReadingModuleResponse;
+      if (isReadingContentValid(content)) {
+        accumulator.reading = content;
+      }
+    }
+
+    if (row.moduleKey === DailyContentModule.GRAMMAR) {
+      accumulator.grammar = row.contentJson as GrammarModuleResponse;
+    }
+
+    return accumulator;
+  }, {});
+}
+
 export async function getEffectiveStudentAccess(userId: string): Promise<StudentFeatureAccessState> {
   const now = new Date();
   const [activeSubscription, manualFeatureAccess, manualExamAccesses] = await Promise.all([

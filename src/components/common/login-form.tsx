@@ -3,11 +3,9 @@
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 
 export function LoginForm() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,11 +16,13 @@ export function LoginForm() {
     e.preventDefault();
     setError("");
     setPending(true);
+    const callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl") || "/dashboard";
 
     const result = await signIn("credentials", {
       email,
       password,
       redirect: false,
+      callbackUrl,
     });
 
     setPending(false);
@@ -32,8 +32,7 @@ export function LoginForm() {
       return;
     }
 
-    router.push("/dashboard");
-    router.refresh();
+    window.location.assign(result?.url || callbackUrl);
   }
 
   return (
