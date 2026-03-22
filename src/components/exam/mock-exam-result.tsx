@@ -6,6 +6,7 @@ type MockExamResultProps = {
   lessonPriceLabel: string;
   aiExplanationEnabled: boolean;
   result: {
+    deliveryMode?: "STANDARD" | "ADAPTIVE";
     correctCount: number;
     incorrectCount: number;
     blankCount: number;
@@ -22,6 +23,14 @@ type MockExamResultProps = {
       selectedAnswer: string | null;
       isCorrect: boolean | null;
     }>;
+    adaptiveSummary?: {
+      skillType: string;
+      topicTheme: string;
+      finalLevel: string;
+      finalConfidence: number;
+      history: Array<{ questionId: string; questionNumber: number; level: string; correct: boolean | null }>;
+      lastDecision: Record<string, unknown> | null;
+    } | null;
   };
   previewMode?: boolean;
 };
@@ -55,6 +64,17 @@ export function MockExamResult({
             </div>
           ))}
         </div>
+        {result.deliveryMode === "ADAPTIVE" && result.adaptiveSummary ? (
+          <div className="mt-5 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-4 text-sm text-cyan-50">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">Adaptive Journey</p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <span>Skill: {result.adaptiveSummary.skillType}</span>
+              <span>Final level: {result.adaptiveSummary.finalLevel}</span>
+              <span>Confidence: %{Math.round(result.adaptiveSummary.finalConfidence * 100)}</span>
+              <span>Tema: {result.adaptiveSummary.topicTheme}</span>
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -111,6 +131,9 @@ export function MockExamResult({
               <p><span className="font-semibold text-white">En güçlü alan:</span> {result.strongestSection ?? "Henüz yok"}</p>
               <p><span className="font-semibold text-white">En zayıf alan:</span> {result.weakestSection ?? "Henüz yok"}</p>
               <p>Reading inference ve contrast linker sorularında karar verirken yüzeysel anahtar kelime eşleşmesi yerine bağlam akışını takip etmek gerekiyor.</p>
+              {result.deliveryMode === "ADAPTIVE" && result.adaptiveSummary ? (
+                <p>Adaptive akış bu denemeyi {result.adaptiveSummary.finalLevel} seviyesinde kapattı. Confidence %{Math.round(result.adaptiveSummary.finalConfidence * 100)} olarak kaydedildi.</p>
+              ) : null}
             </div>
           </div>
 

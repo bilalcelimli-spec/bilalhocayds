@@ -23,6 +23,8 @@ export default async function MockExamAttemptPage({ params }: PageProps) {
         title={attempt.exam.title}
         totalQuestions={attempt.questions.length}
         remainingSeconds={attempt.remainingSeconds}
+        deliveryMode={attempt.deliveryMode}
+        adaptive={attempt.adaptive}
         questions={attempt.questions}
       />
     </DashboardShell>

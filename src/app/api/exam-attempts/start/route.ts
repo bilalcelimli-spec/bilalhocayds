@@ -3,11 +3,14 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { authOptions } from "@/src/auth";
+import { adaptiveAttemptConfigSchema } from "@/src/lib/adaptive-exam-schemas";
 import { startExamAttempt } from "@/src/lib/exam-attempts";
 
 const requestSchema = z.object({
   examModuleId: z.string().min(1).optional(),
   slug: z.string().min(1).optional(),
+  deliveryMode: z.enum(["STANDARD", "ADAPTIVE"]).optional(),
+  adaptiveConfig: adaptiveAttemptConfigSchema.optional(),
 });
 
 export async function POST(request: Request) {

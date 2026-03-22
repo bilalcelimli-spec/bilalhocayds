@@ -18,6 +18,7 @@ const adminNavItems = [
   { label: "Grammar Yönetimi", href: "/admin/grammar" },
   { label: "Vocabulary Yönetimi", href: "/admin/vocabulary" },
   { label: "Sınav Yönetimi", href: "/admin/exams" },
+  { label: "Adaptive Lab", href: "/admin/adaptive-lab" },
   { label: "Sınav Satışları", href: "/admin/exam-sales" },
   { label: "Canlı Ders Yönetimi", href: "/admin/live-classes" },
   { label: "Canlı Ders Kayıtları", href: "/admin/live-recordings" },
@@ -125,54 +126,6 @@ async function createExamAction(formData: FormData) {
   }
 
   await examModule.create({
-    data: {
-      title,
-      slug: toSlug(slugInput || title),
-      examType: String(formData.get("examType") ?? "General Practice").trim() || "General Practice",
-      cefrLevel: String(formData.get("cefrLevel") ?? "").trim() || null,
-      durationMinutes: parseNumber(formData.get("durationMinutes"), 45),
-      questionCount: parseNumber(formData.get("questionCount"), 20),
-      description: String(formData.get("description") ?? "").trim() || null,
-      instructions: String(formData.get("instructions") ?? "").trim() || null,
-      marketplaceTitle: String(formData.get("marketplaceTitle") ?? "").trim() || null,
-      marketplaceDescription: String(formData.get("marketplaceDescription") ?? "").trim() || null,
-      coverImageUrl: String(formData.get("coverImageUrl") ?? "").trim() || null,
-      price: parseNumber(formData.get("price"), 0),
-      isForSale: formData.get("isForSale") === "on",
-      contentJson: parseContentJson(formData.get("contentJson")),
-      subtitle: parseString(formData.get("subtitle")),
-      sourceLabel: parseString(formData.get("sourceLabel")),
-      examSeries: parseString(formData.get("examSeries")),
-      yearLabel: parseString(formData.get("yearLabel")),
-      estimatedDifficulty: parseString(formData.get("estimatedDifficulty")),
-      targetStudentLevel: parseString(formData.get("targetStudentLevel")),
-      publicationStatus: String(formData.get("publicationStatus") ?? "DRAFT"),
-      aiExplanationEnabled: formData.get("aiExplanationEnabled") === "on",
-      lessonReviewPrice: parseOptionalNumber(formData.get("lessonReviewPrice")),
-      lessonCurrency: String(formData.get("lessonCurrency") ?? "TRY").trim() || "TRY",
-      isPublished: formData.get("isPublished") === "on",
-      isActive: formData.get("isActive") === "on",
-    },
-  });
-
-  revalidatePath("/admin/exams");
-  revalidatePath("/admin");
-  revalidatePath("/exam");
-}
-
-async function updateExamAction(formData: FormData) {
-  "use server";
-  await assertAdmin();
-
-  const id = String(formData.get("id") ?? "");
-  const title = String(formData.get("title") ?? "").trim();
-  const slugInput = String(formData.get("slug") ?? "").trim();
-  if (!id || !title) {
-    return;
-  }
-
-  await examModule.update({
-    where: { id },
     data: {
       title,
       slug: toSlug(slugInput || title),
@@ -385,6 +338,9 @@ export default async function AdminExamsPage() {
         <div className="ml-auto rounded-xl bg-emerald-500/15 px-3 py-2 text-sm font-semibold text-emerald-300">
           API ile eklenebilir JSON sınav havuzu
         </div>
+        <Link href="/admin/adaptive-lab" className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-sm font-semibold text-cyan-200 hover:bg-cyan-500/15">
+          Adaptive Lab
+        </Link>
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-5">

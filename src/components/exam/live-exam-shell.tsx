@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { formatDurationLabel } from "@/src/lib/exam-workspace";
@@ -11,6 +11,16 @@ type LiveExamShellProps = {
   title: string;
   totalQuestions: number;
   remainingSeconds: number;
+  deliveryMode?: "STANDARD" | "ADAPTIVE";
+  adaptive?: {
+    skillType: string;
+    topicTheme: string;
+    currentLevel: string;
+    currentConfidence: number;
+    history: Array<{ questionId: string; questionNumber: number; level: string; correct: boolean | null }>;
+    lastDecision: Record<string, unknown> | null;
+    status: string;
+  } | null;
   questions: Array<{
     id: string;
     number: number;
@@ -28,10 +38,14 @@ export function LiveExamShell({
   title,
   totalQuestions,
   remainingSeconds: initialRemainingSeconds,
+  deliveryMode = "STANDARD",
+  adaptive = null,
   questions,
 }: LiveExamShellProps) {
   const router = useRouter();
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [questionList, setQuestionList] = useState(questions);
+  const [adaptiveState, setAdaptiveState] = useState(adaptive);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(deliveryMode === "ADAPTIVE" ? Math.max(questions.length - 1, 0) : 0);
   const [remainingSeconds, setRemainingSeconds] = useState(initialRemainingSeconds);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>(
     Object.fromEntries(questions.map((question) => [question.id, question.selectedAnswer ?? ""])),
@@ -44,26 +58,60 @@ export function LiveExamShell({
   const [error, setError] = useState("");
   const hasAutoSubmittedRef = useRef(false);
 
-  const currentQuestion = questions[currentQuestionIndex];
+  const currentQuestion = questionList[currentQuestionIndex];
   const answeredCount = useMemo(() => Object.values(selectedAnswers).filter(Boolean).length, [selectedAnswers]);
 
   async function persistAnswer(questionId: string, payload: { selectedAnswer?: string | null; isFlaggedForReview?: boolean }) {
     setSavePendingQuestionId(questionId);
     setError("");
 
-    const response = await fetch(`/api/exam-attempts/${attemptId}/answers`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      deliveryMode === "ADAPTIVE"
+        ? `/api/exam-attempts/${attemptId}/adaptive/answer`
+        : `/api/exam-attempts/${attemptId}/answers`,
+      {
+        method: deliveryMode === "ADAPTIVE" ? "POST" : "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(
+          deliveryMode === "ADAPTIVE"
+            ? { questionId, selectedAnswer: payload.selectedAnswer ?? null, isFlaggedForReview: payload.isFlaggedForReview }
+            : {
+                answers: [{ questionId, ...payload }],
+              },
+        ),
       },
-      body: JSON.stringify({
-        answers: [{ questionId, ...payload }],
-      }),
-    });
+    );
 
     setSavePendingQuestionId(null);
 
     if (response.ok) {
+      if (deliveryMode === "ADAPTIVE") {
+        const data = (await response.json()) as {
+          finished?: boolean;
+          payload?: {
+            remainingSeconds: number;
+            questions: LiveExamShellProps["questions"];
+            adaptive?: LiveExamShellProps["adaptive"];
+          };
+        };
+
+        if (data.finished) {
+          router.push(`/exam/${examSlug}/attempt/${attemptId}/result`);
+          return;
+        }
+
+        if (data.payload) {
+          setQuestionList(data.payload.questions);
+          setAdaptiveState(data.payload.adaptive ?? adaptiveState);
+          setSelectedAnswers(Object.fromEntries(data.payload.questions.map((question) => [question.id, question.selectedAnswer ?? ""])));
+          setFlaggedQuestions(Object.fromEntries(data.payload.questions.map((question) => [question.id, question.isFlaggedForReview])));
+          setRemainingSeconds(data.payload.remainingSeconds);
+          setCurrentQuestionIndex(Math.max(data.payload.questions.length - 1, 0));
+        }
+      }
+
       return;
     }
 
@@ -99,11 +147,17 @@ export function LiveExamShell({
     router.push(`/exam/${examSlug}/attempt/${attemptId}/result`);
   }
 
+  const handleAutoSubmit = useEffectEvent(() => {
+    void submitAttempt(true);
+  });
+
   useEffect(() => {
     if (remainingSeconds <= 0) {
       if (!hasAutoSubmittedRef.current) {
         hasAutoSubmittedRef.current = true;
-        void submitAttempt(true);
+        window.setTimeout(() => {
+          handleAutoSubmit();
+        }, 0);
       }
 
       return;
@@ -123,10 +177,10 @@ export function LiveExamShell({
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300">Live Attempt</p>
             <h1 className="mt-2 text-2xl font-black text-white">{title}</h1>
-            <p className="mt-1 text-sm text-zinc-400">Attempt ID: {attemptId} · Autosave aktif · OMR paneli sağda sabit</p>
+            <p className="mt-1 text-sm text-zinc-400">Attempt ID: {attemptId} · {deliveryMode === "ADAPTIVE" ? "Adaptive akış aktif" : "Autosave aktif · OMR paneli sağda sabit"}</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-zinc-200">{answeredCount}/{totalQuestions} işaretlendi</div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-zinc-200">{answeredCount}/{deliveryMode === "ADAPTIVE" ? questionList.length : totalQuestions} işaretlendi</div>
             <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-200">Kalan süre: {formatDurationLabel(remainingSeconds)}</div>
             <button
               type="button"
@@ -138,6 +192,14 @@ export function LiveExamShell({
             </button>
           </div>
         </div>
+        {deliveryMode === "ADAPTIVE" && adaptiveState ? (
+          <div className="mt-4 flex flex-wrap gap-3 text-xs text-zinc-300">
+            <span className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1">{adaptiveState.skillType}</span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Current level {adaptiveState.currentLevel}</span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Confidence %{Math.round(adaptiveState.currentConfidence * 100)}</span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Tema: {adaptiveState.topicTheme}</span>
+          </div>
+        ) : null}
       </header>
 
       {error ? (
@@ -155,6 +217,7 @@ export function LiveExamShell({
             </div>
             <button
               type="button"
+              disabled={deliveryMode === "ADAPTIVE"}
               onClick={() => {
                 const nextFlagState = !flaggedQuestions[currentQuestion.id];
                 setFlaggedQuestions((current) => ({
@@ -167,7 +230,7 @@ export function LiveExamShell({
                 flaggedQuestions[currentQuestion.id]
                   ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
                   : "border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"
-              }`}
+              } ${deliveryMode === "ADAPTIVE" ? "cursor-not-allowed opacity-60" : ""}`}
             >
               {flaggedQuestions[currentQuestion.id] ? "Review işaretli" : "Review için işaretle"}
             </button>
@@ -185,6 +248,7 @@ export function LiveExamShell({
                   <button
                     key={option}
                     type="button"
+                    disabled={deliveryMode === "ADAPTIVE" && Boolean(selectedAnswers[currentQuestion.id])}
                     onClick={() => {
                       setSelectedAnswers((current) => ({
                         ...current,
@@ -196,7 +260,7 @@ export function LiveExamShell({
                       isSelected
                         ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-100"
                         : "border-white/10 bg-white/[0.03] text-zinc-200 hover:bg-white/[0.06]"
-                    }`}
+                    } ${deliveryMode === "ADAPTIVE" && Boolean(selectedAnswers[currentQuestion.id]) ? "cursor-not-allowed opacity-70" : ""}`}
                   >
                     <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-current text-xs font-bold">
                       {letter}
@@ -211,14 +275,16 @@ export function LiveExamShell({
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
             <button
               type="button"
+              disabled={deliveryMode === "ADAPTIVE"}
               onClick={() => setCurrentQuestionIndex((current) => Math.max(current - 1, 0))}
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300 transition hover:bg-white/10"
+              className={`rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300 transition hover:bg-white/10 ${deliveryMode === "ADAPTIVE" ? "cursor-not-allowed opacity-50" : ""}`}
             >
               Önceki
             </button>
             <div className="flex gap-3">
               <button
                 type="button"
+                disabled={deliveryMode === "ADAPTIVE"}
                 onClick={() => {
                   setSelectedAnswers((current) => ({
                     ...current,
@@ -226,14 +292,15 @@ export function LiveExamShell({
                   }));
                   void persistAnswer(currentQuestion.id, { selectedAnswer: null });
                 }}
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300 transition hover:bg-white/10"
+                className={`rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300 transition hover:bg-white/10 ${deliveryMode === "ADAPTIVE" ? "cursor-not-allowed opacity-50" : ""}`}
               >
                 Cevabı temizle
               </button>
               <button
                 type="button"
-                onClick={() => setCurrentQuestionIndex((current) => Math.min(current + 1, questions.length - 1))}
-                className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200"
+                disabled={deliveryMode === "ADAPTIVE"}
+                onClick={() => setCurrentQuestionIndex((current) => Math.min(current + 1, questionList.length - 1))}
+                className={`rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200 ${deliveryMode === "ADAPTIVE" ? "cursor-not-allowed opacity-50" : ""}`}
               >
                 Sonraki
               </button>
@@ -242,13 +309,13 @@ export function LiveExamShell({
         </div>
 
         <aside className="rounded-[32px] border border-white/10 bg-[rgba(18,20,28,0.95)] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.22)]">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">Optical Sheet</p>
-          <p className="mt-2 text-sm text-zinc-400">Tıkla ve soruya atla. Cevaplanan, boş ve review işaretli sorular ayrı görünür.</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">{deliveryMode === "ADAPTIVE" ? "Adaptive Trail" : "Optical Sheet"}</p>
+          <p className="mt-2 text-sm text-zinc-400">{deliveryMode === "ADAPTIVE" ? "Adaptive akışta önceki sorular kilitlenir; son kart sıradaki aktif soruyu gösterir." : "Tıkla ve soruya atla. Cevaplanan, boş ve review işaretli sorular ayrı görünür."}</p>
 
           <div className="mt-5 grid grid-cols-5 gap-2">
-            {Array.from({ length: totalQuestions }, (_, index) => {
+            {Array.from({ length: deliveryMode === "ADAPTIVE" ? questionList.length : totalQuestions }, (_, index) => {
               const number = index + 1;
-              const question = questions.find((item) => item.number === number);
+              const question = questionList.find((item) => item.number === number);
               const answer = question ? selectedAnswers[question.id] : "";
               const flagged = question ? flaggedQuestions[question.id] : false;
               const isCurrent = currentQuestion.number === number;
@@ -257,8 +324,9 @@ export function LiveExamShell({
                 <button
                   key={number}
                   type="button"
+                  disabled={deliveryMode === "ADAPTIVE"}
                   onClick={() => {
-                    const targetIndex = questions.findIndex((item) => item.number === number);
+                    const targetIndex = questionList.findIndex((item) => item.number === number);
                     if (targetIndex >= 0) {
                       setCurrentQuestionIndex(targetIndex);
                     }
@@ -277,6 +345,9 @@ export function LiveExamShell({
               );
             })}
           </div>
+          {deliveryMode === "ADAPTIVE" && adaptiveState?.lastDecision ? (
+            <pre className="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/20 p-3 text-[11px] leading-5 text-zinc-300">{JSON.stringify(adaptiveState.lastDecision, null, 2)}</pre>
+          ) : null}
         </aside>
       </div>
 

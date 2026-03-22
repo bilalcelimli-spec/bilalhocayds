@@ -36,6 +36,7 @@ const adminNavItems = [
   { label: "Muhasebe", href: "/admin/accounting" },
   { label: "SEO Yönetimi", href: "/admin/seo" },
   { label: "Content Engine", href: "/admin/content-engine" },
+  { label: "Adaptive Lab", href: "/admin/adaptive-lab" },
   { label: "Öğrenci Modülleri", href: "/dashboard" },
   { label: "Öğretmen Paneli", href: "/teacher" },
 ];
@@ -320,6 +321,14 @@ export default async function AdminPage() {
                 Icon: Sparkles,
                 color: "text-amber-300",
                 bg: "border-amber-500/20 bg-amber-500/8",
+              },
+              {
+                title: "Adaptive Lab",
+                desc: "Prompt test, adaptive analytics ve audit stream",
+                href: "/admin/adaptive-lab",
+                Icon: Shield,
+                color: "text-cyan-300",
+                bg: "border-cyan-500/20 bg-cyan-500/8",
               },
               {
                 title: "Muhasebe",
