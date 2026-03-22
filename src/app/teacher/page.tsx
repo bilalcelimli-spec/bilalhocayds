@@ -82,6 +82,12 @@ export default async function TeacherPage() {
             email: true,
           },
         },
+        attempt: {
+          select: {
+            incorrectCount: true,
+            blankCount: true,
+          },
+        },
         examModule: {
           select: {
             title: true,
@@ -267,14 +273,18 @@ export default async function TeacherPage() {
             <div key={booking.id} className="rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3 text-sm text-zinc-300">
               <p className="font-semibold text-white">{booking.student.name ?? booking.student.email} · {booking.examModule.title}</p>
               <p className="mt-1 text-xs text-zinc-500">Status: {booking.status}</p>
+              <p className="mt-1 text-xs text-zinc-500">Odak soru seti: {(booking.attempt.incorrectCount ?? 0) + (booking.attempt.blankCount ?? 0)}</p>
               <p className="mt-1 text-xs text-zinc-400">{booking.scheduledStartAt ? format(booking.scheduledStartAt, "d MMMM yyyy · HH:mm", { locale: tr }) : "Henüz slot atanmadı"}</p>
+              <Link href={`/teacher/review-bookings/${booking.id}`} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-emerald-300 hover:text-emerald-200">
+                Review workspace ac
+                <ArrowRight size={12} />
+              </Link>
             </div>
           )) : (
             <p className="py-4 text-center text-sm text-zinc-500">Sana atanmış review booking bulunmuyor.</p>
           )}
         </div>
       </div>
-
       <div>
         <h2 className="mb-4 text-lg font-bold text-white">Hızlı Eylemler</h2>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

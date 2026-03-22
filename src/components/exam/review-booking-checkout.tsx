@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import type { ReviewSlotOption } from "@/src/lib/exam-review-bookings";
+
 function resolvePaytrRedirectUrl(payment?: { redirectUrl?: string; token?: string }) {
   if (typeof payment?.redirectUrl === "string" && payment.redirectUrl.trim()) {
     return payment.redirectUrl;
@@ -22,6 +24,9 @@ type ReviewBookingCheckoutProps = {
   incorrectCount: number;
   initialFullName: string;
   initialEmail: string;
+  slotOptions: ReviewSlotOption[];
+  initialPreferredSlot?: string;
+  initialBookingNote?: string;
 };
 
 export function ReviewBookingCheckout({
@@ -32,10 +37,15 @@ export function ReviewBookingCheckout({
   incorrectCount,
   initialFullName,
   initialEmail,
+  slotOptions,
+  initialPreferredSlot = "",
+  initialBookingNote = "",
 }: ReviewBookingCheckoutProps) {
   const [fullName, setFullName] = useState(initialFullName);
   const [email, setEmail] = useState(initialEmail);
   const [phone, setPhone] = useState("");
+  const [preferredSlot, setPreferredSlot] = useState(initialPreferredSlot);
+  const [bookingNote, setBookingNote] = useState(initialBookingNote);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
@@ -54,6 +64,8 @@ export function ReviewBookingCheckout({
         fullName,
         email,
         phone,
+        preferredSlot,
+        bookingNote,
       }),
     });
 
@@ -110,6 +122,27 @@ export function ReviewBookingCheckout({
           onChange={(event) => setPhone(event.target.value)}
           placeholder="Telefon"
           required
+          className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white"
+        />
+        <select
+          name="preferredSlot"
+          value={preferredSlot}
+          onChange={(event) => setPreferredSlot(event.target.value)}
+          className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white"
+        >
+          <option value="">Uygun slot sec...</option>
+          {slotOptions.map((slot) => (
+            <option key={slot.value} value={slot.value}>
+              {slot.label}
+            </option>
+          ))}
+        </select>
+        <textarea
+          name="bookingNote"
+          value={bookingNote}
+          onChange={(event) => setBookingNote(event.target.value)}
+          placeholder="Ek not veya odaklanilacak konu"
+          rows={4}
           className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white"
         />
       </div>

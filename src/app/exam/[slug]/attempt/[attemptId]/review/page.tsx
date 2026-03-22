@@ -3,7 +3,6 @@ import { notFound, redirect } from "next/navigation";
 
 import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
-import { ensureAttemptExplanationsForUser } from "@/src/lib/exam-explanations";
 import { getExamAttemptResult } from "@/src/lib/exam-attempts";
 
 type PageProps = { params: Promise<{ slug: string; attemptId: string }> };
@@ -12,19 +11,16 @@ export default async function MockExamReviewPage({ params }: PageProps) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
   const { slug, attemptId } = await params;
-  const [result, explanations] = await Promise.all([
-    getExamAttemptResult(session.user.id, attemptId).catch(() => null),
-    ensureAttemptExplanationsForUser(session.user.id, attemptId).catch(() => new Map()),
-  ]);
+  const result = await getExamAttemptResult(session.user.id, attemptId).catch(() => null);
   if (!result || result.exam.slug !== slug) notFound();
 
   return (
     <DashboardShell navItems={[{ label: "Dashboard", href: "/dashboard" }, { label: "Sınav", href: "/exam" }]} roleLabel="Öğrenci Paneli" title="Detailed Review" subtitle="AI explanations and wrong-answer analysis" userName={session.user.name ?? undefined} userRole={session.user.role}>
       <div className="space-y-4">
-        {result.answers.map((question) => (
-          (() => {
-            const explanation = explanations.get(question.id);
-            return (
+        {result.answers.map((question) => {
+          const explanation = question.explanationDetail;
+
+          return (
           <div key={question.id} className="rounded-3xl border border-white/10 bg-white/5 p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm font-semibold text-white">Soru {question.number} · {question.section}</p>
@@ -40,9 +36,8 @@ export default async function MockExamReviewPage({ params }: PageProps) {
               <p className="mt-3 text-sm text-cyan-100">Exam tip: {explanation?.examTip ?? "Şık seçmeden önce bağlam, anahtar bağlaçlar ve soru kökünü birlikte oku."}</p>
             </div>
           </div>
-            );
-          })()
-        ))}
+          );
+        })}
       </div>
     </DashboardShell>
   );

@@ -1,5 +1,6 @@
 import { AttemptStatus, type ExamQuestion, type ExamSectionType, type Prisma } from "@prisma/client";
 
+import { ensureAttemptExplanationsForUser } from "@/src/lib/exam-explanations";
 import { prisma } from "@/src/lib/prisma";
 
 type LegacyExamQuestion = {
@@ -627,6 +628,10 @@ export async function getExamAttemptResult(userId: string, attemptId: string) {
     throw new Error("ATTEMPT_NOT_SUBMITTED");
   }
 
+  const explanationMap = attempt.examModule.aiExplanationEnabled
+    ? await ensureAttemptExplanationsForUser(userId, attemptId).catch(() => new Map())
+    : new Map();
+
   return {
     attemptId: attempt.id,
     status: attempt.status,
@@ -651,7 +656,8 @@ export async function getExamAttemptResult(userId: string, attemptId: string) {
       selectedAnswer: answer.selectedAnswer,
       isFlaggedForReview: answer.isFlaggedForReview,
       isCorrect: answer.isCorrect,
-      explanation: answer.question.manualExplanation,
+      explanation: explanationMap.get(answer.question.id)?.detailed ?? answer.question.manualExplanation,
+      explanationDetail: explanationMap.get(answer.question.id) ?? null,
     })),
   };
 }

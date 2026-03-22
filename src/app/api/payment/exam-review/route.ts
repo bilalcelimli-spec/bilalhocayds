@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { authOptions } from "@/src/auth";
+import { mergeReviewBookingNotes, normalizeReviewSlotSelection } from "@/src/lib/exam-review-bookings";
 import { paytrCheckout } from "@/lib/payment/paytr-checkout";
 import { prisma } from "@/lib/prisma";
 
@@ -11,6 +12,8 @@ const requestSchema = z.object({
   fullName: z.string().min(2).max(120),
   email: z.email(),
   phone: z.string().min(10).max(20),
+  preferredSlot: z.string().optional(),
+  bookingNote: z.string().max(1000).optional(),
 });
 
 const rateLimitStore = new Map<string, number[]>();
@@ -35,6 +38,14 @@ function isRateLimited(key: string) {
   return entries.length > maxRequests;
 }
 
+function parsePreferredSlot(value?: string) {
+  if (!value?.trim()) {
+    return null;
+  }
+
+  return normalizeReviewSlotSelection(value) ?? "INVALID";
+}
+
 export async function POST(request: Request) {
   const rateKey = getClientKey(request);
   if (isRateLimited(rateKey)) {
@@ -51,7 +62,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Gecersiz istek." }, { status: 400 });
   }
 
-  const { attemptId, fullName, email, phone } = payload.data;
+  const { attemptId, fullName, email, phone, preferredSlot, bookingNote } = payload.data;
   const attempt = await prisma.examAttempt.findFirst({
     where: {
       id: attemptId,
@@ -95,6 +106,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Telefon numarasi gecersiz." }, { status: 400 });
   }
 
+  const parsedPreferredSlot = parsePreferredSlot(preferredSlot);
+  if (parsedPreferredSlot === "INVALID") {
+    return NextResponse.json({ error: "Slot tarihi gecersiz." }, { status: 400 });
+  }
+
   const selectedQuestionIds = attempt.answers.map((answer) => answer.questionId);
 
   const existingBooking = await prisma.examReviewBooking.findFirst({
@@ -106,21 +122,55 @@ export async function POST(request: Request) {
       },
     },
     orderBy: { createdAt: "desc" },
-  });
-
-  const booking = existingBooking ?? await prisma.examReviewBooking.create({
-    data: {
-      examModuleId: attempt.examModule.id,
-      attemptId: attempt.id,
-      studentId: session.user.id,
-      status: "PENDING_PAYMENT",
-      durationMinutes: 30,
-      priceAmount: amount,
-      currency,
-      selectedQuestionIds,
-      bookingScope: "FULL_WRONG_SET",
+    select: {
+      id: true,
+      teacherId: true,
+      durationMinutes: true,
+      scheduledStartAt: true,
+      scheduledEndAt: true,
+      lessonNotes: true,
     },
   });
+
+  const scheduledStartAt = parsedPreferredSlot && !existingBooking?.teacherId
+    ? parsedPreferredSlot
+    : existingBooking?.scheduledStartAt ?? null;
+  const bookingDuration = existingBooking?.durationMinutes ?? 30;
+  const scheduledEndAt = scheduledStartAt
+    ? new Date(scheduledStartAt.getTime() + bookingDuration * 60 * 1000)
+    : existingBooking?.scheduledEndAt ?? null;
+  const normalizedBookingNote = bookingNote?.trim() || null;
+
+  const booking = existingBooking
+    ? await prisma.examReviewBooking.update({
+        where: { id: existingBooking.id },
+        data: {
+          selectedQuestionIds,
+          scheduledStartAt,
+          scheduledEndAt,
+          lessonNotes: mergeReviewBookingNotes(existingBooking.lessonNotes, {
+            studentNote: normalizedBookingNote,
+          }),
+        },
+      })
+    : await prisma.examReviewBooking.create({
+        data: {
+          examModuleId: attempt.examModule.id,
+          attemptId: attempt.id,
+          studentId: session.user.id,
+          status: "PENDING_PAYMENT",
+          durationMinutes: 30,
+          priceAmount: amount,
+          currency,
+          selectedQuestionIds,
+          bookingScope: "FULL_WRONG_SET",
+          scheduledStartAt,
+          scheduledEndAt,
+          lessonNotes: mergeReviewBookingNotes(null, {
+            studentNote: normalizedBookingNote,
+          }),
+        },
+      });
 
   const referenceId = createReviewPaymentReferenceId();
   const paymentRecord = await prisma.examReviewPayment.create({
