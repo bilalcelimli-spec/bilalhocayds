@@ -267,6 +267,38 @@ export async function getOrCreateStudentDailyContent<M extends DailyContentModul
   return generated;
 }
 
+export async function regenerateStudentDailyContent<M extends DailyContentModule>(
+  userId: string,
+  moduleKey: M,
+  date = new Date(),
+): Promise<StudentDailyContentMap[M]> {
+  const dayKey = getIstanbulDayKey(date);
+  const generated = await generateStudentDailyContent(userId, moduleKey, date);
+
+  await prisma.studentDailyContent.upsert({
+    where: {
+      userId_dayKey_moduleKey: {
+        userId,
+        dayKey,
+        moduleKey,
+      },
+    },
+    update: {
+      contentJson: generated as unknown as Prisma.InputJsonValue,
+      generatedAt: new Date(generated.generatedAt),
+    },
+    create: {
+      userId,
+      dayKey,
+      moduleKey,
+      contentJson: generated as unknown as Prisma.InputJsonValue,
+      generatedAt: new Date(generated.generatedAt),
+    },
+  });
+
+  return generated;
+}
+
 export async function ensureTodayStudentDailyContent(
   userId: string,
   accessState: StudentFeatureAccessState,

@@ -50,6 +50,8 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
   const correctCount = submitted
     ? questionList.filter(({ question }) => selectedAnswers[question.id] === question.answer).length
     : 0;
+  const passageCount = passages.length;
+  const questionCount = questionList.length;
 
   const score = questionList.length > 0 ? Math.round((correctCount / questionList.length) * 100) : 0;
 
@@ -58,7 +60,7 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Reading Exam Lab</p>
-          <h2 className="mt-2 text-2xl font-black text-white">3 passages, 15 multiple-choice questions</h2>
+          <h2 className="mt-2 text-2xl font-black text-white">{passageCount} passages, {questionCount} multiple-choice questions</h2>
           <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-300">
             Each passage targets a different topic area. The question set balances main idea, detail, inference, vocabulary in context, and tone.
           </p>
@@ -84,6 +86,11 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
       </div>
 
       <div className="mt-6 space-y-6">
+        {passages.length === 0 ? (
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">
+            No additional passages are available for this session.
+          </div>
+        ) : null}
         {passages.map((passage, passageIndex) => (
           <article key={`${passage.title}-${passageIndex}`} className="rounded-3xl border border-white/10 bg-zinc-950/30 p-5">
             <div className="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">

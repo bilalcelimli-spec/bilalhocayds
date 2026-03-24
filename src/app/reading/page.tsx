@@ -2,8 +2,9 @@ import { Button } from "@/src/components/common/button";
 import { AiArticleReader } from "@/src/components/reading/ai-article-reader";
 import { ReadingExamPanel } from "@/src/components/reading/reading-exam-panel";
 import { authOptions } from "@/src/auth";
-import { getOrCreateStudentDailyContent } from "@/src/lib/student-daily-content";
+import { getOrCreateStudentDailyContent, regenerateStudentDailyContent } from "@/src/lib/student-daily-content";
 import { DailyContentModule } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,24 @@ function getWordCount(text: string) {
 }
 
 export default async function ReadingPage() {
+	async function refreshTodayContentAction() {
+		"use server";
+
+		const actionSession = await getServerSession(authOptions);
+		if (!actionSession?.user?.id) {
+			return;
+		}
+
+		await Promise.all([
+			regenerateStudentDailyContent(actionSession.user.id, DailyContentModule.READING),
+			regenerateStudentDailyContent(actionSession.user.id, DailyContentModule.VOCABULARY),
+		]);
+
+		revalidatePath("/reading");
+		revalidatePath("/vocabulary");
+		revalidatePath("/dashboard");
+	}
+
 	const session = await getServerSession(authOptions);
 	if (!session?.user?.id) {
 		return null;
@@ -24,6 +43,7 @@ export default async function ReadingPage() {
 	]);
 
 	const mainPassage = reading.passages[0];
+	const examPassages = reading.passages.slice(1);
 	const totalQuestionCount = reading.passages.reduce((sum, passage) => sum + passage.questions.length, 0);
 	const averageWordCount = Math.round(
 		reading.passages.reduce((sum, passage) => sum + getWordCount(passage.passage), 0) /
@@ -50,6 +70,14 @@ export default async function ReadingPage() {
 					<Button href="/dashboard" variant="outline">
 						Dashboard&apos;a Dön
 					</Button>
+					<form action={refreshTodayContentAction}>
+						<button
+							type="submit"
+							className="inline-flex items-center rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-400/20"
+						>
+							Bugünü yenile
+						</button>
+					</form>
 					<Button href="/live-classes">Canlı Ders Takvimi</Button>
 				</div>
 			</div>
@@ -69,31 +97,35 @@ export default async function ReadingPage() {
 			</div>
 
 			<div className="mt-10 space-y-6">
-				<AiArticleReader
-					passage={mainPassage}
-					generatedAt={reading.generatedAt}
-					wordMeanings={wordMeanings}
-				/>
+				{mainPassage ? (
+					<AiArticleReader
+						passage={mainPassage}
+						generatedAt={reading.generatedAt}
+						wordMeanings={wordMeanings}
+					/>
+				) : null}
 
 				<div className="grid gap-6 lg:grid-cols-3">
 					<div className="lg:col-span-2">
-						<ReadingExamPanel passages={reading.passages} />
+						<ReadingExamPanel passages={examPassages} />
 					</div>
 
 					<div className="space-y-6">
-						<div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_12px_30px_rgba(0,0,0,0.18)]">
-							<h2 className="text-xl font-bold text-white">Reading plan</h2>
-							<div className="mt-5 space-y-3">
-								{mainPassage.studyPlan.map((item, index) => (
-									<div key={item} className="flex items-start gap-3 rounded-2xl border border-white/15 px-4 py-4">
-										<span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-600 text-xs font-bold text-white">
-											{index + 1}
-										</span>
-										<p className="text-sm font-medium text-slate-200">{item}</p>
-									</div>
-								))}
+						{mainPassage ? (
+							<div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_12px_30px_rgba(0,0,0,0.18)]">
+								<h2 className="text-xl font-bold text-white">Reading plan</h2>
+								<div className="mt-5 space-y-3">
+									{mainPassage.studyPlan.map((item, index) => (
+										<div key={item} className="flex items-start gap-3 rounded-2xl border border-white/15 px-4 py-4">
+											<span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-600 text-xs font-bold text-white">
+												{index + 1}
+											</span>
+											<p className="text-sm font-medium text-slate-200">{item}</p>
+										</div>
+									))}
+								</div>
 							</div>
-						</div>
+						) : null}
 
 						<div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_12px_30px_rgba(0,0,0,0.18)]">
 							<p className="text-sm font-semibold text-slate-300">Strategy Notes</p>

@@ -1,8 +1,9 @@
 import { Button } from "@/src/components/common/button";
 import { VocabularyPracticePanel } from "@/src/components/vocabulary/vocabulary-practice-panel";
 import { authOptions } from "@/src/auth";
-import { getOrCreateStudentDailyContent } from "@/src/lib/student-daily-content";
+import { getOrCreateStudentDailyContent, regenerateStudentDailyContent } from "@/src/lib/student-daily-content";
 import { DailyContentModule } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,24 @@ const studySteps = [
 ];
 
 export default async function VocabularyPage() {
+	async function refreshTodayContentAction() {
+		"use server";
+
+		const actionSession = await getServerSession(authOptions);
+		if (!actionSession?.user?.id) {
+			return;
+		}
+
+		await Promise.all([
+			regenerateStudentDailyContent(actionSession.user.id, DailyContentModule.VOCABULARY),
+			regenerateStudentDailyContent(actionSession.user.id, DailyContentModule.READING),
+		]);
+
+		revalidatePath("/vocabulary");
+		revalidatePath("/reading");
+		revalidatePath("/dashboard");
+	}
+
 	const session = await getServerSession(authOptions);
 	if (!session?.user?.id) {
 		return null;
@@ -43,6 +62,14 @@ export default async function VocabularyPage() {
 					<Button href="/dashboard" variant="outline">
 						Dashboard&apos;a Don
 					</Button>
+					<form action={refreshTodayContentAction}>
+						<button
+							type="submit"
+							className="inline-flex items-center rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-400/20"
+						>
+							Bugünü yenile
+						</button>
+					</form>
 					<Button href="/pricing">Premium Kelime Setleri</Button>
 				</div>
 			</div>

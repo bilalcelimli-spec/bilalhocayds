@@ -148,6 +148,8 @@ type AiPromptOptions = {
   temperature?: number;
 };
 
+const ISTANBUL_TIME_ZONE = "Europe/Istanbul";
+
 const MASTER_READING_VOCAB_SYSTEM_PROMPT = `You are BilalHocaYDS Daily Reading and Vocabulary Engine.
 You are an expert academic English instructor, exam content editor, assessment designer, and pedagogical AI specialized in YDS, YDT, IELTS Academic, and IELTS General.
 
@@ -1068,7 +1070,12 @@ function isCleanEnglishContent(text: string, minimumLength = 1) {
 }
 
 function getDaySeed(date: Date) {
-  const key = `${date.getUTCFullYear()}-${date.getUTCMonth() + 1}-${date.getUTCDate()}`;
+  const key = new Intl.DateTimeFormat("en-CA", {
+    timeZone: ISTANBUL_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
   let hash = 0;
   for (let i = 0; i < key.length; i += 1) {
     hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
