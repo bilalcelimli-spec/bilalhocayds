@@ -25,6 +25,10 @@ const ROUTER_PROMPT_VERSION = "adaptive-router-v1";
 const VALIDATOR_PROMPT_VERSION = "adaptive-validator-v1";
 const WRITING_PROMPT_VERSION = "adaptive-writing-v1";
 
+const QUESTION_QUALITY_THRESHOLD = 72;
+const ROUTER_QUALITY_THRESHOLD = 65;
+const WRITING_QUALITY_THRESHOLD = 68;
+
 const CEFR_ORDER: CefrLevel[] = ["A2", "B1", "B2", "C1"];
 
 function clampLevel(level: CefrLevel, delta: number) {
@@ -317,6 +321,47 @@ function deterministicRouter(input: AdaptiveRouterInput): AdaptiveRouterDecision
   };
 }
 
+function clampQualityScore(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function evaluateRouterQuality(decision: AdaptiveRouterDecision) {
+  const checks: string[] = [];
+
+  if (decision.decisionReason.trim().length >= 30) {
+    checks.push("Decision reason is sufficiently specific.");
+  } else {
+    checks.push("Decision reason is too short.");
+  }
+
+  if (decision.stopRecommendation.shouldEnd && decision.nextAction !== "end_test") {
+    checks.push("Stop recommendation conflicts with nextAction.");
+  } else {
+    checks.push("Stop recommendation and nextAction are consistent.");
+  }
+
+  if (decision.confidenceScoreOfCurrentLevel >= 0 && decision.confidenceScoreOfCurrentLevel <= 1) {
+    checks.push("Confidence score is in expected range.");
+  } else {
+    checks.push("Confidence score is out of expected range.");
+  }
+
+  const consistencyPenalty = checks.some((item) => item.includes("conflicts")) ? 15 : 0;
+  const brevityPenalty = checks.some((item) => item.includes("too short")) ? 10 : 0;
+  const score =
+    decision.evidenceSummary.recentAccuracy * 40 +
+    decision.confidenceScoreOfCurrentLevel * 35 +
+    (decision.evidenceSummary.stability === "high" ? 15 : decision.evidenceSummary.stability === "medium" ? 10 : 6) +
+    (decision.nextAction === "generate_question" || decision.nextAction === "end_test" ? 10 : 6) -
+    consistencyPenalty -
+    brevityPenalty;
+
+  return {
+    qualityScore: clampQualityScore(score),
+    qualityChecks: checks,
+  };
+}
+
 function splitSentences(text: string) {
   return text
     .split(/(?<=[.!?])\s+/)
@@ -391,6 +436,35 @@ function deterministicWritingEvaluation(input: WritingEvaluationInput): WritingE
   };
 }
 
+function evaluateWritingQuality(evaluation: WritingEvaluation) {
+  const checks: string[] = [];
+
+  if (evaluation.summaryJudgement.trim().length >= 20) {
+    checks.push("Summary judgement has sufficient detail.");
+  } else {
+    checks.push("Summary judgement is too brief.");
+  }
+
+  if (evaluation.priorityImprovements.length >= 2) {
+    checks.push("Priority improvements are actionable.");
+  } else {
+    checks.push("Priority improvements are insufficient.");
+  }
+
+  if (evaluation.sentenceLevelIssues.length >= 1) {
+    checks.push("Sentence-level issue list is present.");
+  } else {
+    checks.push("Sentence-level issue list is missing.");
+  }
+
+  const score = evaluation.overallScoreOutOf100 * 0.75 + evaluation.ratingConfidence * 0.25;
+
+  return {
+    qualityScore: clampQualityScore(score),
+    qualityChecks: checks,
+  };
+}
+
 export function mapAdaptiveQuestionToExamQuestion(question: AdaptiveGeneratedQuestion) {
   const sectionType = inferSectionType(question.skillType, question.questionFormat);
 
@@ -420,6 +494,16 @@ export async function generateValidatedAdaptiveQuestion(
   validatorPromptVersion: string;
   model: string;
   usedFallback: boolean;
+  fallbackReason: string | null;
+  qualityScore: number;
+  qualityChecks: string[];
+  aiTelemetry: {
+    providerAvailable: boolean;
+    traceId: string;
+    latencyMs: number;
+    attempts: number;
+    errorType: string | null;
+  };
 }> {
   const input = adaptiveQuestionInputSchema.parse({
     ...rawInput,
@@ -445,15 +529,43 @@ export async function generateValidatedAdaptiveQuestion(
 
   const validation = aiValidation.data ?? deterministicValidation;
   const finalValidation = validation.isValid ? validation : deterministicValidation;
-  const finalQuestion = finalValidation.isValid ? question : generatedFallback;
+  const qualityChecks = [...finalValidation.rejectReasons];
+  const failedQualityGate = finalValidation.qualityScore < QUESTION_QUALITY_THRESHOLD;
+
+  if (failedQualityGate) {
+    qualityChecks.push(`Quality score below threshold: ${finalValidation.qualityScore}/${QUESTION_QUALITY_THRESHOLD}.`);
+  }
+
+  const finalQuestion = finalValidation.isValid && !failedQualityGate ? question : generatedFallback;
+  const finalValidationResult = finalValidation.isValid && !failedQualityGate
+    ? finalValidation
+    : validateQuestionDeterministically(finalQuestion);
+  const usedFallback = !generation.data || !finalValidation.isValid || failedQualityGate;
+  const fallbackReason = !generation.data
+    ? generation.errorType ?? "generation_failed"
+    : !finalValidation.isValid
+      ? "validation_failed"
+      : failedQualityGate
+        ? "quality_threshold_not_met"
+        : null;
 
   return {
     question: finalQuestion,
-    validation: finalValidation.isValid ? finalValidation : validateQuestionDeterministically(finalQuestion),
+    validation: finalValidationResult,
     promptVersion: GENERATOR_PROMPT_VERSION,
     validatorPromptVersion: VALIDATOR_PROMPT_VERSION,
     model: generation.model,
-    usedFallback: !generation.data || !finalValidation.isValid,
+    usedFallback,
+    fallbackReason,
+    qualityScore: finalValidationResult.qualityScore,
+    qualityChecks,
+    aiTelemetry: {
+      providerAvailable: generation.providerAvailable,
+      traceId: generation.traceId,
+      latencyMs: generation.latencyMs,
+      attempts: generation.attempts,
+      errorType: generation.errorType,
+    },
   };
 }
 
@@ -462,6 +574,16 @@ export async function decideAdaptiveNextStep(rawInput: AdaptiveRouterInput): Pro
   promptVersion: string;
   model: string;
   usedFallback: boolean;
+  fallbackReason: string | null;
+  qualityScore: number;
+  qualityChecks: string[];
+  aiTelemetry: {
+    providerAvailable: boolean;
+    traceId: string;
+    latencyMs: number;
+    attempts: number;
+    errorType: string | null;
+  };
 }> {
   const input = adaptiveRouterInputSchema.parse(rawInput);
   const fallbackDecision = deterministicRouter(input);
@@ -472,11 +594,29 @@ export async function decideAdaptiveNextStep(rawInput: AdaptiveRouterInput): Pro
     temperature: 0.15,
   });
 
+  const candidateDecision = aiDecision.data ?? fallbackDecision;
+  const quality = evaluateRouterQuality(candidateDecision);
+  const failedQualityGate = quality.qualityScore < ROUTER_QUALITY_THRESHOLD;
+
   return {
-    decision: aiDecision.data ?? fallbackDecision,
+    decision: aiDecision.data && !failedQualityGate ? aiDecision.data : fallbackDecision,
     promptVersion: ROUTER_PROMPT_VERSION,
     model: aiDecision.model,
-    usedFallback: !aiDecision.data,
+    usedFallback: !aiDecision.data || failedQualityGate,
+    fallbackReason: !aiDecision.data
+      ? aiDecision.errorType ?? "router_generation_failed"
+      : failedQualityGate
+        ? "quality_threshold_not_met"
+        : null,
+    qualityScore: quality.qualityScore,
+    qualityChecks: quality.qualityChecks,
+    aiTelemetry: {
+      providerAvailable: aiDecision.providerAvailable,
+      traceId: aiDecision.traceId,
+      latencyMs: aiDecision.latencyMs,
+      attempts: aiDecision.attempts,
+      errorType: aiDecision.errorType,
+    },
   };
 }
 
@@ -485,6 +625,16 @@ export async function evaluateWriting(rawInput: WritingEvaluationInput): Promise
   promptVersion: string;
   model: string;
   usedFallback: boolean;
+  fallbackReason: string | null;
+  qualityScore: number;
+  qualityChecks: string[];
+  aiTelemetry: {
+    providerAvailable: boolean;
+    traceId: string;
+    latencyMs: number;
+    attempts: number;
+    errorType: string | null;
+  };
 }> {
   const input = rawInput;
   const fallbackEvaluation = deterministicWritingEvaluation(input);
@@ -495,11 +645,29 @@ export async function evaluateWriting(rawInput: WritingEvaluationInput): Promise
     temperature: 0.2,
   });
 
+  const candidateEvaluation = aiEvaluation.data ?? fallbackEvaluation;
+  const quality = evaluateWritingQuality(candidateEvaluation);
+  const failedQualityGate = quality.qualityScore < WRITING_QUALITY_THRESHOLD;
+
   return {
-    evaluation: aiEvaluation.data ?? fallbackEvaluation,
+    evaluation: aiEvaluation.data && !failedQualityGate ? aiEvaluation.data : fallbackEvaluation,
     promptVersion: WRITING_PROMPT_VERSION,
     model: aiEvaluation.model,
-    usedFallback: !aiEvaluation.data,
+    usedFallback: !aiEvaluation.data || failedQualityGate,
+    fallbackReason: !aiEvaluation.data
+      ? aiEvaluation.errorType ?? "writing_generation_failed"
+      : failedQualityGate
+        ? "quality_threshold_not_met"
+        : null,
+    qualityScore: quality.qualityScore,
+    qualityChecks: quality.qualityChecks,
+    aiTelemetry: {
+      providerAvailable: aiEvaluation.providerAvailable,
+      traceId: aiEvaluation.traceId,
+      latencyMs: aiEvaluation.latencyMs,
+      attempts: aiEvaluation.attempts,
+      errorType: aiEvaluation.errorType,
+    },
   };
 }
 

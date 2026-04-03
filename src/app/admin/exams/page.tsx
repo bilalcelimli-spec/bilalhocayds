@@ -67,8 +67,11 @@ function parseContentJson(rawValue: FormDataEntryValue | null): Prisma.InputJson
 
   try {
     return JSON.parse(raw) as Prisma.InputJsonValue;
-  } catch {
-    return { raw };
+  } catch (error) {
+    return {
+      raw,
+      parseError: error instanceof Error ? error.message : "invalid_json",
+    };
   }
 }
 
@@ -91,6 +94,12 @@ async function quickUpdateExamAction(formData: FormData) {
       slug: toSlug(slugInput || title),
       examType: String(formData.get("examType") ?? "General Practice").trim() || "General Practice",
       cefrLevel: String(formData.get("cefrLevel") ?? "").trim() || null,
+      subtitle: parseString(formData.get("subtitle")),
+      sourceLabel: parseString(formData.get("sourceLabel")),
+      examSeries: parseString(formData.get("examSeries")),
+      yearLabel: parseString(formData.get("yearLabel")),
+      estimatedDifficulty: parseString(formData.get("estimatedDifficulty")),
+      targetStudentLevel: parseString(formData.get("targetStudentLevel")),
       durationMinutes: parseNumber(formData.get("durationMinutes"), 45),
       questionCount: parseNumber(formData.get("questionCount"), 20),
       price: parseNumber(formData.get("price"), 0),

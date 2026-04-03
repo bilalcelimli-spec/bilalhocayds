@@ -1,8 +1,16 @@
 import { ExplanationSourceType, type Prisma } from "@prisma/client";
+import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
+import { callAiJson } from "@/src/lib/ai-json";
 
 const EXAM_EXPLANATION_PROMPT_VERSION = "exam-review-v1";
+
+const examExplanationSchema = z.object({
+  shortReason: z.string().trim().min(1),
+  detailed: z.string().trim().min(1),
+  examTip: z.string().trim().min(1),
+});
 
 export type ExamExplanationPayload = {
   shortReason: string;
@@ -68,79 +76,33 @@ async function callAiForExplanation(input: {
   selectedAnswer: string | null;
   manualExplanation: string | null;
 }) {
-  const apiKey = process.env.AI_API_KEY;
-  if (!apiKey) {
-    return null;
-  }
-
-  const baseUrl = process.env.AI_BASE_URL ?? "https://api.openai.com/v1";
-  const model = process.env.AI_MODEL ?? "gpt-4o-mini";
-
-  const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      temperature: 0.35,
-      response_format: {
-        type: "json_object",
-      },
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are an elite YDS exam coach. Return strict JSON with keys shortReason, detailed, examTip. Write the explanation in Turkish. Be concrete, concise, and exam-oriented.",
-        },
-        {
-          role: "user",
-          content: [
-            `Exam: ${input.examTitle}`,
-            `Section: ${input.sectionTitle}`,
-            `Question: ${input.questionText}`,
-            `Options: ${input.options.join(" | ")}`,
-            `Correct answer: ${input.correctAnswer}`,
-            `Student answer: ${input.selectedAnswer ?? "Boş"}`,
-            input.manualExplanation ? `Manual explanation: ${input.manualExplanation}` : "Manual explanation: yok",
-            "Explain why the correct option is correct, why the student's answer is weak if wrong, and add a short exam technique tip.",
-          ].join("\n"),
-        },
-      ],
-    }),
-    cache: "no-store",
+  const completion = await callAiJson({
+    schema: examExplanationSchema,
+    temperature: 0.35,
+    systemPrompt:
+      "You are an elite YDS exam coach. Return strict JSON with keys shortReason, detailed, examTip. Write the explanation in Turkish. Be concrete, concise, and exam-oriented.",
+    userPrompt: [
+      `Exam: ${input.examTitle}`,
+      `Section: ${input.sectionTitle}`,
+      `Question: ${input.questionText}`,
+      `Options: ${input.options.join(" | ")}`,
+      `Correct answer: ${input.correctAnswer}`,
+      `Student answer: ${input.selectedAnswer ?? "Boş"}`,
+      input.manualExplanation ? `Manual explanation: ${input.manualExplanation}` : "Manual explanation: yok",
+      "Explain why the correct option is correct, why the student's answer is weak if wrong, and add a short exam technique tip.",
+    ].join("\n"),
   });
 
-  if (!response.ok) {
+  if (!completion.data) {
     return null;
   }
 
-  const json = await response.json();
-  const rawContent = json?.choices?.[0]?.message?.content;
-  if (typeof rawContent !== "string") {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(rawContent) as Record<string, unknown>;
-    const shortReason = typeof parsed.shortReason === "string" ? parsed.shortReason.trim() : "";
-    const detailed = typeof parsed.detailed === "string" ? parsed.detailed.trim() : "";
-    const examTip = typeof parsed.examTip === "string" ? parsed.examTip.trim() : "";
-
-    if (!shortReason || !detailed || !examTip) {
-      return null;
-    }
-
-    return {
-      shortReason,
-      detailed,
-      examTip,
-      sourceType: input.manualExplanation?.trim() ? "HYBRID" : "AI",
-    } satisfies ExamExplanationPayload;
-  } catch {
-    return null;
-  }
+  return {
+    shortReason: completion.data.shortReason,
+    detailed: completion.data.detailed,
+    examTip: completion.data.examTip,
+    sourceType: input.manualExplanation?.trim() ? "HYBRID" : "AI",
+  } satisfies ExamExplanationPayload;
 }
 
 async function ensureQuestionExplanation(input: {

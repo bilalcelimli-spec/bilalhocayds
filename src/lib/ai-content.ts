@@ -1,3 +1,5 @@
+import { callAiChatCompletion } from "@/src/lib/ai-client";
+
 type ExamType = "YDS" | "YDT" | "IELTS Academic" | "IELTS General";
 type StudentLevel = "A2" | "B1" | "B2" | "C1";
 type FocusSkill = "reading" | "vocabulary" | "mixed";
@@ -1846,44 +1848,19 @@ function createGrammarPersonalizedNextStep(profile: AiStudentProfile, blueprint:
 }
 
 async function tryProviderRewrite(input: string | AiPromptOptions) {
-  const apiKey = process.env.AI_API_KEY;
-  if (!apiKey) {
-    return null;
-  }
-
   const prompt = typeof input === "string" ? { userPrompt: input } : input;
 
-  const baseUrl = process.env.AI_BASE_URL ?? "https://api.openai.com/v1";
-  const model = process.env.AI_MODEL ?? "gpt-4o-mini";
+  const completion = await callAiChatCompletion({
+    systemPrompt: prompt.systemPrompt ?? "You are an academic English tutor.",
+    userPrompt: prompt.userPrompt,
+    temperature: prompt.temperature ?? 0.4,
+  });
 
-  try {
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        temperature: prompt.temperature ?? 0.4,
-        messages: [
-          { role: "system", content: prompt.systemPrompt ?? "You are an academic English tutor." },
-          { role: "user", content: prompt.userPrompt },
-        ],
-      }),
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const json = await response.json();
-    const text = json?.choices?.[0]?.message?.content;
-    return typeof text === "string" ? text : null;
-  } catch {
+  if (!completion.ok) {
     return null;
   }
+
+  return completion.rawText;
 }
 
 export async function getDailyVocabulary(

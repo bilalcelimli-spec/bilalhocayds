@@ -101,6 +101,26 @@ type AiSuggestions = {
   };
 };
 
+type AiSeoEnvelope = {
+  status?: "ok" | "fallback";
+  data?: {
+    aiAvailable?: boolean;
+    suggestions?: AiSuggestions | null;
+    raw?: string | null;
+  };
+  ai?: {
+    usedFallback?: boolean;
+    fallbackReason?: string | null;
+    qualityScore?: number | null;
+    qualityChecks?: string[] | null;
+    attempts?: number | null;
+    latencyMs?: number | null;
+  };
+  aiAvailable?: boolean;
+  suggestions?: AiSuggestions | null;
+  raw?: string | null;
+};
+
 type FormValue = string | boolean | number;
 type FormState = Record<string, FormValue>;
 
@@ -236,6 +256,7 @@ export default function SeoEditor({
   const [aiAvailable, setAiAvailable] = useState<boolean | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<AiSuggestions | null>(null);
   const [aiRaw, setAiRaw] = useState<string | null>(null);
+  const [aiMeta, setAiMeta] = useState<AiSeoEnvelope["ai"] | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(true);
   const [showSchema, setShowSchema] = useState(true);
   const [showCustomPage, setShowCustomPage] = useState(false);
@@ -288,6 +309,7 @@ export default function SeoEditor({
     setAiSuggestions(null);
     setAiRaw(null);
     setAiAvailable(null);
+    setAiMeta(null);
     setExtraContext("");
   }
 
@@ -439,6 +461,7 @@ export default function SeoEditor({
     setForm({});
     setAiSuggestions(null);
     setAiRaw(null);
+    setAiMeta(null);
     setError(null);
   }
 
@@ -542,9 +565,17 @@ export default function SeoEditor({
         if (!response.ok) {
           throw new Error(data.error ?? "AI önerisi alınamadı.");
         }
-        setAiAvailable(data.aiAvailable ?? false);
-        setAiSuggestions(data.suggestions ?? null);
-        setAiRaw(data.raw ?? null);
+
+        const envelope = data as AiSeoEnvelope;
+        const payload = envelope.data ?? envelope;
+        const fallbackFromMeta = envelope.ai?.usedFallback;
+
+        setAiAvailable(
+          payload.aiAvailable ?? (typeof fallbackFromMeta === "boolean" ? !fallbackFromMeta : false),
+        );
+        setAiSuggestions(payload.suggestions ?? null);
+        setAiRaw(payload.raw ?? null);
+        setAiMeta(envelope.ai ?? null);
       } catch (aiError) {
         setError(aiError instanceof Error ? aiError.message : "AI isteği başarısız oldu.");
       }
@@ -730,6 +761,40 @@ export default function SeoEditor({
                 </button>
               </div>
             </div>
+
+            {aiMeta && (
+              <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
+                <div className="flex items-center gap-2">
+                  <Bot className="h-4 w-4 text-cyan-300" />
+                  <p className="text-sm font-bold text-white">AI Çalışma Durumu</p>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {typeof aiMeta.qualityScore === "number" && (
+                    <AuditChip
+                      label={`Kalite ${Math.round(aiMeta.qualityScore * 100)}/100`}
+                      state={aiMeta.qualityScore >= 0.8 ? "ok" : aiMeta.qualityScore >= 0.6 ? "warn" : "error"}
+                    />
+                  )}
+                  <AuditChip label={aiMeta.usedFallback ? "Fallback" : "AI Live"} state={aiMeta.usedFallback ? "warn" : "ok"} />
+                  {typeof aiMeta.attempts === "number" && <AuditChip label={`${aiMeta.attempts} deneme`} state="ok" />}
+                  {typeof aiMeta.latencyMs === "number" && <AuditChip label={`${aiMeta.latencyMs} ms`} state="ok" />}
+                </div>
+                {aiMeta.fallbackReason && (
+                  <p className="mt-3 text-xs text-amber-300">
+                    Fallback nedeni: <span className="font-semibold">{aiMeta.fallbackReason}</span>
+                  </p>
+                )}
+                {Array.isArray(aiMeta.qualityChecks) && aiMeta.qualityChecks.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {aiMeta.qualityChecks.map((check) => (
+                      <span key={check} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-zinc-300">
+                        {check}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {aiSuggestions && (
               <div className="mt-5 grid gap-4 xl:grid-cols-2">

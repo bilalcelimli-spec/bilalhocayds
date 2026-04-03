@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { createAiProfileOverridesFromStudentContext, getDailyGrammarModule } from "@/src/lib/ai-content";
 import { authOptions } from "@/src/auth";
 import { prisma } from "@/src/lib/prisma";
+import { buildAiApiResponse, inferFallbackReasonFromModel } from "@/src/lib/ai-api-response";
+import { assessGrammarModuleQuality } from "@/src/lib/ai-quality";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -31,5 +33,30 @@ export async function GET() {
       interestTags: profile?.interestTags,
     }),
   });
-  return Response.json(data);
+
+  const quality = assessGrammarModuleQuality(data);
+  const modelFallback = data.model.includes("local");
+  const usedFallback = modelFallback || !quality.passed;
+
+  return Response.json(
+    buildAiApiResponse({
+      data,
+      ai: {
+        model: data.model,
+        providerAvailable: !data.model.includes("local"),
+        traceId: null,
+        latencyMs: null,
+        attempts: null,
+        usedFallback,
+        fallbackReason: modelFallback
+          ? inferFallbackReasonFromModel(data.model)
+          : !quality.passed
+            ? "quality_threshold_not_met"
+            : null,
+        errorType: null,
+        qualityScore: quality.qualityScore,
+        qualityChecks: quality.qualityChecks,
+      },
+    }),
+  );
 }

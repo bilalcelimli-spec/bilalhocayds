@@ -8,6 +8,7 @@ import { ParseJobStatus, QuestionStatus, type ExamSectionType, type Prisma } fro
 import { PDFParse } from "pdf-parse";
 
 import { prisma } from "@/lib/prisma";
+import { callAiChatCompletion, extractJsonTextFromContent } from "@/src/lib/ai-client";
 
 const execFileAsync = promisify(execFile);
 
@@ -404,67 +405,37 @@ async function callAiExamParser(input: {
   extractedText: string;
   sectionHints: string[];
 }) {
-  const apiKey = process.env.AI_API_KEY;
-  if (!apiKey) {
+  const completion = await callAiChatCompletion({
+    systemPrompt:
+      "You convert Turkish or English exam PDFs into a strict JSON structure for a YDS/YDT admin workspace. Preserve numbering, infer sensible sections, keep questions exam-grade, and return only valid JSON.",
+    userPrompt: [
+      `Exam title: ${input.examTitle}`,
+      `Expected question count: ${input.questionCountHint || 0}`,
+      `Section hints: ${input.sectionHints.join(", ") || "none"}`,
+      "Return JSON with this exact top-level schema:",
+      '{"sections":[{"title":"...","description":"...","passageText":"optional","questions":[{"number":1,"prompt":"...","choices":["A) ...","B) ...","C) ...","D) ...","E) ..."],"answer":"A","difficultyLabel":"B2-C1","topicTags":["..."],"confidence":0.0}]}],"warnings":["..."]}',
+      "Rules:",
+      "- Keep exactly five choices when the source allows it.",
+      "- If the answer key is missing, omit answer instead of inventing it.",
+      "- Group consecutive questions under the same section title.",
+      "- Do not include markdown or commentary.",
+      "Source text:",
+      clipText(input.extractedText, 32000),
+    ].join("\n\n"),
+    temperature: 0.15,
+    responseFormat: "json_object",
+  });
+
+  if (!completion.ok || !completion.rawText) {
     return null;
   }
 
-  const baseUrl = process.env.AI_BASE_URL ?? "https://api.openai.com/v1";
-  const model = process.env.AI_MODEL ?? "gpt-4o-mini";
-
-  try {
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.15,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "You convert Turkish or English exam PDFs into a strict JSON structure for a YDS/YDT admin workspace. Preserve numbering, infer sensible sections, keep questions exam-grade, and return only valid JSON.",
-          },
-          {
-            role: "user",
-            content: [
-              `Exam title: ${input.examTitle}`,
-              `Expected question count: ${input.questionCountHint || 0}`,
-              `Section hints: ${input.sectionHints.join(", ") || "none"}`,
-              "Return JSON with this exact top-level schema:",
-              '{"sections":[{"title":"...","description":"...","passageText":"optional","questions":[{"number":1,"prompt":"...","choices":["A) ...","B) ...","C) ...","D) ...","E) ..."],"answer":"A","difficultyLabel":"B2-C1","topicTags":["..."],"confidence":0.0}]}],"warnings":["..."]}',
-              "Rules:",
-              "- Keep exactly five choices when the source allows it.",
-              "- If the answer key is missing, omit answer instead of inventing it.",
-              "- Group consecutive questions under the same section title.",
-              "- Do not include markdown or commentary.",
-              "Source text:",
-              clipText(input.extractedText, 32000),
-            ].join("\n\n"),
-          },
-        ],
-      }),
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const json = await response.json();
-    const rawContent = json?.choices?.[0]?.message?.content;
-    if (typeof rawContent !== "string") {
-      return null;
-    }
-
-    return extractJsonObject(rawContent);
-  } catch {
+  const jsonText = extractJsonTextFromContent(completion.rawText);
+  if (!jsonText) {
     return null;
   }
+
+  return extractJsonObject(jsonText);
 }
 
 function inferQuestionTypeText(block: string) {

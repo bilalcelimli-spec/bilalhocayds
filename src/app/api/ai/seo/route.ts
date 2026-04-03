@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { authOptions } from "@/src/auth";
+import { callAiChatCompletion, extractJsonTextFromContent } from "@/src/lib/ai-client";
+import { buildAiApiResponse } from "@/src/lib/ai-api-response";
 
 const bodySchema = z.object({
   pageKey: z.string().min(1),
@@ -29,44 +31,133 @@ const PAGE_CONTEXTS: Record<string, string> = {
   register: "Kayıt ol sayfası — YDS hazırlık platformuna ücretsiz kayıt.",
 };
 
-async function callAI(prompt: string): Promise<string | null> {
-  const apiKey = process.env.AI_API_KEY;
-  if (!apiKey) return null;
+type SeoSuggestionShape = {
+  primaryKeyword?: string;
+  secondaryKeywords?: string;
+  searchIntent?: string;
+  title?: string;
+  description?: string;
+  keywords?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  twitterTitle?: string;
+  twitterDescription?: string;
+  ogType?: string;
+  twitterCard?: string;
+  schemaType?: string;
+  robotsDirectives?: string;
+  breadcrumbTitle?: string;
+  changeFrequency?: string;
+  sitemapPriority?: number;
+  analysis?: Record<string, unknown>;
+};
 
-  const baseUrl = process.env.AI_BASE_URL ?? "https://api.openai.com/v1";
-  const model = process.env.AI_MODEL ?? "gpt-4o-mini";
+function buildFallbackSuggestions(input: {
+  pageKey: string;
+  pageLabel: string;
+  currentTitle?: string;
+  currentDescription?: string;
+  currentKeywords?: string;
+  currentPrimaryKeyword?: string;
+  currentSecondaryKeywords?: string;
+  currentSearchIntent?: string;
+}): SeoSuggestionShape {
+  return {
+    primaryKeyword: input.currentPrimaryKeyword ?? input.pageLabel,
+    secondaryKeywords:
+      input.currentSecondaryKeywords ??
+      "yds hazırlık, yökdil hazırlık, ydt hazırlık, online Ingilizce, sınav Ingilizcesi",
+    searchIntent: input.currentSearchIntent ?? "commercial",
+    title: input.currentTitle ?? `${input.pageLabel} | Bilal Hoca YDS`,
+    description:
+      input.currentDescription ??
+      `YDS, YÖKDİL ve YDT sınavına hazırlanmak için Bilal Hoca'nın AI destekli platformunu keşfet. ${input.pageLabel} modülü ile sınava adım at.`,
+    keywords:
+      input.currentKeywords ??
+      "YDS hazırlık, YÖKDİL, YDT, online Ingilizce, canlı ders, AI öğrenme",
+    ogTitle: input.currentTitle ?? `${input.pageLabel} | Bilal Hoca YDS`,
+    ogDescription:
+      input.currentDescription ??
+      "Bilal Hoca ile YDS'ye hazırlan. AI destekli kişisel plan, günlük görevler ve canlı dersler.",
+    twitterTitle: input.currentTitle ?? `${input.pageLabel} | Bilal Hoca YDS`,
+    twitterDescription:
+      input.currentDescription ??
+      `Bilal Hoca YDS platformunda ${input.pageLabel} sayfasını keşfet ve sınava daha planlı hazırlan.`,
+    ogType: "website",
+    twitterCard: "summary_large_image",
+    schemaType: "WebPage",
+    robotsDirectives: "max-image-preview:large, max-snippet:-1",
+    breadcrumbTitle: input.pageLabel,
+    changeFrequency: "weekly",
+    sitemapPriority: input.pageKey === "home" ? 1 : 0.8,
+    analysis: {
+      titleScore: null,
+      improvements: [
+        "AI API anahtarı tanımlanmadığı için detaylı analiz yapılamadı.",
+        "Render Dashboard'dan AI_API_KEY env var'ını ekle.",
+      ],
+    },
+  };
+}
 
-  try {
-    const res = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.3,
-        messages: [
-          {
-            role: "system",
-            content:
-              "Sen deneyimli bir Türkçe SEO uzmanısın. Eğitim ve e-öğrenme sektöründe uzmansın. " +
-              "Google'ın E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness) kriterlerini göz önünde bulundurarak " +
-              "TR pazarı için optimize edilmiş, doğal dilde, tıklama oranını artıracak SEO metinleri yazarsın. " +
-              "Her zaman sadece JSON formatında cevap verirsin, başka hiçbir şey eklemezsin.",
-          },
-          { role: "user", content: prompt },
-        ],
-      }),
-      cache: "no-store",
-    });
+function assessSeoSuggestionQuality(suggestion: SeoSuggestionShape) {
+  const checks: string[] = [];
+  const title = (suggestion.title ?? "").trim();
+  const description = (suggestion.description ?? "").trim();
+  const primaryKeyword = (suggestion.primaryKeyword ?? "").trim();
+  const schemaType = (suggestion.schemaType ?? "").trim();
 
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json?.choices?.[0]?.message?.content ?? null;
-  } catch {
-    return null;
+  if (title.length >= 35 && title.length <= 70) {
+    checks.push("Title length is in SEO target range.");
+  } else {
+    checks.push("Title length is outside SEO target range (35-70).");
   }
+
+  if (description.length >= 120 && description.length <= 180) {
+    checks.push("Description length is in SEO target range.");
+  } else {
+    checks.push("Description length is outside SEO target range (120-180).");
+  }
+
+  if (primaryKeyword.length > 0) {
+    checks.push("Primary keyword is present.");
+  } else {
+    checks.push("Primary keyword is missing.");
+  }
+
+  if (schemaType.length > 0) {
+    checks.push("Schema type is present.");
+  } else {
+    checks.push("Schema type is missing.");
+  }
+
+  const penalties = [
+    title.length < 35 || title.length > 70 ? 18 : 0,
+    description.length < 120 || description.length > 180 ? 18 : 0,
+    primaryKeyword.length === 0 ? 22 : 0,
+    schemaType.length === 0 ? 22 : 0,
+  ].reduce((sum, value) => sum + value, 0);
+
+  const qualityScore = Math.max(0, 100 - penalties);
+  return {
+    qualityScore,
+    qualityChecks: checks,
+  };
+}
+
+async function callAI(prompt: string) {
+  const completion = await callAiChatCompletion({
+    systemPrompt:
+      "Sen deneyimli bir Türkçe SEO uzmanısın. Eğitim ve e-öğrenme sektöründe uzmansın. " +
+      "Google'ın E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness) kriterlerini göz önünde bulundurarak " +
+      "TR pazarı için optimize edilmiş, doğal dilde, tıklama oranını artıracak SEO metinleri yazarsın. " +
+      "Her zaman sadece JSON formatında cevap verirsin, başka hiçbir şey eklemezsin.",
+    userPrompt: prompt,
+    temperature: 0.3,
+    responseFormat: "json_object",
+  });
+
+  return completion;
 }
 
 export async function POST(request: Request) {
@@ -152,56 +243,115 @@ Lütfen aşağıdaki JSON formatında tam ve optimize edilmiş öneriler sun:
 
   const aiResponse = await callAI(prompt);
 
-  if (!aiResponse) {
+  if (!aiResponse.ok || !aiResponse.rawText) {
+    const failureReason = aiResponse.ok ? "seo_local_fallback" : aiResponse.errorType ?? "seo_local_fallback";
+    const failureType = aiResponse.ok ? "seo_local_fallback" : aiResponse.errorType;
+
     // AI yoksa temel öneriler üret
-    return NextResponse.json({
-      aiAvailable: false,
-      suggestions: {
-        primaryKeyword: currentPrimaryKeyword ?? pageLabel,
-        secondaryKeywords:
-          currentSecondaryKeywords ??
-          "yds hazırlık, yökdil hazırlık, ydt hazırlık, online Ingilizce, sınav Ingilizcesi",
-        searchIntent: currentSearchIntent ?? "commercial",
-        title: currentTitle ?? `${pageLabel} | Bilal Hoca YDS`,
-        description:
-          currentDescription ??
-          `YDS, YÖKDİL ve YDT sınavına hazırlanmak için Bilal Hoca'nın AI destekli platformunu keşfet. ${pageLabel} modülü ile sınava adım at.`,
-        keywords:
-          currentKeywords ??
-          "YDS hazırlık, YÖKDİL, YDT, online Ingilizce, canlı ders, AI öğrenme",
-        ogTitle: currentTitle ?? `${pageLabel} | Bilal Hoca YDS`,
-        ogDescription:
-          currentDescription ??
-          `Bilal Hoca ile YDS'ye hazırlan. AI destekli kişisel plan, günlük görevler ve canlı dersler.`,
-        twitterTitle: currentTitle ?? `${pageLabel} | Bilal Hoca YDS`,
-        twitterDescription:
-          currentDescription ??
-          `Bilal Hoca YDS platformunda ${pageLabel} sayfasını keşfet ve sınava daha planlı hazırlan.`,
-        ogType: "website",
-        twitterCard: "summary_large_image",
-        schemaType: "WebPage",
-        robotsDirectives: "max-image-preview:large, max-snippet:-1",
-        breadcrumbTitle: pageLabel,
-        changeFrequency: "weekly",
-        sitemapPriority: pageKey === "home" ? 1 : 0.8,
-        analysis: {
-          titleScore: null,
-          improvements: [
-            "AI API anahtarı tanımlanmadığı için detaylı analiz yapılamadı.",
-            "Render Dashboard'dan AI_API_KEY env var'ını ekle.",
-          ],
+    return NextResponse.json(
+      buildAiApiResponse({
+        data: {
+          aiAvailable: false,
+          suggestions: buildFallbackSuggestions({
+            pageKey,
+            pageLabel,
+            currentTitle,
+            currentDescription,
+            currentKeywords,
+            currentPrimaryKeyword,
+            currentSecondaryKeywords,
+            currentSearchIntent,
+          }),
         },
-      },
-    });
+        ai: {
+          model: aiResponse.model,
+          providerAvailable: aiResponse.providerAvailable,
+          traceId: aiResponse.traceId,
+          latencyMs: aiResponse.latencyMs,
+          attempts: aiResponse.attempts,
+          usedFallback: true,
+          fallbackReason: failureReason,
+          errorType: failureType,
+          qualityScore: 35,
+          qualityChecks: ["Provider response unavailable; local fallback suggestions were used."],
+        },
+      }),
+    );
   }
 
   try {
-    // Extract JSON from AI response (might have extra text)
-    const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("No JSON in response");
-    const suggestions = JSON.parse(jsonMatch[0]);
-    return NextResponse.json({ aiAvailable: true, suggestions });
+    const jsonText = extractJsonTextFromContent(aiResponse.rawText);
+    if (!jsonText) throw new Error("No JSON in response");
+    const suggestions = JSON.parse(jsonText) as SeoSuggestionShape;
+    const quality = assessSeoSuggestionQuality(suggestions);
+    const failedQualityGate = quality.qualityScore < 70;
+
+    if (failedQualityGate) {
+      return NextResponse.json(
+        buildAiApiResponse({
+          data: {
+            aiAvailable: false,
+            suggestions: buildFallbackSuggestions({
+              pageKey,
+              pageLabel,
+              currentTitle,
+              currentDescription,
+              currentKeywords,
+              currentPrimaryKeyword,
+              currentSecondaryKeywords,
+              currentSearchIntent,
+            }),
+          },
+          ai: {
+            model: aiResponse.model,
+            providerAvailable: aiResponse.providerAvailable,
+            traceId: aiResponse.traceId,
+            latencyMs: aiResponse.latencyMs,
+            attempts: aiResponse.attempts,
+            usedFallback: true,
+            fallbackReason: "quality_threshold_not_met",
+            errorType: null,
+            qualityScore: quality.qualityScore,
+            qualityChecks: quality.qualityChecks,
+          },
+        }),
+      );
+    }
+
+    return NextResponse.json(
+      buildAiApiResponse({
+        data: { aiAvailable: true, suggestions },
+        ai: {
+          model: aiResponse.model,
+          providerAvailable: aiResponse.providerAvailable,
+          traceId: aiResponse.traceId,
+          latencyMs: aiResponse.latencyMs,
+          attempts: aiResponse.attempts,
+          usedFallback: false,
+          fallbackReason: null,
+          errorType: null,
+          qualityScore: quality.qualityScore,
+          qualityChecks: quality.qualityChecks,
+        },
+      }),
+    );
   } catch {
-    return NextResponse.json({ aiAvailable: true, raw: aiResponse, suggestions: null });
+    return NextResponse.json(
+      buildAiApiResponse({
+        data: { aiAvailable: true, raw: aiResponse.rawText, suggestions: null },
+        ai: {
+          model: aiResponse.model,
+          providerAvailable: aiResponse.providerAvailable,
+          traceId: aiResponse.traceId,
+          latencyMs: aiResponse.latencyMs,
+          attempts: aiResponse.attempts,
+          usedFallback: true,
+          fallbackReason: "invalid_json_response",
+          errorType: "invalid_json_response",
+          qualityScore: 20,
+          qualityChecks: ["AI response could not be parsed as valid JSON."],
+        },
+      }),
+    );
   }
 }

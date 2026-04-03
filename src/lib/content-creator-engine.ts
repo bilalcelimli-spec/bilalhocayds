@@ -1,6 +1,7 @@
 import { PDFParse } from "pdf-parse";
 import { Prisma } from "@prisma/client";
 
+import { callAiChatCompletion } from "@/src/lib/ai-client";
 import { prisma } from "@/src/lib/prisma";
 
 export const contentSourceTypes = ["TEXT", "WEB", "PDF", "VIDEO", "AUDIO", "DOCUMENT", "OTHER"] as const;
@@ -348,47 +349,19 @@ async function normalizeSource(source: ContentSourceInput): Promise<NormalizedSo
 }
 
 async function callAi(input: AiPromptOptions) {
-  const apiKey = process.env.AI_API_KEY;
-  if (!apiKey) {
+  const completion = await callAiChatCompletion({
+    systemPrompt:
+      input.systemPrompt ??
+      "You are a content creator engine specialized in analyzing source materials and generating original educational items.",
+    userPrompt: input.userPrompt,
+    temperature: input.temperature ?? 0.45,
+  });
+
+  if (!completion.ok) {
     return null;
   }
 
-  const baseUrl = process.env.AI_BASE_URL ?? "https://api.openai.com/v1";
-  const model = process.env.AI_MODEL ?? "gpt-4o-mini";
-
-  try {
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        temperature: input.temperature ?? 0.45,
-        messages: [
-          {
-            role: "system",
-            content:
-              input.systemPrompt ??
-              "You are a content creator engine specialized in analyzing source materials and generating original educational items.",
-          },
-          { role: "user", content: input.userPrompt },
-        ],
-      }),
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const json = await response.json();
-    const text = json?.choices?.[0]?.message?.content;
-    return typeof text === "string" ? text : null;
-  } catch {
-    return null;
-  }
+  return completion.rawText;
 }
 
 function createFallbackItems(input: ContentGenerationInput, sources: NormalizedSource[], styleAnalysis: string) {

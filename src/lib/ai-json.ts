@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { callAiChatCompletion, extractJsonTextFromContent } from "@/src/lib/ai-client";
+
 type AiJsonRequest<TSchema extends z.ZodTypeAny> = {
   schema: TSchema;
   systemPrompt: string;
@@ -12,95 +14,74 @@ type AiJsonResponse<TSchema extends z.ZodTypeAny> = {
   rawText: string | null;
   model: string;
   providerAvailable: boolean;
+  traceId: string;
+  latencyMs: number;
+  attempts: number;
+  errorType: "no_api_key" | "timeout" | "network" | "http" | "invalid_json" | "schema_mismatch" | null;
 };
-
-function extractJsonText(rawContent: unknown) {
-  if (typeof rawContent !== "string") {
-    return null;
-  }
-
-  const trimmed = rawContent.trim();
-  if (!trimmed) {
-    return null;
-  }
-
-  const jsonMatch = trimmed.match(/\{[\s\S]*\}$/);
-  return jsonMatch?.[0] ?? trimmed;
-}
 
 export async function callAiJson<TSchema extends z.ZodTypeAny>(
   input: AiJsonRequest<TSchema>,
 ): Promise<AiJsonResponse<TSchema>> {
-  const apiKey = process.env.AI_API_KEY;
-  const model = process.env.AI_MODEL ?? "gpt-4o-mini";
+  const completion = await callAiChatCompletion({
+    systemPrompt: input.systemPrompt,
+    userPrompt: input.userPrompt,
+    temperature: input.temperature ?? 0.2,
+    responseFormat: "json_object",
+  });
 
-  if (!apiKey) {
+  if (!completion.ok) {
     return {
       data: null,
       rawText: null,
-      model,
-      providerAvailable: false,
+      model: completion.model,
+      providerAvailable: completion.providerAvailable,
+      traceId: completion.traceId,
+      latencyMs: completion.latencyMs,
+      attempts: completion.attempts,
+      errorType: completion.errorType,
     };
   }
 
-  const baseUrl = process.env.AI_BASE_URL ?? "https://api.openai.com/v1";
-
-  try {
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        temperature: input.temperature ?? 0.2,
-        response_format: {
-          type: "json_object",
-        },
-        messages: [
-          { role: "system", content: input.systemPrompt },
-          { role: "user", content: input.userPrompt },
-        ],
-      }),
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      return {
-        data: null,
-        rawText: null,
-        model,
-        providerAvailable: true,
-      };
-    }
-
-    const json = await response.json();
-    const rawText = extractJsonText(json?.choices?.[0]?.message?.content);
-
-    if (!rawText) {
-      return {
-        data: null,
-        rawText: null,
-        model,
-        providerAvailable: true,
-      };
-    }
-
-    const parsed = input.schema.safeParse(JSON.parse(rawText));
-
+  const rawText = extractJsonTextFromContent(completion.rawText);
+  if (!rawText) {
     return {
-      data: parsed.success ? parsed.data : null,
-      rawText,
-      model,
-      providerAvailable: true,
+      data: null,
+      rawText: null,
+      model: completion.model,
+      providerAvailable: completion.providerAvailable,
+      traceId: completion.traceId,
+      latencyMs: completion.latencyMs,
+      attempts: completion.attempts,
+      errorType: "invalid_json",
     };
+  }
+
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(rawText);
   } catch {
     return {
       data: null,
-      rawText: null,
-      model,
-      providerAvailable: true,
+      rawText,
+      model: completion.model,
+      providerAvailable: completion.providerAvailable,
+      traceId: completion.traceId,
+      latencyMs: completion.latencyMs,
+      attempts: completion.attempts,
+      errorType: "invalid_json",
     };
   }
+
+  const schemaResult = input.schema.safeParse(parsedJson);
+  return {
+    data: schemaResult.success ? schemaResult.data : null,
+    rawText,
+    model: completion.model,
+    providerAvailable: completion.providerAvailable,
+    traceId: completion.traceId,
+    latencyMs: completion.latencyMs,
+    attempts: completion.attempts,
+    errorType: schemaResult.success ? null : "schema_mismatch",
+  };
 }

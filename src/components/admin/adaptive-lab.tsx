@@ -50,6 +50,26 @@ type LabProps = {
 
 type JsonResult = Record<string, unknown> | null;
 
+type AiEnvelopeResponse = {
+  status?: "ok" | "fallback";
+  data?: Record<string, unknown>;
+  ai?: {
+    usedFallback?: boolean;
+    fallbackReason?: string | null;
+    qualityScore?: number | null;
+    qualityChecks?: string[] | null;
+    latencyMs?: number | null;
+    attempts?: number | null;
+  };
+};
+
+type ResultWithMeta = Record<string, unknown> & {
+  _meta?: {
+    status?: "ok" | "fallback" | null;
+    ai?: AiEnvelopeResponse["ai"] | null;
+  };
+};
+
 const questionDefaults = {
   skillType: "GRAMMAR",
   targetCefr: "B1",
@@ -125,11 +145,64 @@ export function AdaptiveLab({ summary, levelDistribution, recentAdaptiveAttempts
           return;
         }
 
+        const envelope = json as AiEnvelopeResponse;
+        if (envelope && typeof envelope === "object" && envelope.data && typeof envelope.data === "object") {
+          setter({
+            ...(envelope.data as Record<string, unknown>),
+            _meta: {
+              status: envelope.status ?? null,
+              ai: envelope.ai ?? null,
+            },
+          });
+          return;
+        }
+
         setter(json as JsonResult);
       } catch {
         setError("Payload geçerli JSON olmalı.");
       }
     });
+  }
+
+  function renderMeta(result: JsonResult) {
+    const meta = (result as ResultWithMeta | null)?._meta;
+    if (!meta?.ai) return null;
+
+    const quality = typeof meta.ai.qualityScore === "number" ? Math.round(meta.ai.qualityScore * 100) : null;
+
+    return (
+      <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">AI Meta</p>
+        <div className="mt-2 flex flex-wrap gap-2 text-xs">
+          <span className={`rounded-full px-2.5 py-1 font-semibold ${meta.ai.usedFallback ? "bg-amber-500/15 text-amber-300" : "bg-emerald-500/15 text-emerald-300"}`}>
+            {meta.ai.usedFallback ? "Fallback" : "AI Live"}
+          </span>
+          {quality != null ? (
+            <span className={`rounded-full px-2.5 py-1 font-semibold ${quality >= 80 ? "bg-emerald-500/15 text-emerald-300" : quality >= 60 ? "bg-amber-500/15 text-amber-300" : "bg-red-500/15 text-red-300"}`}>
+              Kalite {quality}/100
+            </span>
+          ) : null}
+          {typeof meta.ai.attempts === "number" ? (
+            <span className="rounded-full bg-cyan-500/15 px-2.5 py-1 font-semibold text-cyan-300">{meta.ai.attempts} deneme</span>
+          ) : null}
+          {typeof meta.ai.latencyMs === "number" ? (
+            <span className="rounded-full bg-blue-500/15 px-2.5 py-1 font-semibold text-blue-300">{meta.ai.latencyMs} ms</span>
+          ) : null}
+        </div>
+        {meta.ai.fallbackReason ? (
+          <p className="mt-2 text-xs text-amber-300">Fallback nedeni: <span className="font-semibold">{meta.ai.fallbackReason}</span></p>
+        ) : null}
+        {Array.isArray(meta.ai.qualityChecks) && meta.ai.qualityChecks.length > 0 ? (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {meta.ai.qualityChecks.map((check) => (
+              <span key={check} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-zinc-300">
+                {check}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    );
   }
 
   return (
@@ -163,7 +236,12 @@ export function AdaptiveLab({ summary, levelDistribution, recentAdaptiveAttempts
                 Soru üret
               </button>
             </div>
-            {questionResult ? <pre className="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/20 p-4 text-xs leading-6 text-zinc-200">{JSON.stringify(questionResult, null, 2)}</pre> : null}
+            {questionResult ? (
+              <>
+                {renderMeta(questionResult)}
+                <pre className="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/20 p-4 text-xs leading-6 text-zinc-200">{JSON.stringify(questionResult, null, 2)}</pre>
+              </>
+            ) : null}
           </section>
 
           <section className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
@@ -181,7 +259,12 @@ export function AdaptiveLab({ summary, levelDistribution, recentAdaptiveAttempts
                 Karar üret
               </button>
             </div>
-            {routerResult ? <pre className="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/20 p-4 text-xs leading-6 text-zinc-200">{JSON.stringify(routerResult, null, 2)}</pre> : null}
+            {routerResult ? (
+              <>
+                {renderMeta(routerResult)}
+                <pre className="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/20 p-4 text-xs leading-6 text-zinc-200">{JSON.stringify(routerResult, null, 2)}</pre>
+              </>
+            ) : null}
           </section>
 
           <section className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
@@ -199,7 +282,12 @@ export function AdaptiveLab({ summary, levelDistribution, recentAdaptiveAttempts
                 Writing değerlendir
               </button>
             </div>
-            {writingResult ? <pre className="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/20 p-4 text-xs leading-6 text-zinc-200">{JSON.stringify(writingResult, null, 2)}</pre> : null}
+            {writingResult ? (
+              <>
+                {renderMeta(writingResult)}
+                <pre className="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/20 p-4 text-xs leading-6 text-zinc-200">{JSON.stringify(writingResult, null, 2)}</pre>
+              </>
+            ) : null}
           </section>
         </div>
 

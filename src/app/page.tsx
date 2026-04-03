@@ -4,7 +4,8 @@ import { ArrowUpRight, BarChart3, BookOpenText, BrainCircuit, CalendarDays, Cloc
 import { authOptions } from "@/src/auth";
 import { Button } from "@/src/components/common/button";
 import { ExamMarketplacePurchase } from "@/src/components/payment/exam-marketplace-purchase";
-import { examModule, prisma } from "@/src/lib/prisma";
+import { prisma } from "@/src/lib/prisma";
+import { prisma as db } from "@/lib/prisma";
 import { LiveClassSinglePurchase } from "@/src/components/payment/live-class-single-purchase";
 import { LeadCaptureSection } from "@/src/components/home/lead-capture-section";
 import { format } from "date-fns";
@@ -111,10 +112,40 @@ export default async function HomePage() {
   const premiumPlan = plans.find((plan) => plan.slug === "premium") ?? plans[0] ?? null;
   const liveClassEnabledPlanCount = plans.filter((plan) => plan.includesLiveClass).length;
   const standaloneExamPlan = plans.find((plan) => plan.isStandaloneExamProduct && plan.includesExam) ?? null;
-  const marketplaceExams = (await examModule.findMany({
-    where: { isActive: true, isPublished: true, isForSale: true },
-    orderBy: { updatedAt: "desc" },
-  })).slice(0, 3);
+  let marketplaceExams: Array<{
+    id: string;
+    title: string;
+    examType: string;
+    marketplaceTitle: string | null;
+    marketplaceDescription: string | null;
+    description: string | null;
+    coverImageUrl: string | null;
+    questionCount: number;
+    durationMinutes: number;
+    price: number | null;
+  }> = [];
+
+  try {
+    marketplaceExams = await db.examModule.findMany({
+      where: { isActive: true, isPublished: true, isForSale: true },
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        examType: true,
+        marketplaceTitle: true,
+        marketplaceDescription: true,
+        description: true,
+        coverImageUrl: true,
+        questionCount: true,
+        durationMinutes: true,
+        price: true,
+      },
+      take: 3,
+    });
+  } catch (error) {
+    console.error("Marketplace exams could not be loaded on homepage", error);
+  }
 
   const nextLiveClass = await prisma.liveClass.findFirst({
     where: {
