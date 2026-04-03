@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { generateDailyContentForEligibleStudents } from "@/src/lib/student-daily-content";
+import {
+  generateDailyContentForEligibleStudents,
+  regenerateDailyContentForEligibleStudents,
+} from "@/src/lib/student-daily-content";
 
 function isAuthorized(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -22,6 +25,7 @@ async function handleCron(request: Request) {
 
   const url = new URL(request.url);
   const dateParam = url.searchParams.get("date");
+  const mode = url.searchParams.get("mode"); // "regenerate" → force-overwrite existing content
   const date = dateParam ? new Date(dateParam) : new Date();
 
   if (Number.isNaN(date.getTime())) {
@@ -29,12 +33,12 @@ async function handleCron(request: Request) {
   }
 
   try {
-    const result = await generateDailyContentForEligibleStudents(date);
+    const result =
+      mode === "regenerate"
+        ? await regenerateDailyContentForEligibleStudents(date)
+        : await generateDailyContentForEligibleStudents(date);
 
-    return NextResponse.json({
-      ok: true,
-      ...result,
-    });
+    return NextResponse.json({ ok: true, mode: mode ?? "ensure", ...result });
   } catch (error) {
     console.error("[cron/daily-content] error:", error);
     return NextResponse.json({ error: "Failed to generate daily content" }, { status: 500 });

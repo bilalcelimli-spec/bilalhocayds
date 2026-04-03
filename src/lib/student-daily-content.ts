@@ -537,4 +537,75 @@ export async function generateDailyContentForEligibleStudents(date = new Date())
   };
 }
 
+// ---------------------------------------------------------------------------
+// Morning cron worker: force-regenerate fresh content for all eligible students
+// Processes students in batches to stay within AI provider rate limits.
+// ---------------------------------------------------------------------------
+const CRON_BATCH_SIZE = 3; // max concurrent students
+
+export async function regenerateDailyContentForEligibleStudents(date = new Date()) {
+  const dayKey = getIstanbulDayKey(date);
+
+  const students = await prisma.user.findMany({
+    where: { role: "STUDENT" },
+    select: { id: true, email: true },
+  });
+
+  const results: Array<{
+    userId: string;
+    email: string;
+    generated: DailyContentModule[];
+    errors: Partial<Record<DailyContentModule, string>>;
+  }> = [];
+
+  for (let i = 0; i < students.length; i += CRON_BATCH_SIZE) {
+    const batch = students.slice(i, i + CRON_BATCH_SIZE);
+
+    const batchResults = await Promise.all(
+      batch.map(async (student) => {
+        const accessState = await getEffectiveStudentAccess(student.id);
+        const modules: DailyContentModule[] = [];
+        if (accessState.hasVocabAccess) modules.push(DailyContentModule.VOCABULARY);
+        if (accessState.hasReadingAccess) modules.push(DailyContentModule.READING);
+        if (accessState.hasGrammarAccess) modules.push(DailyContentModule.GRAMMAR);
+
+        if (modules.length === 0) {
+          return { userId: student.id, email: student.email, generated: [], errors: {} };
+        }
+
+        const generated: DailyContentModule[] = [];
+        const errors: Partial<Record<DailyContentModule, string>> = {};
+
+        await Promise.all(
+          modules.map(async (mod) => {
+            try {
+              await regenerateStudentDailyContent(student.id, mod, date);
+              generated.push(mod);
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : String(err);
+              errors[mod] = msg;
+              console.error(`[cron/daily-content] failed for user=${student.id} module=${mod}: ${msg}`);
+            }
+          }),
+        );
+
+        return { userId: student.id, email: student.email, generated, errors };
+      }),
+    );
+
+    results.push(...batchResults);
+    console.log(`[cron/daily-content] batch ${Math.floor(i / CRON_BATCH_SIZE) + 1}/${Math.ceil(students.length / CRON_BATCH_SIZE)} done`);
+  }
+
+  const errorCount = results.reduce((sum, r) => sum + Object.keys(r.errors).length, 0);
+
+  return {
+    dayKey,
+    totalStudents: students.length,
+    generatedStudents: results.filter((r) => r.generated.length > 0).length,
+    errorCount,
+    results,
+  };
+}
+
 export { getIstanbulDayKey };

@@ -1,0 +1,29 @@
+services:
+  # ─── Web Application ───────────────────────────────────────────────
+  - type: web
+    name: bilalhocayds
+    env: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+  # ─── Daily Content Worker (06:00 Istanbul = 03:00 UTC) ─────────────
+  # Turkey observes UTC+3 year-round (no DST since 2016).
+  # Cron expression: "0 3 * * *"  →  03:00 UTC = 06:00 Istanbul
+  - type: cron
+    name: daily-content-worker
+    env: node
+    plan: starter
+    schedule: "0 3 * * *"
+    buildCommand: npm ci
+    startCommand: node scripts/daily-content-cron.mjs
+    envVars:
+      - key: SITE_URL
+        # Set this to your deployed web service URL, e.g. https://bilalhocayds.onrender.com
+        sync: false
+      - key: CRON_SECRET
+        sync: false
