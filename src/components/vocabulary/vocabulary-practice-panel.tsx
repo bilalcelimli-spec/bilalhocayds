@@ -190,8 +190,3 @@ export function VocabularyPracticePanel({ activities }: VocabularyPracticePanelP
 	);
 }
 
-
-type VocabularyPracticePanelProps = {
-  activities: VocabularyActivity[];
-};
-
