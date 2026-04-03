@@ -8,6 +8,7 @@ import { prisma } from "@/src/lib/prisma";
 import { prisma as db } from "@/lib/prisma";
 import { LiveClassSinglePurchase } from "@/src/components/payment/live-class-single-purchase";
 import { LeadCaptureSection } from "@/src/components/home/lead-capture-section";
+import { LevelQuizSection } from "@/src/components/home/level-quiz-section";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 
@@ -310,6 +311,8 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      <LevelQuizSection />
 
       <section id="pricing" className="mx-auto max-w-7xl px-6 pb-12 pt-2 md:pt-4">
         <div className="mx-auto max-w-3xl text-center">
