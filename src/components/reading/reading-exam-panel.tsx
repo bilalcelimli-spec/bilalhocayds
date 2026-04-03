@@ -118,7 +118,7 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
 				const passageScore = passage.questions.length > 0 ? Math.round((passageCorrect / passage.questions.length) * 100) : 0;
 
 				return (
-					<article key={`${passage.title}-${passageIndex}`} className="overflow-hidden rounded-[24px] border border-white/[0.08] bg-[#0e1117]">
+					<article key={`${passage.title}-${passageIndex}`} className="overflow-hidden rounded-[24px] border border-slate-700/40 bg-[#12192a]">
 						{/* passage header (always visible) */}
 						<div
 							className="flex cursor-pointer items-start justify-between gap-4 p-6"
@@ -151,11 +151,11 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
 						{isExpanded && (
 							<div className="px-6 pb-6 space-y-5">
 								{/* passage text */}
-								<div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5">
-									<p className="text-sm leading-8 text-slate-200">{passage.passage}</p>
-								</div>
-								{/* summary */}
-								<div className="flex items-start gap-3 rounded-2xl border border-cyan-500/15 bg-cyan-500/[0.06] px-4 py-3">
+							<div className="rounded-2xl border border-slate-700/30 bg-slate-900/70 p-5">
+								<p className="text-sm leading-8 text-slate-100">{passage.passage}</p>
+							</div>
+							{/* summary */}
+							<div className="flex items-start gap-3 rounded-2xl border border-cyan-700/40 bg-cyan-950/60 px-4 py-3">
 									<span className="mt-0.5 text-cyan-400 shrink-0">ℹ</span>
 									<p className="text-sm leading-6 text-cyan-100"><strong>Özet:</strong> {passage.summary}</p>
 								</div>
@@ -169,7 +169,7 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
 										const typeColorClass = QUESTION_TYPE_COLOR[question.type] ?? QUESTION_TYPE_COLOR["detail"];
 
 										return (
-											<div key={question.id} className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5">
+										<div key={question.id} className="rounded-2xl border border-slate-700/35 bg-[#0f1623] p-5">
 												<div className="flex flex-wrap items-center justify-between gap-2 mb-3">
 													<div className="flex items-center gap-2">
 														<span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-700 text-[10px] font-bold text-white">
@@ -198,12 +198,12 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
 																}
 																className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-left text-sm transition ${
 																	isAnswer
-																		? "border-emerald-500/40 bg-emerald-500/10 text-emerald-100"
-																		: isSelected && !submitted
-																			? "border-cyan-500/40 bg-cyan-500/10 text-cyan-100"
-																			: isSelected && submitted
-																				? "border-rose-500/40 bg-rose-500/10 text-rose-100"
-																				: "border-white/[0.08] bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]"
+																	? "border-emerald-500/55 bg-emerald-900/45 text-emerald-100"
+																	: isSelected && !submitted
+																		? "border-cyan-500/55 bg-cyan-900/45 text-cyan-100"
+																		: isSelected && submitted
+																			? "border-rose-500/55 bg-rose-900/45 text-rose-100"
+																			: "border-slate-600/50 bg-[#1c2840] text-slate-100 hover:border-slate-500/65 hover:bg-[#1f2d4a]"
 																}`}
 															>
 																<span className="mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-current text-[11px] font-black">
@@ -216,7 +216,7 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
 												</div>
 
 												{submitted && (
-													<div className="mt-4 rounded-2xl border border-white/[0.07] bg-black/30 p-4">
+											<div className="mt-4 rounded-2xl border border-slate-600/30 bg-slate-900/80 p-4">
 														<div className="flex items-center gap-2">
 															{isCorrect ? (
 																<CheckCircle2 size={15} className="shrink-0 text-emerald-400" />
@@ -235,9 +235,9 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
 														</div>
 														<p className="mt-2 text-sm leading-6 text-slate-300">{question.explanation}</p>
 														{question.whyOthersWrong.length > 0 && (
-															<div className="mt-3 space-y-1.5 border-t border-white/[0.07] pt-3">
-																{question.whyOthersWrong.map((item) => (
-																	<p key={item} className="text-xs leading-5 text-slate-500">{item}</p>
+													<div className="mt-3 space-y-1.5 border-t border-slate-600/30 pt-3">
+														{question.whyOthersWrong.map((item) => (
+															<p key={item} className="text-xs leading-5 text-slate-400">{item}</p>
 																))}
 															</div>
 														)}

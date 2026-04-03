@@ -136,8 +136,8 @@ export function GrammarPracticePanel({ groups }: GrammarPracticePanelProps) {
 									key={item.id}
 									className={`overflow-hidden rounded-2xl border transition-all duration-200 ${
 										isRevealed && isCorrect && hasOptions
-											? "border-emerald-500/20 bg-emerald-950/20"
-											: "border-white/[0.09] bg-[#0e1117] hover:border-white/[0.14]"
+										? "border-emerald-600/40 bg-emerald-950/45"
+										: "border-slate-700/40 bg-[#12192a] hover:border-slate-600/55"
 									}`}
 								>
 									<div className="p-5">
@@ -155,8 +155,7 @@ export function GrammarPracticePanel({ groups }: GrammarPracticePanelProps) {
 										</div>
 
 										{/* prompt */}
-										<p className="text-sm leading-7 text-slate-300">{item.prompt}</p>
-
+									<p className="text-sm leading-7 text-slate-100">{item.prompt}</p>
 										{/* input */}
 										{hasOptions ? (
 											<div className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -175,12 +174,12 @@ export function GrammarPracticePanel({ groups }: GrammarPracticePanelProps) {
 															}
 															className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 text-left text-sm font-medium transition-all ${
 																showCorrect
-																	? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
-																	: showWrong
-																		? "border-rose-500/40 bg-rose-500/10 text-rose-200"
-																		: isSelected
-																			? "border-violet-500/40 bg-violet-500/10 text-violet-100"
-																			: "border-white/[0.08] bg-white/[0.03] text-slate-300 hover:border-violet-500/20 hover:bg-violet-500/[0.05] hover:text-white"
+																? "border-emerald-500/55 bg-emerald-900/45 text-emerald-100"
+																: showWrong
+																	? "border-rose-500/55 bg-rose-900/45 text-rose-100"
+																	: isSelected
+																		? "border-violet-500/55 bg-violet-900/40 text-white"
+																		: "border-slate-600/50 bg-[#1c2840] text-slate-100 hover:border-violet-500/40 hover:bg-violet-900/20 hover:text-white"
 															} ${isRevealed ? "cursor-default" : "cursor-pointer"}`}
 														>
 															<span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-black ${
@@ -237,10 +236,10 @@ export function GrammarPracticePanel({ groups }: GrammarPracticePanelProps) {
 
 									{/* feedback */}
 									{isRevealed && (
-										<div className={`border-t px-5 py-4 ${isCorrect && hasOptions ? "border-emerald-500/20 bg-emerald-950/30" : "border-white/[0.07] bg-white/[0.02]"}`}>
-											<p className="text-sm font-bold text-white mb-1">Referans Cevap</p>
-											<p className="text-sm leading-6 text-slate-300">{item.answer}</p>
-											<p className="mt-2 text-xs leading-5 text-slate-500">{item.explanation}</p>
+									<div className={`border-t px-5 py-4 ${isCorrect && hasOptions ? "border-emerald-600/35 bg-emerald-950/55" : "border-slate-600/30 bg-[#0b1018]"}`}>
+										<p className="text-sm font-bold text-white mb-1">Referans Cevap</p>
+										<p className="text-sm leading-6 text-slate-200">{item.answer}</p>
+										<p className="mt-2 text-xs leading-5 text-slate-400">{item.explanation}</p>
 											{item.sampleResponse && (
 												<div className="mt-3 rounded-xl border border-amber-500/15 bg-amber-500/[0.07] px-3 py-2">
 													<p className="text-xs font-semibold text-amber-400">Örnek üretim:</p>
