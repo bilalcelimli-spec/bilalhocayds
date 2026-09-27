@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import { prisma } from "@/src/lib/prisma";
@@ -8,24 +9,26 @@ const leadSchema = z.object({
   name: z.string().min(2).max(100),
   surname: z.string().min(1).max(100),
   phone: z.string().min(10).max(20),
-  email: z.email(),
+  // Ana sayfadaki danışmanlık formunda e-posta isteğe bağlıdır.
+  email: z.union([z.email(), z.literal("")]).optional().default(""),
   plan: z.string().min(1).max(200),
 });
 
 export async function POST(request: Request) {
+  const tErrors = await getTranslations("apiErrors");
   const ip = getClientIp(request);
   if (isRateLimited(`lead:${ip}`, 5, 60_000)) {
-    return NextResponse.json({ error: "Cok fazla istek. Lutfen bir dakika sonra tekrar deneyin." }, { status: 429 });
+    return NextResponse.json({ error: tErrors("tooManyRequests") }, { status: 429 });
   }
 
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object") {
-    return NextResponse.json({ error: "Gecersiz istek." }, { status: 400 });
+    return NextResponse.json({ error: tErrors("invalidData") }, { status: 400 });
   }
 
   const parsed = leadSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Gecersiz veri." }, { status: 400 });
+    return NextResponse.json({ error: tErrors("invalidData") }, { status: 400 });
   }
 
   const { name, surname, email, phone, plan } = parsed.data;

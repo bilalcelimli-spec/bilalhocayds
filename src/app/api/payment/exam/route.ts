@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import { authOptions } from "@/src/auth";
@@ -36,25 +37,26 @@ function isRateLimited(key: string) {
 }
 
 export async function POST(request: Request) {
+	const [t, tErrors] = await Promise.all([getTranslations("examPurchase.api"), getTranslations("apiErrors")]);
 	const rateKey = getClientKey(request);
 	if (isRateLimited(rateKey)) {
-		return NextResponse.json({ error: "Cok fazla deneme. Lutfen bir dakika sonra tekrar deneyin." }, { status: 429 });
+		return NextResponse.json({ error: tErrors("tooManyRequests") }, { status: 429 });
 	}
 
 	const payload = requestSchema.safeParse(await request.json());
 	if (!payload.success) {
-		return NextResponse.json({ error: "Gecersiz istek." }, { status: 400 });
+		return NextResponse.json({ error: tErrors("invalidData") }, { status: 400 });
 	}
 
 	const { examModuleId, fullName, email, phone } = payload.data;
 	const exam = await examModule.findUnique({ where: { id: examModuleId } });
 	if (!exam || !exam.isActive || !exam.isPublished || !exam.isForSale || !exam.price || exam.price <= 0) {
-		return NextResponse.json({ error: "Bu sinav su anda satin alinabilir degil." }, { status: 400 });
+		return NextResponse.json({ error: t("notPurchasable") }, { status: 400 });
 	}
 
 	const normalizedPhone = phone.replace(/\D/g, "");
 	if (normalizedPhone.length < 10 || normalizedPhone.length > 15) {
-		return NextResponse.json({ error: "Telefon numarasi gecersiz." }, { status: 400 });
+		return NextResponse.json({ error: t("invalidPhone") }, { status: 400 });
 	}
 
 	const [firstName, ...rest] = fullName.trim().split(" ");

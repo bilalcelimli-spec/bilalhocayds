@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { ChevronRight, ChevronLeft, Trophy, Brain, CheckCircle2 } from "lucide-react";
 
@@ -328,77 +329,66 @@ const LABELS = ["A", "B", "C", "D"] as const;
 const PAGE_SIZE = 10;
 const TOTAL_PAGES = 5;
 
-function getSectionLabel(page: number): string {
-  if (page === 0) return "Bölüm 1 — Kelime Bilgisi";
-  if (page === 1) return "Bölüm 1 & 2 — Kelime Bilgisi / Dilbilgisi";
-  if (page === 2) return "Bölüm 2 — Dilbilgisi";
-  if (page === 3) return "Bölüm 3 — Okuduğunu Anlama";
-  return "Bölüm 4 — Cümle Yapısı";
+function getSectionKey(page: number) {
+  if (page === 0) return "s1" as const;
+  if (page === 1) return "s12" as const;
+  if (page === 2) return "s2" as const;
+  if (page === 3) return "s3" as const;
+  return "s4" as const;
 }
 
 interface LevelInfo {
-  code: string;
-  name: string;
+  code: "A2" | "B1" | "B2" | "C1" | "C2";
   color: string;
   ring: string;
   bg: string;
   bar: string;
-  desc: string;
 }
 
 function getLevel(score: number): LevelInfo {
   if (score <= 14)
     return {
       code: "A2",
-      name: "Başlangıç Seviyesi",
       color: "text-slate-300",
       ring: "ring-slate-500/50",
       bg: "bg-slate-800/60",
       bar: "bg-slate-500",
-      desc: "Temel İngilizce yapılar henüz oturmamış. Doğru sistematik planla çok hızlı ilerliyebilirsin.",
     };
   if (score <= 24)
     return {
       code: "B1",
-      name: "Orta Öncesi Seviye",
       color: "text-blue-400",
       ring: "ring-blue-500/50",
       bg: "bg-blue-900/30",
       bar: "bg-blue-500",
-      desc: "Temel yapıları biliyorsun, ancak akademik İngilizce için daha stratejik bir çalışmaya ihtiyacın var.",
     };
   if (score <= 34)
     return {
       code: "B2",
-      name: "Orta Seviye",
       color: "text-emerald-400",
       ring: "ring-emerald-500/50",
       bg: "bg-emerald-900/30",
       bar: "bg-emerald-500",
-      desc: "Sağlam bir temel var. Hedef puana ulaşmak için akıllı strateji ve tutarlı pratik şart.",
     };
   if (score <= 44)
     return {
       code: "C1",
-      name: "İleri Seviye",
       color: "text-amber-400",
       ring: "ring-amber-500/50",
       bg: "bg-amber-900/30",
       bar: "bg-amber-500",
-      desc: "Çok iyi bir noktadasın. Küçük ama kritik hatalar seni geri tutuyor — onları birlikte kapatalım.",
     };
   return {
     code: "C2",
-    name: "Ustalık Seviyesi",
     color: "text-purple-400",
     ring: "ring-purple-500/50",
     bg: "bg-purple-900/30",
     bar: "bg-purple-500",
-    desc: "Olağanüstü bir performans! Mükemmel skora taşıyacak son rötuşları birlikte yapabiliriz.",
   };
 }
 
 export function LevelQuizSection() {
+  const t = useTranslations("levelQuiz");
   const [step, setStep] = useState<"intro" | "quiz" | "results" | "lead" | "success">("intro");
   const [page, setPage] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -456,13 +446,15 @@ export function LevelQuizSection() {
       if (!res.ok) throw new Error("fail");
       setStep("success");
     } catch {
-      setFormError("Bir hata oluştu. Lütfen tekrar deneyin.");
+      setFormError(t("submitError"));
     } finally {
       setSubmitting(false);
     }
   }
 
   const level = getLevel(score);
+  const levelName = t(`levels.${level.code}.name`);
+  const levelDesc = t(`levels.${level.code}.desc`);
   const percentage = Math.round((score / 50) * 100);
 
   // ── INTRO ──────────────────────────────────────────────────────────────────
@@ -477,23 +469,22 @@ export function LevelQuizSection() {
         <div className="relative mx-auto max-w-3xl text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-5 py-2 text-sm font-semibold text-amber-300 mb-8">
             <Brain className="w-4 h-4" />
-            Ücretsiz Seviye Tespit Sınavı
+            {t("introBadge")}
           </div>
           <h2 className="text-4xl font-black text-white mb-6 leading-tight md:text-5xl">
-            YDS / YDT Seviyeni{" "}
+            {t("introTitle1")}{" "}
             <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-              Şimdi Keşfet
+              {t("introTitle2")}
             </span>
           </h2>
           <p className="text-slate-400 text-lg mb-12 max-w-2xl mx-auto leading-relaxed">
-            50 soruluk bu sınav; kelime bilgisi, dilbilgisi ve okuduğunu anlama becerilerini ölçer. Sonunda
-            gerçek seviyeni öğren, Bilal Hoca&apos;dan kişiselleştirilmiş çalışma planı al.
+            {t("introText")}
           </p>
 
           <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto mb-12">
             {[
-              { icon: "📝", label: "50 Soru" },
-              { icon: "⏱️", label: "~20 Dakika" },
+              { icon: "📝", label: t("statQuestions") },
+              { icon: "⏱️", label: t("statDuration") },
               { icon: "🎯", label: "A2 → C2" },
             ].map((item) => (
               <div
@@ -510,10 +501,10 @@ export function LevelQuizSection() {
             onClick={() => setStep("quiz")}
             className="inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-4 text-lg font-bold text-white shadow-[0_16px_40px_rgba(212,168,67,0.25)] transition hover:from-amber-400 hover:to-orange-400"
           >
-            Sınava Başla
+            {t("start")}
             <ChevronRight className="w-5 h-5" />
           </button>
-          <p className="mt-4 text-sm text-slate-500">Kayıt gerektirmez · Tamamen ücretsiz</p>
+          <p className="mt-4 text-sm text-slate-500">{t("startNote")}</p>
         </div>
       </section>
     );
@@ -528,9 +519,9 @@ export function LevelQuizSection() {
           <div className="mb-8">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm text-slate-400">
-                Soru {Math.min(page * PAGE_SIZE + 1, 50)}–{Math.min((page + 1) * PAGE_SIZE, 50)} / 50
+                {t("questionRange", { from: Math.min(page * PAGE_SIZE + 1, 50), to: Math.min((page + 1) * PAGE_SIZE, 50) })}
               </span>
-              <span className="text-sm font-semibold text-amber-400">{progress}% tamamlandı</span>
+              <span className="text-sm font-semibold text-amber-400">{t("progress", { percent: progress })}</span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-white/10">
               <div
@@ -542,7 +533,7 @@ export function LevelQuizSection() {
 
           {/* Section label */}
           <p className="mb-6 text-xs font-bold uppercase tracking-widest text-slate-500">
-            {getSectionLabel(page)}
+            {t(`sections.${getSectionKey(page)}`)}
           </p>
 
           {/* Questions */}
@@ -557,13 +548,13 @@ export function LevelQuizSection() {
                   {showPassage && q.passage && (
                     <div className="mb-6 rounded-2xl border border-blue-500/20 bg-blue-950/40 p-5">
                       <p className="mb-3 text-xs font-bold uppercase tracking-widest text-blue-400">
-                        Okuma Parçası
+                        {t("passage")}
                       </p>
                       <p className="text-sm leading-relaxed text-slate-300">{q.passage}</p>
                     </div>
                   )}
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
-                    <p className="mb-3 text-xs font-bold text-slate-500">Soru {absIdx + 1}</p>
+                    <p className="mb-3 text-xs font-bold text-slate-500">{t("questionNumber", { number: absIdx + 1 })}</p>
                     <p className="mb-5 font-medium leading-relaxed text-white">{q.q}</p>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       {q.options.map((opt, oi) => {
@@ -604,7 +595,7 @@ export function LevelQuizSection() {
               disabled={page === 0}
               className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-slate-400 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-30"
             >
-              <ChevronLeft className="w-4 h-4" /> Önceki
+              <ChevronLeft className="w-4 h-4" /> {t("previous")}
             </button>
 
             {page < TOTAL_PAGES - 1 ? (
@@ -613,7 +604,7 @@ export function LevelQuizSection() {
                 disabled={!pageFullyAnswered}
                 className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-3 font-bold text-white transition hover:from-amber-400 hover:to-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Sonraki <ChevronRight className="w-4 h-4" />
+                {t("next")} <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
               <button
@@ -621,14 +612,14 @@ export function LevelQuizSection() {
                 disabled={answeredCount < questions.length}
                 className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-8 py-3 font-bold text-white transition hover:from-emerald-400 hover:to-teal-400 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <CheckCircle2 className="w-4 h-4" /> Sonuçları Gör
+                <CheckCircle2 className="w-4 h-4" /> {t("seeResults")}
               </button>
             )}
           </div>
 
           {!pageFullyAnswered && (
             <p className="mt-3 text-center text-xs text-amber-500/70">
-              Devam etmek için bu sayfadaki tüm soruları yanıtla
+              {t("answerAll")}
             </p>
           )}
         </div>
@@ -642,20 +633,20 @@ export function LevelQuizSection() {
       <section className="py-20 px-6">
         <div className="mx-auto max-w-2xl text-center">
           <Trophy className="mx-auto mb-4 w-14 h-14 text-amber-400" />
-          <h2 className="mb-2 text-3xl font-black text-white">Sınav Tamamlandı!</h2>
-          <p className="mb-10 text-slate-400">İşte seviye analizin</p>
+          <h2 className="mb-2 text-3xl font-black text-white">{t("doneTitle")}</h2>
+          <p className="mb-10 text-slate-400">{t("doneText")}</p>
 
           <div
             className={`mb-8 rounded-3xl border p-8 ring-2 ${level.ring} ${level.bg}`}
           >
             <div className={`mb-1 text-7xl font-black ${level.color}`}>{level.code}</div>
-            <div className="mb-3 text-xl font-semibold text-white">{level.name}</div>
+            <div className="mb-3 text-xl font-semibold text-white">{levelName}</div>
             <div className="mb-1 text-5xl font-black text-white">
               {score}
               <span className="text-2xl font-normal text-slate-400"> / 50</span>
             </div>
-            <div className="mb-5 text-sm text-slate-400">({percentage}% doğru)</div>
-            <p className="leading-relaxed text-slate-300">{level.desc}</p>
+            <div className="mb-5 text-sm text-slate-400">{t("correctPercent", { percent: percentage })}</div>
+            <p className="leading-relaxed text-slate-300">{levelDesc}</p>
           </div>
 
           {/* Score bar */}
@@ -679,10 +670,10 @@ export function LevelQuizSection() {
             onClick={() => setStep("lead")}
             className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 py-4 text-lg font-bold text-white shadow-[0_16px_40px_rgba(212,168,67,0.2)] transition hover:from-amber-400 hover:to-orange-400"
           >
-            Kişisel Programımı Oluştur →
+            {t("buildProgram")}
           </button>
           <p className="mt-3 text-sm text-slate-500">
-            Bilal Hoca ekibi seni arayarak {level.code} seviyene özel plan sunar
+            {t("buildProgramNote", { level: level.code })}
           </p>
         </div>
       </section>
@@ -698,58 +689,58 @@ export function LevelQuizSection() {
             <div
               className={`mb-4 inline-block rounded-full border px-4 py-1 text-sm font-bold ring-1 ${level.ring} ${level.bg} ${level.color}`}
             >
-              Seviyeniz: {level.code} — {score}/50
+              {t("yourLevel", { level: level.code, score })}
             </div>
-            <h2 className="mb-2 text-2xl font-black text-white">Kişisel Planını Al</h2>
+            <h2 className="mb-2 text-2xl font-black text-white">{t("leadTitle")}</h2>
             <p className="text-sm text-slate-400">
-              Bilal Hoca ekibi 24 saat içinde seni arayarak {level.code} seviyene özel programı sunar.
+              {t("leadText", { level: level.code })}
             </p>
           </div>
 
           <form onSubmit={handleLeadSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1.5 block text-sm text-slate-400">Ad</label>
+                <label className="mb-1.5 block text-sm text-slate-400">{t("name")}</label>
                 <input
                   type="text"
                   required
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  placeholder="Adın"
+                  placeholder={t("namePlaceholder")}
                   className="w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-white placeholder-slate-500 transition focus:border-amber-500/60 focus:outline-none focus:ring-1 focus:ring-amber-500/40"
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-sm text-slate-400">Soyad</label>
+                <label className="mb-1.5 block text-sm text-slate-400">{t("surname")}</label>
                 <input
                   type="text"
                   required
                   value={form.surname}
                   onChange={(e) => setForm((f) => ({ ...f, surname: e.target.value }))}
-                  placeholder="Soyadın"
+                  placeholder={t("surnamePlaceholder")}
                   className="w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-white placeholder-slate-500 transition focus:border-amber-500/60 focus:outline-none focus:ring-1 focus:ring-amber-500/40"
                 />
               </div>
             </div>
             <div>
-              <label className="mb-1.5 block text-sm text-slate-400">Telefon</label>
+              <label className="mb-1.5 block text-sm text-slate-400">{t("phone")}</label>
               <input
                 type="tel"
                 required
                 value={form.phone}
                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                placeholder="05XX XXX XXXX"
+                placeholder={t("phonePlaceholder")}
                 className="w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-white placeholder-slate-500 transition focus:border-amber-500/60 focus:outline-none focus:ring-1 focus:ring-amber-500/40"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm text-slate-400">E-posta</label>
+              <label className="mb-1.5 block text-sm text-slate-400">{t("email")}</label>
               <input
                 type="email"
                 required
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                placeholder="email@ornek.com"
+                placeholder={t("emailPlaceholder")}
                 className="w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-white placeholder-slate-500 transition focus:border-amber-500/60 focus:outline-none focus:ring-1 focus:ring-amber-500/40"
               />
             </div>
@@ -761,10 +752,10 @@ export function LevelQuizSection() {
               disabled={submitting}
               className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 py-4 text-lg font-bold text-white shadow-[0_16px_40px_rgba(212,168,67,0.2)] transition hover:from-amber-400 hover:to-orange-400 disabled:opacity-60"
             >
-              {submitting ? "Gönderiliyor..." : "Programımı İstiyorum →"}
+              {submitting ? t("submitting") : t("submit")}
             </button>
             <p className="text-center text-xs text-slate-500">
-              Bilgilerin yalnızca program planlaması için kullanılır.
+              {t("privacy")}
             </p>
           </form>
         </div>
@@ -777,13 +768,16 @@ export function LevelQuizSection() {
     <section className="py-20 px-6">
       <div className="mx-auto max-w-md text-center">
         <CheckCircle2 className="mx-auto mb-6 w-16 h-16 text-emerald-400" />
-        <h2 className="mb-4 text-3xl font-black text-white">Harika! Teşekkürler 🎉</h2>
+        <h2 className="mb-4 text-3xl font-black text-white">{t("successTitle")}</h2>
         <p className="mb-6 leading-relaxed text-slate-300">
-          <strong className={level.color}>{level.code} seviyesinde</strong> {score}/50 puan aldın. Bilal Hoca
-          ekibi en kısa sürede sana ulaşarak seviyene özel programı sunacak.
+          {t.rich("successText", {
+            level: level.code,
+            score,
+            strong: (chunks) => <strong className={level.color}>{chunks}</strong>,
+          })}
         </p>
         <div className={`rounded-2xl border p-5 text-left ring-1 ${level.ring} ${level.bg}`}>
-          <p className="text-sm leading-relaxed text-slate-300">{level.desc}</p>
+          <p className="text-sm leading-relaxed text-slate-300">{levelDesc}</p>
         </div>
       </div>
     </section>

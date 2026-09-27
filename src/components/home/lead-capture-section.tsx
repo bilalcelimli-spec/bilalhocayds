@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, CheckCircle2, Mail, PhoneCall, ShieldCheck, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 type FormState = {
@@ -11,6 +12,7 @@ type FormState = {
 };
 
 export function LeadCaptureSection() {
+  const t = useTranslations("lead");
   const [form, setForm] = useState<FormState>({ name: "", surname: "", phone: "", email: "" });
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -34,14 +36,14 @@ export function LeadCaptureSection() {
 
       if (!res.ok) {
         const data = (await res.json()) as { error?: string };
-        throw new Error(data.error ?? "Bir hata oluştu.");
+        throw new Error(data.error ?? t("genericError"));
       }
 
       setStatus("success");
       setForm({ name: "", surname: "", phone: "", email: "" });
     } catch (err) {
       setStatus("error");
-      setErrorMsg(err instanceof Error ? err.message : "Bir hata oluştu.");
+      setErrorMsg(err instanceof Error ? err.message : t("genericError"));
     }
   }
 
@@ -56,13 +58,13 @@ export function LeadCaptureSection() {
           <div>
             <div className="inline-flex max-w-full flex-wrap items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-300 shadow-[0_0_24px_rgba(212,168,67,0.12)] sm:text-xs sm:tracking-[0.28em]">
               <span className="h-2 w-2 rounded-full bg-amber-400" />
-              Danışmanlık Talebi
+              {t("badge")}
             </div>
             <h2 className="mt-6 break-words text-3xl font-black text-white md:text-5xl">
-              Daha fazla bilgi almak ister misin?
+              {t("title")}
             </h2>
             <p className="mt-5 max-w-xl text-lg leading-8 text-slate-300">
-              Bilgilerini bırak, danışmanımız sana en kısa sürede ulaşsın. En uygun planı, canlı ders ritmini ve başlama akışını birlikte netleştirelim.
+              {t("intro")}
             </p>
 
             <div className="mt-8 space-y-3">
@@ -72,8 +74,8 @@ export function LeadCaptureSection() {
                     <PhoneCall size={16} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white">Hızlı dönüş</p>
-                    <p className="mt-1 text-xs leading-6 text-slate-400">Danışman ekibi en kısa sürede uygun plan ve başlangıç akışını paylaşır.</p>
+                    <p className="text-sm font-semibold text-white">{t("fastTitle")}</p>
+                    <p className="mt-1 text-xs leading-6 text-slate-400">{t("fastText")}</p>
                   </div>
                 </div>
               </div>
@@ -83,8 +85,8 @@ export function LeadCaptureSection() {
                     <Mail size={16} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white">Net yönlendirme</p>
-                    <p className="mt-1 text-xs leading-6 text-slate-400">Canlı ders, modül kapsamı ve ödeme akışı tek görüşmede çerçevelenir.</p>
+                    <p className="text-sm font-semibold text-white">{t("clearTitle")}</p>
+                    <p className="mt-1 text-xs leading-6 text-slate-400">{t("clearText")}</p>
                   </div>
                 </div>
               </div>
@@ -94,8 +96,8 @@ export function LeadCaptureSection() {
                     <ShieldCheck size={16} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white">Gizlilik güvencesi</p>
-                    <p className="mt-1 text-xs leading-6 text-emerald-100/80">Bilgilerin yalnızca danışmanlık amacıyla kullanılır.</p>
+                    <p className="text-sm font-semibold text-white">{t("privacyTitle")}</p>
+                    <p className="mt-1 text-xs leading-6 text-emerald-100/80">{t("privacyText")}</p>
                   </div>
                 </div>
               </div>
@@ -109,24 +111,24 @@ export function LeadCaptureSection() {
             <div className="flex h-16 w-16 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
               <CheckCircle2 size={30} />
             </div>
-            <h3 className="text-xl font-bold text-white">Talebiniz alındı!</h3>
+            <h3 className="text-xl font-bold text-white">{t("successTitle")}</h3>
             <p className="max-w-md text-slate-400">
-              Danışmanımız en kısa sürede sizinle iletişime geçecek.
+              {t("successText")}
             </p>
             <button
               type="button"
               onClick={() => setStatus("idle")}
               className="mt-2 text-sm font-semibold text-amber-400 hover:text-amber-300"
             >
-              Yeni bir talep oluştur
+              {t("newRequest")}
             </button>
           </div>
         ) : (
           <>
             <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Hızlı Başvuru</p>
-                <h3 className="mt-2 break-words text-2xl font-black text-white">Seni arayalım, doğru planı birlikte netleştirelim</h3>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">{t("formBadge")}</p>
+                <h3 className="mt-2 break-words text-2xl font-black text-white">{t("formTitle")}</h3>
               </div>
               <div className="w-fit rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
                 <Sparkles size={18} />
@@ -136,35 +138,35 @@ export function LeadCaptureSection() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
               <div className="xl:col-span-2">
-                <label className="mb-1.5 block text-sm font-medium text-slate-300">Ad</label>
+                <label className="mb-1.5 block text-sm font-medium text-slate-300">{t("name")}</label>
                 <input
                   name="name"
                   value={form.name}
                   onChange={handleChange}
-                  placeholder="Adınız"
+                  placeholder={t("namePlaceholder")}
                   required
                   className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-slate-500 outline-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/30"
                 />
               </div>
               <div className="xl:col-span-2">
-                <label className="mb-1.5 block text-sm font-medium text-slate-300">Soyad</label>
+                <label className="mb-1.5 block text-sm font-medium text-slate-300">{t("surname")}</label>
                 <input
                   name="surname"
                   value={form.surname}
                   onChange={handleChange}
-                  placeholder="Soyadınız"
+                  placeholder={t("surnamePlaceholder")}
                   required
                   className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-slate-500 outline-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/30"
                 />
               </div>
 
               <div className="xl:col-span-2">
-                <label className="mb-1.5 block text-sm font-medium text-slate-300">Telefon</label>
+                <label className="mb-1.5 block text-sm font-medium text-slate-300">{t("phone")}</label>
                 <input
                   name="phone"
                   value={form.phone}
                   onChange={handleChange}
-                  placeholder="05XX XXX XX XX"
+                  placeholder={t("phonePlaceholder")}
                   required
                   type="tel"
                   className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-slate-500 outline-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/30"
@@ -173,13 +175,13 @@ export function LeadCaptureSection() {
 
               <div className="sm:col-span-2 xl:col-span-6">
                 <label className="mb-1.5 block text-sm font-medium text-slate-300">
-                  E-posta <span className="text-slate-500">(isteğe bağlı)</span>
+                  {t("email")} <span className="text-slate-500">{t("optional")}</span>
                 </label>
                 <input
                   name="email"
                   value={form.email}
                   onChange={handleChange}
-                  placeholder="ornek@mail.com"
+                  placeholder={t("emailPlaceholder")}
                   type="email"
                   className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-slate-500 outline-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/30"
                 />
@@ -192,14 +194,14 @@ export function LeadCaptureSection() {
 
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <p className="text-xs text-slate-500 lg:max-w-sm">
-              Bilgileriniz yalnızca danışmanlık amacıyla kullanılır ve üçüncü taraflarla paylaşılmaz.
+              {t("privacyNote")}
               </p>
               <button
                 type="submit"
                 disabled={status === "loading"}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] px-6 py-3.5 text-center text-sm font-bold text-zinc-950 shadow-[0_12px_30px_rgba(212,168,67,0.35)] transition hover:brightness-105 disabled:opacity-60 lg:w-auto lg:min-w-[220px]"
               >
-                {status === "loading" ? "Gönderiliyor..." : "Beni Arayın"}
+                {status === "loading" ? t("submitting") : t("submit")}
                 <ArrowRight size={16} />
               </button>
             </div>

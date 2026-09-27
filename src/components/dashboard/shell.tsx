@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 import { signOut } from "next-auth/react";
 import {
@@ -105,11 +106,13 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const todayLabel = new Intl.DateTimeFormat("tr-TR", {
+  const t = useTranslations("shell");
+  const formatter = useFormatter();
+  const todayLabel = formatter.dateTime(new Date(), {
     weekday: "long",
     day: "numeric",
     month: "long",
-  }).format(new Date());
+  });
   const theme =
     roleTheme[(userRole as keyof typeof roleTheme) ?? "STUDENT"] ??
     roleTheme.STUDENT;
@@ -120,10 +123,10 @@ export function DashboardShell({
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-400">
-              Workspace
+              {t("workspace")}
             </div>
             <p className="mt-3 text-base font-black text-white">BilalHocayds</p>
-            <p className="mt-1 text-xs text-zinc-500">Premium kontrol yüzeyi</p>
+            <p className="mt-1 text-xs text-zinc-500">{t("controlSurface")}</p>
           </div>
           <button
             onClick={() => setOpen(false)}
@@ -143,7 +146,7 @@ export function DashboardShell({
             {roleLabel}
           </span>
           <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
-            Dashboard
+            {t("dashboard")}
           </span>
         </div>
       </div>
@@ -222,7 +225,7 @@ export function DashboardShell({
           className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm font-medium text-zinc-300 transition-all hover:border-red-500/20 hover:bg-red-500/8 hover:text-red-400"
         >
           <LogOut size={16} className="shrink-0" />
-          <span>Çıkış Yap</span>
+          <span>{t("signOut")}</span>
         </button>
       </div>
     </aside>
@@ -303,12 +306,12 @@ export function DashboardShell({
 
                 <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[320px]">
                   <div className="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">Bugün</p>
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">{t("today")}</p>
                     <p className="mt-1 text-sm font-semibold text-white">{todayLabel}</p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">Çalışma Alanı</p>
-                    <p className="mt-1 text-sm font-semibold text-white">Odaklı premium panel</p>
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">{t("workArea")}</p>
+                    <p className="mt-1 text-sm font-semibold text-white">{t("focusedPanel")}</p>
                   </div>
                 </div>
               </div>

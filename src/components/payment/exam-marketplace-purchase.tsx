@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { FileText, ShieldCheck, Sparkles } from "lucide-react";
+import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { Button } from "@/src/components/common/button";
@@ -20,17 +21,6 @@ type ExamMarketplacePurchaseProps = {
 	compact?: boolean;
 };
 
-function formatPrice(price: number | null) {
-	if (price === null || price <= 0) {
-		return "Satışa kapalı";
-	}
-
-	return new Intl.NumberFormat("tr-TR", {
-		style: "currency",
-		currency: "TRY",
-		maximumFractionDigits: 0,
-	}).format(price);
-}
 
 function resolvePaytrRedirectUrl(payment?: { redirectUrl?: string; token?: string }) {
 	if (typeof payment?.redirectUrl === "string" && payment.redirectUrl.trim()) {
@@ -57,6 +47,12 @@ export function ExamMarketplacePurchase({
 	defaultEmail = "",
 	compact = false,
 }: ExamMarketplacePurchaseProps) {
+	const t = useTranslations("examPurchase");
+	const formatter = useFormatter();
+	const formatPrice = (value: number | null) =>
+		value === null || value <= 0
+			? t("notForSale")
+			: formatter.number(value, { style: "currency", currency: "TRY", maximumFractionDigits: 0 });
 	const [fullName, setFullName] = useState(defaultFullName);
 	const [email, setEmail] = useState(defaultEmail);
 	const [phone, setPhone] = useState("");
@@ -66,7 +62,7 @@ export function ExamMarketplacePurchase({
 	async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		if (!price || price <= 0) {
-			setError("Bu sınav şu anda satışa kapalı.");
+			setError(t("closed"));
 			return;
 		}
 
@@ -86,7 +82,7 @@ export function ExamMarketplacePurchase({
 
 		setPending(false);
 		if (!response.ok) {
-			setError(data.error ?? "Sınav satışı başlatılamadı.");
+			setError(data.error ?? t("startFailed"));
 			return;
 		}
 
@@ -96,7 +92,7 @@ export function ExamMarketplacePurchase({
 			return;
 		}
 
-		setError(data.payment?.message ?? "Ödeme yönlendirmesi oluşturulamadı.");
+		setError(data.payment?.message ?? t("redirectFailed"));
 	}
 
 	return (
@@ -123,7 +119,7 @@ export function ExamMarketplacePurchase({
 						<p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-200/90">{examType}</p>
 						<h3 className="mt-2 text-2xl font-black text-white">{title}</h3>
 						<p className="mt-3 max-w-[28rem] text-sm leading-6 text-slate-200/90">
-							{description ?? "Yayınlı sınav içeriği, süreli çözüm akışı ve ödeme sonrası erişim teslimi ile birlikte sunulur."}
+							{description ?? t("defaultDescription")}
 						</p>
 					</div>
 				</div>
@@ -133,34 +129,34 @@ export function ExamMarketplacePurchase({
 				<div>
 					<p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-300">Exam Snapshot</p>
 					<h3 className="mt-2 text-xl font-black text-white">{formatPrice(price)}</h3>
-					<p className="mt-1 text-xs text-emerald-200">{examType} · {questionCount} soru · {durationMinutes} dk</p>
+					<p className="mt-1 text-xs text-emerald-200">{t("meta", { type: examType, count: questionCount, minutes: durationMinutes })}</p>
 				</div>
 				<div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-right text-emerald-200">
-					<p className="text-[10px] font-bold uppercase tracking-[0.24em] text-emerald-300">Teslim</p>
-					<p className="mt-1 text-sm font-semibold text-white">Anında hesap erişimi</p>
+					<p className="text-[10px] font-bold uppercase tracking-[0.24em] text-emerald-300">{t("delivery")}</p>
+					<p className="mt-1 text-sm font-semibold text-white">{t("instantAccess")}</p>
 				</div>
 			</div>
 
 			<div className="mb-4 grid gap-3 md:grid-cols-2">
 				<div className="rounded-2xl border border-white/8 bg-black/20 p-3 text-xs text-slate-400">
-					<div className="flex items-center gap-2 font-semibold text-slate-300"><FileText size={14} className="text-emerald-300" /> Paket özeti</div>
-					<p className="mt-2">Sınav içeriği, soru setleri ve admin yayınlı açıklamalarla birlikte teslim edilir.</p>
+					<div className="flex items-center gap-2 font-semibold text-slate-300"><FileText size={14} className="text-emerald-300" /> {t("packageSummary")}</div>
+					<p className="mt-2">{t("packageSummaryText")}</p>
 				</div>
 				<div className="rounded-2xl border border-white/8 bg-black/20 p-3 text-xs text-slate-400">
-					<div className="flex items-center gap-2 font-semibold text-slate-300"><ShieldCheck size={14} className="text-emerald-300" /> Teslim</div>
-					<p className="mt-2">Ödeme sonrası hesapta görünür ve e-posta ile bilgilendirme gönderilir.</p>
+					<div className="flex items-center gap-2 font-semibold text-slate-300"><ShieldCheck size={14} className="text-emerald-300" /> {t("delivery")}</div>
+					<p className="mt-2">{t("deliveryText")}</p>
 				</div>
 			</div>
 
 			<form onSubmit={handleSubmit} className="space-y-2">
-				<input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Ad Soyad" required className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-500" />
-				<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="E-posta" required className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-500" />
-				<input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Telefon" required className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-500" />
+				<input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder={t("fullName")} required className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-500" />
+				<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder={t("email")} required className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-500" />
+				<input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder={t("phone")} required className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-500" />
 
 				{error ? <p className="text-xs text-red-300">{error}</p> : null}
 
 				<Button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-[#d1fae5] via-[#6ee7b7] to-[#10b981] text-zinc-950 shadow-[0_20px_50px_rgba(16,185,129,0.28)] hover:brightness-105" disabled={pending || !price || price <= 0} size="lg">
-					{pending ? "Yönlendiriliyor..." : `Sınavı Satın Al · ${formatPrice(price)}`}
+					{pending ? t("redirecting") : t("submit", { price: formatPrice(price) })}
 				</Button>
 			</form>
 		</div>

@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import { getFormatter, getTimeZone, getTranslations } from "next-intl/server";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -16,6 +17,7 @@ import {
 
 import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
+import { prisma } from "@/src/lib/prisma";
 import { getTodayStudentDailyContentSnapshot } from "@/src/lib/student-daily-content";
 
 function isDefined<T>(value: T | null): value is T {
@@ -29,9 +31,27 @@ export default async function DashboardPage() {
   if (session.user.role === "ADMIN") redirect("/admin");
   if (session.user.role === "TEACHER") redirect("/teacher");
 
-  const hour = new Date().getHours();
+  const [t, formatter, timeZone] = await Promise.all([
+    getTranslations("dashboard"),
+    getFormatter(),
+    getTimeZone(),
+  ]);
+  // Selamlama, öğrencinin kendi saat dilimindeki saate göre seçilir.
+  const hour = Number(
+    new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone }).format(new Date()),
+  );
   const greeting =
-    hour < 12 ? "Günaydın" : hour < 17 ? "İyi günler" : "İyi akşamlar";
+    hour < 12 ? t("greetingMorning") : hour < 17 ? t("greetingDay") : t("greetingEvening");
+  const nextLiveClass = session.user.hasLiveClassesAccess
+    ? await prisma.liveClass.findFirst({
+        where: { scheduledAt: { gte: new Date() }, status: { not: "CANCELLED" } },
+        orderBy: { scheduledAt: "asc" },
+        select: { title: true, scheduledAt: true },
+      })
+    : null;
+  const nextLiveLabel = nextLiveClass
+    ? formatter.dateTime(nextLiveClass.scheduledAt, { weekday: "long", hour: "2-digit", minute: "2-digit" })
+    : null;
   const hasBundledExamAccess = (session.user.accessibleExamIds?.length ?? 0) > 0;
   const hasAnyExamAccess = session.user.hasExamAccess || hasBundledExamAccess;
   const dailyContent = session.user.id
@@ -41,14 +61,14 @@ export default async function DashboardPage() {
     session.user.hasVocabAccess && dailyContent.vocabulary
       ? {
           id: 1,
-          label: `${dailyContent.vocabulary.items.length} kelime kartını tamamla`,
+          label: t("taskVocab", { count: dailyContent.vocabulary.items.length }),
           module: "Vocabulary",
           done: false,
         }
       : session.user.hasVocabAccess
         ? {
             id: 1,
-            label: "Vocabulary oturumunu başlat",
+            label: t("taskVocabStart"),
             module: "Vocabulary",
             done: false,
           }
@@ -56,14 +76,14 @@ export default async function DashboardPage() {
     session.user.hasReadingAccess && dailyContent.reading
       ? {
           id: 2,
-          label: `${dailyContent.reading.passages[0]?.questions.length ?? 0} reading sorusunu çöz`,
+          label: t("taskReading", { count: dailyContent.reading.passages[0]?.questions.length ?? 0 }),
           module: "Reading",
           done: false,
         }
       : session.user.hasReadingAccess
         ? {
             id: 2,
-            label: "Reading oturumunu başlat",
+            label: t("taskReadingStart"),
             module: "Reading",
             done: false,
           }
@@ -71,14 +91,14 @@ export default async function DashboardPage() {
     session.user.hasGrammarAccess && dailyContent.grammar
       ? {
           id: 3,
-          label: `${dailyContent.grammar.focusTopic} konusunu tekrar et`,
+          label: t("taskGrammar", { topic: dailyContent.grammar.focusTopic }),
           module: "Grammar",
           done: false,
         }
       : session.user.hasGrammarAccess
         ? {
             id: 3,
-            label: "Grammar oturumunu başlat",
+            label: t("taskGrammarStart"),
             module: "Grammar",
             done: false,
           }
@@ -86,27 +106,27 @@ export default async function DashboardPage() {
     hasAnyExamAccess
       ? {
           id: 4,
-          label: "1 süreli mini deneme çöz",
+          label: t("taskExam"),
           module: "Exam",
           done: false,
         }
       : null,
   ].filter(isDefined);
   const studentNavItems = [
-    { label: "Dashboard", href: "/dashboard" },
-    { label: "Siparişlerim", href: "/dashboard/orders" },
+    { label: t("navDashboard"), href: "/dashboard" },
+    { label: t("navOrders"), href: "/dashboard/orders" },
     session.user.hasLiveRecordingsAccess
-      ? { label: "Canlı Ders Kayıtları", href: "/dashboard/live-recordings" }
+      ? { label: t("navRecordings"), href: "/dashboard/live-recordings" }
       : null,
     session.user.hasContentLibraryAccess
-      ? { label: "Paylaşılan İçerikler", href: "/dashboard/content-library" }
+      ? { label: t("navLibrary"), href: "/dashboard/content-library" }
       : null,
     session.user.hasVocabAccess ? { label: "Vocabulary", href: "/vocabulary" } : null,
     session.user.hasReadingAccess ? { label: "Reading", href: "/reading" } : null,
     session.user.hasGrammarAccess ? { label: "Grammar", href: "/grammar" } : null,
-    { label: "Sınav", href: "/exam" },
-    session.user.hasLiveClassesAccess ? { label: "Canlı Dersler", href: "/live-classes" } : null,
-    { label: "Fiyatlandırma", href: "/pricing" },
+    { label: t("navExam"), href: "/exam" },
+    session.user.hasLiveClassesAccess ? { label: t("navLive"), href: "/live-classes" } : null,
+    { label: t("navPricing"), href: "/pricing" },
   ].filter(isDefined);
   const moduleCards = [
     session.user.hasVocabAccess && dailyContent.vocabulary
@@ -116,35 +136,35 @@ export default async function DashboardPage() {
           href: "/vocabulary",
           Icon: Languages,
           gradient: "from-blue-600 to-blue-700",
-          stat: `${dailyContent.vocabulary.items.length} kart`,
+          stat: t("cardVocabStat", { count: dailyContent.vocabulary.items.length }),
         }
       : session.user.hasVocabAccess
         ? {
             title: "Vocabulary",
-            desc: "Bugünkü kelime oturumunu açarak içeriği oluştur.",
+            desc: t("cardVocabPrepare"),
             href: "/vocabulary",
             Icon: Languages,
             gradient: "from-blue-600 to-blue-700",
-            stat: "Hazırla",
+            stat: t("prepare"),
           }
       : null,
     session.user.hasReadingAccess && dailyContent.reading
       ? {
           title: "Reading",
-          desc: dailyContent.reading.passages[0]?.title ?? "Günlük AI makale ve comprehension seti",
+          desc: dailyContent.reading.passages[0]?.title ?? t("cardReadingFallback"),
           href: "/reading",
           Icon: BookOpen,
           gradient: "from-indigo-600 to-indigo-700",
-          stat: `${dailyContent.reading.passages.length} metin`,
+          stat: t("cardReadingStat", { count: dailyContent.reading.passages.length }),
         }
       : session.user.hasReadingAccess
         ? {
             title: "Reading",
-            desc: "Günlük reading paketini açarak anında üret.",
+            desc: t("cardReadingPrepare"),
             href: "/reading",
             Icon: BookOpen,
             gradient: "from-indigo-600 to-indigo-700",
-            stat: "Hazırla",
+            stat: t("prepare"),
           }
       : null,
     session.user.hasGrammarAccess && dailyContent.grammar
@@ -154,34 +174,34 @@ export default async function DashboardPage() {
           href: "/grammar",
           Icon: GraduationCap,
           gradient: "from-violet-600 to-violet-700",
-          stat: "1 konu",
+          stat: t("cardGrammarStat"),
         }
       : session.user.hasGrammarAccess
         ? {
             title: "Grammar",
-            desc: "Bugünkü grammar oturumunu başlat.",
+            desc: t("cardGrammarPrepare"),
             href: "/grammar",
             Icon: GraduationCap,
             gradient: "from-violet-600 to-violet-700",
-            stat: "Hazırla",
+            stat: t("prepare"),
           }
       : null,
     {
-      title: "Sınav",
-      desc: hasAnyExamAccess ? "API ile eklenen deneme sınavlarını süreli çöz" : "Deneme sınavı modülünü aç veya tekil sınav satın al",
+      title: t("cardExam"),
+      desc: hasAnyExamAccess ? t("cardExamOpen") : t("cardExamLocked"),
       href: "/exam",
       Icon: FileText,
       gradient: "from-emerald-600 to-emerald-700",
-      stat: hasAnyExamAccess ? (hasBundledExamAccess && !session.user.hasExamAccess ? `${session.user.accessibleExamIds?.length ?? 0} set` : "Deneme seti") : "Kilitli",
+      stat: hasAnyExamAccess ? (hasBundledExamAccess && !session.user.hasExamAccess ? t("cardExamSets", { count: session.user.accessibleExamIds?.length ?? 0 }) : t("cardExamSet")) : t("locked"),
     },
     session.user.hasLiveClassesAccess
       ? {
-          title: "Canlı Ders",
-          desc: "Haftalık Bilal Hoca canlı oturumu",
+          title: t("cardLive"),
+          desc: nextLiveClass?.title ?? t("cardLiveText"),
           href: "/live-classes",
           Icon: Video,
           gradient: "from-teal-600 to-teal-700",
-          stat: "Cmt 20:00",
+          stat: nextLiveLabel ?? t("cardLiveNone"),
         }
       : null,
   ].filter(isDefined);
@@ -189,18 +209,18 @@ export default async function DashboardPage() {
   return (
     <DashboardShell
       navItems={studentNavItems}
-      roleLabel="Öğrenci Paneli"
-      title={`${greeting}, ${session.user.name ?? "Öğrenci"} 👋`}
-      subtitle="Bugünkü çalışma planın hazır. Hedefini yakala!"
+      roleLabel={t("roleLabel")}
+      title={t("title", { greeting, name: session.user.name ?? t("defaultName") })}
+      subtitle={t("subtitle")}
       userName={session.user.name ?? undefined}
       userRole={session.user.role}
     >
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: "Bugünkü Kelimeler", value: session.user.hasVocabAccess ? (dailyContent.vocabulary ? String(dailyContent.vocabulary.items.length) : "Hazırla") : "Kapalı", Icon: Languages, color: "text-blue-300", tone: "border-blue-500/20 bg-blue-500/8" },
-          { label: "Reading Görevi", value: session.user.hasReadingAccess ? (dailyContent.reading ? String(dailyContent.reading.passages.length) : "Hazırla") : "Kapalı", Icon: BookOpen, color: "text-indigo-300", tone: "border-indigo-500/20 bg-indigo-500/8" },
-          { label: "Grammar Alıştırması", value: session.user.hasGrammarAccess ? (dailyContent.grammar ? dailyContent.grammar.focusTopic : "Hazırla") : "Kapalı", Icon: GraduationCap, color: "text-violet-300", tone: "border-violet-500/20 bg-violet-500/8" },
-          { label: "Sınav Hedefi", value: hasAnyExamAccess ? hasBundledExamAccess && !session.user.hasExamAccess ? `${session.user.accessibleExamIds?.length ?? 0} set açık` : "Açık" : "Kilitli", Icon: FileText, color: "text-emerald-300", tone: "border-emerald-500/20 bg-emerald-500/8" },
+          { label: t("statWords"), value: session.user.hasVocabAccess ? (dailyContent.vocabulary ? String(dailyContent.vocabulary.items.length) : t("prepare")) : t("closed"), Icon: Languages, color: "text-blue-300", tone: "border-blue-500/20 bg-blue-500/8" },
+          { label: t("statReading"), value: session.user.hasReadingAccess ? (dailyContent.reading ? String(dailyContent.reading.passages.length) : t("prepare")) : t("closed"), Icon: BookOpen, color: "text-indigo-300", tone: "border-indigo-500/20 bg-indigo-500/8" },
+          { label: t("statGrammar"), value: session.user.hasGrammarAccess ? (dailyContent.grammar ? dailyContent.grammar.focusTopic : t("prepare")) : t("closed"), Icon: GraduationCap, color: "text-violet-300", tone: "border-violet-500/20 bg-violet-500/8" },
+          { label: t("statExam"), value: hasAnyExamAccess ? hasBundledExamAccess && !session.user.hasExamAccess ? t("setsOpen", { count: session.user.accessibleExamIds?.length ?? 0 }) : t("open") : t("locked"), Icon: FileText, color: "text-emerald-300", tone: "border-emerald-500/20 bg-emerald-500/8" },
         ].map((s) => (
           <div
             key={s.label}
@@ -223,12 +243,12 @@ export default async function DashboardPage() {
         <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl lg:col-span-2">
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-white">Bugünkü Görevler</h2>
-              <p className="mt-0.5 text-xs uppercase tracking-[0.18em] text-zinc-500">{todayTasks.length} görev · Tahmini 90 dk</p>
+              <h2 className="text-lg font-bold text-white">{t("tasksTitle")}</h2>
+              <p className="mt-0.5 text-xs uppercase tracking-[0.18em] text-zinc-500">{t("tasksMeta", { count: todayTasks.length })}</p>
             </div>
             <div className="flex items-center gap-1.5 rounded-2xl border border-orange-500/20 bg-orange-500/10 px-3 py-2">
               <Flame size={13} className="text-orange-400" />
-              <span className="text-xs font-semibold text-orange-300">7 günlük seri</span>
+              <span className="text-xs font-semibold text-orange-300">{t("streak")}</span>
             </div>
           </div>
 
@@ -256,17 +276,17 @@ export default async function DashboardPage() {
 
         <div className="space-y-4">
           <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl">
-            <h2 className="mb-5 text-lg font-bold text-white">Performans</h2>
+            <h2 className="mb-5 text-lg font-bold text-white">{t("performance")}</h2>
             <div className="space-y-4">
               {[
-                { label: "Kelime Doğruluğu", val: 78, color: "bg-blue-500" },
-                { label: "Grammar Doğruluğu", val: 69, color: "bg-violet-500" },
-                { label: "Reading Tamamlama", val: 74, color: "bg-indigo-500" },
+                { label: t("perfVocab"), val: 78, color: "bg-blue-500" },
+                { label: t("perfGrammar"), val: 69, color: "bg-violet-500" },
+                { label: t("perfReading"), val: 74, color: "bg-indigo-500" },
               ].map((item) => (
                 <div key={item.label}>
                   <div className="mb-1.5 flex justify-between text-xs">
                     <span className="text-zinc-400">{item.label}</span>
-                    <span className="font-semibold text-white">%{item.val}</span>
+                    <span className="font-semibold text-white">{formatter.number(item.val / 100, { style: "percent" })}</span>
                   </div>
                   <div className="h-2 rounded-full bg-white/10">
                     <div
@@ -284,16 +304,16 @@ export default async function DashboardPage() {
             <div className="mb-2 flex items-center gap-2">
               <Video size={14} className="text-teal-400" />
               <p className="text-xs font-semibold uppercase tracking-wide text-teal-300">
-                Sonraki Canlı Ders
+                {t("nextLive")}
               </p>
             </div>
-            <p className="text-xl font-black text-white">Cumartesi 20:00</p>
-            <p className="mt-1 text-xs text-zinc-400">YDS Reading Stratejisi</p>
+            <p className="text-xl font-black text-white">{nextLiveLabel ?? t("nextLiveNone")}</p>
+            {nextLiveClass ? <p className="mt-1 text-xs text-zinc-400">{nextLiveClass.title}</p> : null}
             <Link
               href="/live-classes"
               className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-teal-400 hover:text-teal-300 transition"
             >
-              Detayları gör <ArrowRight size={12} />
+              {t("details")} <ArrowRight size={12} />
             </Link>
           </div>
           ) : null}
@@ -302,7 +322,7 @@ export default async function DashboardPage() {
 
       {/* Module quick access */}
       <div>
-        <h2 className="mb-4 text-lg font-bold text-white">Modüllere Git</h2>
+        <h2 className="mb-4 text-lg font-bold text-white">{t("modulesTitle")}</h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {moduleCards.map((m) => (
             <Link
@@ -334,11 +354,11 @@ export default async function DashboardPage() {
         <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold text-white">Bugün senin için hazırlandı</h2>
-              <p className="mt-1 text-sm text-zinc-400">İçerikler gün içinde sabit kalır, ertesi gün otomatik olarak yenilenir.</p>
+              <h2 className="text-lg font-bold text-white">{t("preparedTitle")}</h2>
+              <p className="mt-1 text-sm text-zinc-400">{t("preparedText")}</p>
             </div>
             <span className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-300">
-              Otomatik günlük üretim aktif
+              {t("autoDaily")}
             </span>
           </div>
 
@@ -346,14 +366,14 @@ export default async function DashboardPage() {
             {dailyContent.vocabulary ? (
               <Link href="/vocabulary" className="rounded-[24px] border border-blue-500/20 bg-blue-500/8 p-5 transition hover:border-blue-400/40">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-300">Vocabulary</p>
-                <h3 className="mt-2 text-lg font-bold text-white">{dailyContent.vocabulary.items[0]?.word ?? "Bugünün seti hazır"}</h3>
+                <h3 className="mt-2 text-lg font-bold text-white">{dailyContent.vocabulary.items[0]?.word ?? t("vocabReady")}</h3>
                 <p className="mt-2 text-sm text-zinc-300">{dailyContent.vocabulary.items.slice(0, 3).map((item) => item.word).join(", ")}</p>
               </Link>
             ) : null}
             {dailyContent.reading ? (
               <Link href="/reading" className="rounded-[24px] border border-indigo-500/20 bg-indigo-500/8 p-5 transition hover:border-indigo-400/40">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-300">Reading</p>
-                <h3 className="mt-2 text-lg font-bold text-white">{dailyContent.reading.passages[0]?.title ?? "Günlük okuma hazır"}</h3>
+                <h3 className="mt-2 text-lg font-bold text-white">{dailyContent.reading.passages[0]?.title ?? t("readingReady")}</h3>
                 <p className="mt-2 text-sm text-zinc-300">{dailyContent.reading.passages[0]?.summary ?? dailyContent.reading.dailyGoal}</p>
               </Link>
             ) : null}
@@ -377,13 +397,13 @@ export default async function DashboardPage() {
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">
-                  Yeni Modül
+                  {t("newModule")}
                 </p>
                 <h3 className="mt-1 text-base font-black text-white">
-                  Sınav modülü ayrı olarak da açılabiliyor
+                  {t("examPromoTitle")}
                 </h3>
                 <p className="mt-1 text-sm text-zinc-300">
-                  Süreli deneme akışı ve admin tarafından eklenen sınav setleri için erişimi paketine ekleyebilir veya ayrı ürün olarak satın alabilirsin.
+                  {t("examPromoText")}
                 </p>
               </div>
             </div>
@@ -391,7 +411,7 @@ export default async function DashboardPage() {
               href="/pricing"
               className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-zinc-200"
             >
-              Sınav erişimini aç
+              {t("examPromoCta")}
               <ArrowRight size={14} />
             </Link>
           </div>
@@ -407,13 +427,13 @@ export default async function DashboardPage() {
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-fuchsia-300">
-                AI Feature
+                {t("readerBadge")}
               </p>
               <h3 className="mt-1 text-base font-black text-white">
-                Interactive Article Reader aktif
+                {t("readerTitle")}
               </h3>
               <p className="mt-1 text-sm text-zinc-300">
-                Metin üzerinde tıklanabilir kelime analizi, boşluk doldurma ve not paneli.
+                {t("readerText")}
               </p>
             </div>
           </div>
@@ -421,7 +441,7 @@ export default async function DashboardPage() {
             href="/reading"
             className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-zinc-200"
           >
-            Reader&apos;ı Aç
+            {t("readerCta")}
             <ArrowRight size={14} />
           </Link>
         </div>

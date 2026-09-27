@@ -45,7 +45,8 @@ Tarihler `NEXT_TZ` cerezindeki saat dilimine gore gosterilir (tarayici otomatik 
 
 - Metinler: `messages/tr.json`, `messages/en.json` (anahtarlar tip kontrolunden gecer; eksik anahtar derleme hatasi verir)
 - Yapilandirma: `src/i18n/`
-- Cevrilen alanlar: navbar, footer, giris sayfasi, canli sinif. Diger sayfalar kademeli olarak tasinacak.
+- Cevrilen alanlar: ana sayfa (seviye testi ve danismanlik formu dahil), fiyatlar ve plan detay, canli dersler ve canli sinif, giris/kayit/sifre sifirlama, ogrenci paneli, odeme sonuc sayfalari, ilgili API hata mesajlari ve sifre sifirlama e-postasi.
+- Turkce kalanlar: admin paneli, ogretmen paneli, reading/grammar/vocabulary/sinav modul ekranlari, satin alma ve hos geldin e-postalari, veritabanindan gelen icerik (plan adlari, ders basliklari).
 
 ## Platform Ici Canli Sinif
 
