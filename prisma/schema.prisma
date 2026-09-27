@@ -788,6 +788,9 @@ model LiveClassPurchase {
 
   liveClass LiveClass @relation(fields: [liveClassId], references: [id], onDelete: Cascade)
   user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([liveClassId])
+  @@index([userId])
 }
 
 model Account {
@@ -893,6 +896,9 @@ model ContentSource {
   createdById  String?
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
+
+  @@index([createdAt])
+  @@index([sourceType])
 }
 
 model ContentGenerationRun {
@@ -917,6 +923,11 @@ model ContentGenerationRun {
   createdById        String?
   createdAt          DateTime                @default(now())
   updatedAt          DateTime                @updatedAt
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([isApproved])
+  @@index([isPublished])
 }
 
 model ExamModule {
@@ -974,6 +985,9 @@ model ExamModule {
   attempts        ExamAttempt[]
   pricingRules    ExamPricingRule[]
   reviewBookings  ExamReviewBooking[]
+
+  @@index([examType])
+  @@index([isPublished])
 }
 
 model ExamVersion {
@@ -1332,4 +1346,8 @@ model ExamPurchase {
 
   examModule ExamModule @relation(fields: [examModuleId], references: [id], onDelete: Cascade)
   user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([examModuleId])
+  @@index([status])
+  @@index([paidAt])
 }
