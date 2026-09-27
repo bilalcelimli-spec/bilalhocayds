@@ -8,6 +8,7 @@ import { getJoinWindow } from "@/src/lib/live-class-access";
 import { getServerSession } from "next-auth";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { authOptions } from "@/src/auth";
+import { buildPublicPageMetadata } from "@/src/lib/page-metadata";
 
 const benefitKeys = ["benefit1", "benefit2", "benefit3", "benefit4"] as const;
 
@@ -41,6 +42,10 @@ async function PlatformJoinButton({
 			{liveClass.status === "LIVE" ? t("liveJoin") : t("platformJoin")}
 		</Link>
 	);
+}
+
+export function generateMetadata() {
+  return buildPublicPageMetadata({ pageKey: "live-classes", path: "/live-classes" });
 }
 
 export default async function LiveClassesPage() {

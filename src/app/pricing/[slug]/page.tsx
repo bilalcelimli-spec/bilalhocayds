@@ -5,6 +5,7 @@ import { ArrowUpRight, CalendarDays, ShieldCheck, Sparkles } from "lucide-react"
 
 import { prisma } from "@/src/lib/prisma";
 import PlanDetailPurchase from "@/src/components/payment/plan-detail-purchase";
+import { buildPublicPageMetadata } from "@/src/lib/page-metadata";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -24,6 +25,24 @@ const faqItems = [
   { questionKey: "faq4Q", answerKey: "faq4A" },
   { questionKey: "faq5Q", answerKey: "faq5A" },
 ] as const;
+
+export async function generateMetadata({ params }: PageProps) {
+  const { slug } = await params;
+  const plan = await prisma.plan
+    .findFirst({ where: { slug, isActive: true }, select: { name: true, description: true } })
+    .catch(() => null);
+
+  if (!plan) {
+    return { robots: { index: false } };
+  }
+
+  return buildPublicPageMetadata({
+    pageKey: "plan-detail",
+    path: `/pricing/${slug}`,
+    values: { plan: plan.name },
+    description: plan.description,
+  });
+}
 
 export default async function PricingDetailPage({ params, searchParams }: PageProps) {
   const { slug } = await params;

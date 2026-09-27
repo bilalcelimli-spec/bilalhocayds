@@ -6,6 +6,24 @@ export const defaultTimeZone = "Europe/Istanbul";
 
 export const LOCALE_COOKIE = "NEXT_LOCALE";
 export const TIME_ZONE_COOKIE = "NEXT_TZ";
+/** Middleware, /en/... ve /tr/... adreslerindeki dili bu başlıkla iletir. */
+export const LOCALE_HEADER = "x-app-locale";
+
+/** "/en/pricing" → { locale: "en", pathname: "/pricing" } */
+export function splitLocalePrefix(pathname: string): { locale: Locale | null; pathname: string } {
+  const match = pathname.match(/^\/(tr|en)(?=\/|$)/);
+  if (!match || !isLocale(match[1])) {
+    return { locale: null, pathname };
+  }
+  return { locale: match[1], pathname: pathname.slice(match[0].length) || "/" };
+}
+
+/** Dil önekli adres: Türkçe (varsayılan) öneksiz, İngilizce "/en" ile başlar. */
+export function localizedPath(pathname: string, locale: Locale) {
+  const clean = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  if (locale === defaultLocale) return clean;
+  return clean === "/" ? `/${locale}` : `/${locale}${clean}`;
+}
 
 export const localeLabels: Record<Locale, string> = {
   tr: "Türkçe",

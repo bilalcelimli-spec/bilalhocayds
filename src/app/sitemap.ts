@@ -3,6 +3,8 @@ import type { MetadataRoute } from "next";
 import { prisma } from "@/src/lib/prisma";
 import { SEO_PAGE_PRESETS, buildSeoPageUrl } from "@/src/lib/seo-presets";
 import { resolveSiteUrl } from "@/src/lib/site-url";
+import { buildLanguageAlternates } from "@/src/lib/page-metadata";
+import { locales } from "@/src/i18n/config";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
@@ -72,7 +74,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const seoConfigByPageKey = new Map(seoConfigs.map((config) => [config.pageKey, config]));
 
-  const staticEntries: MetadataRoute.Sitemap = SEO_PAGE_PRESETS.filter((preset) => preset.group === "public")
+  const staticEntries = SEO_PAGE_PRESETS.filter((preset) => preset.group === "public")
     .map((preset) => {
       const seoConfig = seoConfigByPageKey.get(preset.key);
 
@@ -81,10 +83,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
 
       const path = seoConfig?.pagePath?.trim() || preset.path;
-      const url = seoConfig?.canonicalUrl?.trim() || buildSeoPageUrl(siteUrl, path);
 
-      return {
-        url,
+      const entry: MetadataRoute.Sitemap[number] = {
+        url: buildSeoPageUrl(siteUrl, path),
         lastModified: seoConfig?.updatedAt ?? new Date(),
         changeFrequency:
           normalizeChangeFrequency(seoConfig?.changeFrequency) ??
@@ -92,15 +93,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           "weekly",
         priority: normalizePriority(seoConfig?.sitemapPriority, DEFAULT_PRIORITIES[preset.key] ?? 0.7),
       };
+
+      return { entry, path, customCanonical: seoConfig?.canonicalUrl?.trim() || null };
     })
     .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
 
-  const planEntries: MetadataRoute.Sitemap = activePlans.map((plan) => ({
-    url: buildSeoPageUrl(siteUrl, `/pricing/${plan.slug}`),
-    lastModified: plan.updatedAt,
-    changeFrequency: "weekly",
-    priority: 0.7,
-  }));
+  const planEntries = activePlans.map((plan) => {
+    const path = `/pricing/${plan.slug}`;
+    const entry: MetadataRoute.Sitemap[number] = {
+      url: buildSeoPageUrl(siteUrl, path),
+      lastModified: plan.updatedAt,
+      changeFrequency: "weekly",
+      priority: 0.7,
+    };
+    return { entry, path };
+  });
 
-  return [...staticEntries, ...planEntries];
+  // Each public page is listed once per language (Turkish unprefixed, English under /en),
+  // with hreflang alternates. A custom canonical URL from the admin replaces the Turkish entry only.
+  const withLanguages = (entry: MetadataRoute.Sitemap[number], path: string, customCanonical?: string | null) =>
+    locales.map((locale) => {
+      const alternates = buildLanguageAlternates(path, locale, siteUrl);
+      return {
+        ...entry,
+        url: locale === "tr" && customCanonical ? customCanonical : alternates.canonical,
+        alternates: { languages: alternates.languages },
+      };
+    });
+
+  return [
+    ...staticEntries.flatMap(({ entry, path, customCanonical }) => withLanguages(entry, path, customCanonical)),
+    ...planEntries.flatMap(({ entry, path }) => withLanguages(entry, path)),
+  ];
 }

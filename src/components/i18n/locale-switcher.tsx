@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useTransition } from "react";
 
 import { setUserLocale } from "@/src/i18n/actions";
-import { localeLabels, locales } from "@/src/i18n/config";
+import { isLocale, localeLabels, localizedPath, locales, splitLocalePrefix } from "@/src/i18n/config";
 
 export function LocaleSwitcher({ className = "" }: { className?: string }) {
   const t = useTranslations("localeSwitcher");
@@ -28,6 +28,12 @@ export function LocaleSwitcher({ className = "" }: { className?: string }) {
           const next = event.target.value;
           startTransition(async () => {
             await setUserLocale(next);
+            // On /en/... or /tr/... the URL decides the language, so move to the other language's URL.
+            const { locale: prefixLocale, pathname: stripped } = splitLocalePrefix(window.location.pathname);
+            if (prefixLocale && isLocale(next)) {
+              router.replace(`${localizedPath(stripped, next)}${window.location.search}`);
+              return;
+            }
             router.refresh();
           });
         }}

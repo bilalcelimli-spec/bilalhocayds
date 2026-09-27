@@ -6,6 +6,7 @@ import { prisma } from "@/src/lib/prisma";
 import { authOptions } from "@/src/auth";
 import PricingCheckout from "@/src/components/payment/pricing-checkout";
 import { SessionBanner } from "@/src/components/common/session-banner";
+import { buildPublicPageMetadata } from "@/src/lib/page-metadata";
 
 function reorderPopularToMiddle<T extends { slug: string }>(items: T[]): T[] {
 	if (items.length !== 3) return items;
@@ -15,6 +16,10 @@ function reorderPopularToMiddle<T extends { slug: string }>(items: T[]): T[] {
 	const [popular] = reordered.splice(idx, 1);
 	reordered.splice(1, 0, popular);
 	return reordered;
+}
+
+export function generateMetadata() {
+  return buildPublicPageMetadata({ pageKey: "pricing", path: "/pricing" });
 }
 
 export default async function PricingPage() {

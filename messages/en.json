@@ -3,6 +3,25 @@
     "title": "Bilal Hoca English",
     "description": "AI-powered English learning with live online classes by Bilal Hoca"
   },
+  "seo": {
+    "siteName": "Bilal Hoca English",
+    "home": {
+      "title": "Bilal Hoca English | Live online English classes with AI-powered practice",
+      "description": "Learn English with Bilal Hoca: live online classes in your browser, plus personalised vocabulary, reading and grammar practice for exams and everyday English."
+    },
+    "pricing": {
+      "title": "Pricing and Plans | Bilal Hoca English",
+      "description": "Compare monthly and yearly plans: live classes with Bilal Hoca, an AI study planner, reading and grammar modules."
+    },
+    "liveClasses": {
+      "title": "Live Online English Classes | Bilal Hoca English",
+      "description": "Join weekly live English classes with Bilal Hoca. See the schedule in your own time zone, book a seat and attend right in your browser."
+    },
+    "planDetail": {
+      "title": "{plan} Plan | Bilal Hoca English",
+      "description": "What the {plan} plan includes, its price and frequently asked questions."
+    }
+  },
   "localeSwitcher": {
     "label": "Language",
     "change": "Change language"

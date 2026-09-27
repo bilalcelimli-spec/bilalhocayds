@@ -10,6 +10,7 @@ import { LiveClassSinglePurchase } from "@/src/components/payment/live-class-sin
 import { LeadCaptureSection } from "@/src/components/home/lead-capture-section";
 import { LevelQuizSection } from "@/src/components/home/level-quiz-section";
 import { getFormatter, getTranslations } from "next-intl/server";
+import { buildPublicPageMetadata } from "@/src/lib/page-metadata";
 
 const featureCardKeys = [
   { title: "f1Title", text: "f1Text", eyebrow: "f1Eyebrow" },
@@ -33,6 +34,10 @@ function reorderPopularToMiddle<T extends { slug: string }>(items: T[]): T[] {
   const [popular] = reordered.splice(idx, 1);
   reordered.splice(1, 0, popular);
   return reordered;
+}
+
+export function generateMetadata() {
+  return buildPublicPageMetadata({ pageKey: "home", path: "/" });
 }
 
 export default async function HomePage() {

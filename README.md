@@ -35,11 +35,12 @@ LIVEKIT_API_SECRET=your-livekit-api-secret
 
 ## Coklu Dil (i18n)
 
-Arayuz `next-intl` ile Turkce (`tr`) ve Ingilizce (`en`) destekler. URL oneki kullanilmaz; dil su sirayla secilir:
+Arayuz `next-intl` ile Turkce (`tr`) ve Ingilizce (`en`) destekler. Dil su sirayla secilir:
 
-1. `NEXT_LOCALE` cerezi (menudeki dil secicisi yazar; giris yapmis kullanicida `User.locale` da guncellenir)
-2. Tarayicinin `Accept-Language` basligi
-3. Varsayilan: `tr`
+1. URL oneki: `/en/...` veya `/tr/...` (middleware oneki kaldirip ayni sayfayi o dilde gosterir ve `NEXT_LOCALE` cerezini yazar)
+2. `NEXT_LOCALE` cerezi (menudeki dil secicisi yazar; giris yapmis kullanicida `User.locale` da guncellenir)
+3. Tarayicinin `Accept-Language` basligi
+4. Varsayilan: `tr`
 
 Tarihler `NEXT_TZ` cerezindeki saat dilimine gore gosterilir (tarayici otomatik yazar, varsayilan `Europe/Istanbul`).
 
@@ -48,6 +49,7 @@ Tarihler `NEXT_TZ` cerezindeki saat dilimine gore gosterilir (tarayici otomatik 
 - Cevrilen alanlar: ogrencinin gordugu tum sayfalar (ana sayfa, fiyatlar, canli dersler/sinif, giris/kayit/sifre, ogrenci paneli ve alt sayfalari, vocabulary/reading/grammar modulleri, sinav akisi ve birebir inceleme), ilgili API mesajlari ve sifre sifirlama e-postasi.
 - AI icerik dili: `User.locale` "en" ise gunluk icerik ve adaptive sinav aciklamalari Ingilizce istenir; Ingilizce arayuzde Turkce kelime karsiliklari gizlenir. AI kullanilamadiginda devreye giren yedek sablonlarin (grammar dahil) Ingilizce karsiliklari `src/lib/ai-content-en.ts` ve `src/lib/ai-content.ts` icindedir.
 - E-postalar (sifre sifirlama, canli ders ve sinav satin alimi) alicinin `User.locale` diline ve `User.timezone` saat dilimine gore gonderilir; hesap yoksa Turkce / Istanbul saati kullanilir.
+- SEO: tanitim sayfalari (ana sayfa, `/pricing`, `/pricing/[slug]`, `/live-classes`) Turkce icin oneksiz, Ingilizce icin `/en` onekli adreste yayinlanir; her birinde canonical ve `hreflang` (tr, en, x-default) etiketleri vardir ve site haritasi iki dili de listeler. Turkce sayfalarda admin panelindeki SEO ayarlari (baslik, aciklama, anahtar kelimeler, OG/Twitter, robots, canonical) uygulanir; Ingilizce baslik ve aciklamalar `messages/en.json` icindeki `seo` bolumundedir (`src/lib/page-metadata.ts`).
 - Turkce kalanlar: admin ve ogretmen paneli, veritabanindan gelen icerik (plan adlari, ders basliklari).
 
 ## Platform Ici Canli Sinif

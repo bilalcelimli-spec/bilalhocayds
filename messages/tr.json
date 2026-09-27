@@ -3,6 +3,25 @@
     "title": "Bilal Hoca YDS",
     "description": "AI destekli YDS / YÖKDİL / YDT hazırlık platformu"
   },
+  "seo": {
+    "siteName": "Bilal Hoca",
+    "home": {
+      "title": "Bilal Hoca | YDS, YÖKDİL ve İngilizce için yapay zekâ destekli online dersler",
+      "description": "Bilal Hoca ile canlı online İngilizce dersleri, kişiselleştirilmiş kelime, okuma ve gramer çalışmaları. YDS, YÖKDİL ve genel İngilizce hazırlığı tek platformda."
+    },
+    "pricing": {
+      "title": "Fiyatlar ve Planlar | Bilal Hoca",
+      "description": "Bilal Hoca İngilizce platformunun aylık ve yıllık planlarını karşılaştır: canlı dersler, yapay zekâ destekli çalışma planı, okuma ve gramer modülleri."
+    },
+    "liveClasses": {
+      "title": "Canlı Online İngilizce Dersleri | Bilal Hoca",
+      "description": "Bilal Hoca ile haftalık canlı İngilizce derslerine katıl. Ders takvimini gör, yerini ayırt ve dersi doğrudan sitede tarayıcından izle."
+    },
+    "planDetail": {
+      "title": "{plan} Planı | Bilal Hoca",
+      "description": "{plan} planının içeriği, fiyatı ve sık sorulan sorular."
+    }
+  },
   "localeSwitcher": {
     "label": "Dil",
     "change": "Dili değiştir"

@@ -7,6 +7,7 @@ import {
   isLocale,
   isValidTimeZone,
   LOCALE_COOKIE,
+  LOCALE_HEADER,
   matchAcceptLanguage,
   TIME_ZONE_COOKIE,
 } from "@/src/i18n/config";
@@ -16,9 +17,12 @@ export default getRequestConfig(async ({ locale: explicitLocale }) => {
 
   // getTranslations({ locale }) ile açıkça istenen dil (ör. e-postalarda alıcının dili) önceliklidir.
   const cookieLocale = cookieStore.get(LOCALE_COOKIE)?.value;
+  const urlLocale = headerStore.get(LOCALE_HEADER);
   const locale = isLocale(explicitLocale)
     ? explicitLocale
-    : isLocale(cookieLocale)
+    : isLocale(urlLocale)
+      ? urlLocale
+      : isLocale(cookieLocale)
       ? cookieLocale
       : (matchAcceptLanguage(headerStore.get("accept-language")) ?? defaultLocale);
 
