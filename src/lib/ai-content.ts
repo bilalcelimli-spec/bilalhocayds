@@ -1,4 +1,5 @@
 import { callAiChatCompletion } from "@/src/lib/ai-client";
+import { GRAMMAR_BLUEPRINT_EN } from "@/src/lib/ai-content-en";
 
 type ExamType = "YDS" | "YDT" | "IELTS Academic" | "IELTS General";
 type StudentLevel = "A2" | "B1" | "B2" | "C1";
@@ -895,11 +896,23 @@ function createAiProfileOverridesFromStudentContext(input?: {
   };
 }
 
+function isEnglishLearner(profile: Pick<AiStudentProfile, "languageOfExplanations">) {
+  return profile.languageOfExplanations === "English";
+}
+
 function createStudentProfileSummary(profile: AiStudentProfile) {
+  if (isEnglishLearner(profile)) {
+    return `Learner profile: aiming for ${profile.examType} at ${profile.studentLevel} level, studying ${profile.dailyStudyTime} minutes a day, interested in ${profile.topicPreferences.slice(0, 3).join(", ")}.`;
+  }
   return `${profile.examType} hedefli, ${profile.studentLevel} seviyesinde, gunde ${profile.dailyStudyTime} dakika ayiran ve ${profile.topicPreferences.slice(0, 3).join(", ")} temalarina ilgi duyan ogrenci profili.`;
 }
 
 function createDailyGoal(profile: AiStudentProfile, skill: FocusSkill) {
+  if (isEnglishLearner(profile)) {
+    if (skill === "vocabulary") return `Practise ${profile.examType} vocabulary with a focus on context, synonyms, collocations and exam traps.`;
+    if (skill === "reading") return `Build ${profile.examType} reading skills: main idea, detail, inference and vocabulary in context.`;
+    return `Strengthen your ${profile.examType} reading and vocabulary skills together.`;
+  }
   if (skill === "vocabulary") {
     return `${profile.examType} icin baglam, synonym, collocation ve exam trap odakli kelime calismasi yap.`;
   }
@@ -910,6 +923,13 @@ function createDailyGoal(profile: AiStudentProfile, skill: FocusSkill) {
 }
 
 function createWarmUp(profile: AiStudentProfile, topic: string) {
+  if (isEnglishLearner(profile)) {
+    return [
+      `Predict which ideas about ${topic} are likely to appear in exam texts.`,
+      `Which traps do you usually fall into in ${profile.examType} questions on this topic?`,
+      `Before reading, get ready to pay extra attention to your ${profile.weakAreas[0]} skill.`,
+    ];
+  }
   return [
     `${topic} temasinda hangi kavramlarin sinav metinlerinde one cikabilecegini tahmin et.`,
     `${profile.examType} sorularinda bu konuda en cok hangi tuzaklara dusuyorsun?`,
@@ -919,56 +939,87 @@ function createWarmUp(profile: AiStudentProfile, topic: string) {
 
 function createDefaultRubric(profile: AiStudentProfile): PerformanceEvaluation {
   const weakAreaPenalty = profile.weakAreas.length >= 3 ? 1 : 0;
+  const en = isEnglishLearner(profile);
 
   const rubric: PerformanceRubricItem[] = [
     {
       label: "Reading Accuracy",
       score: clampRubricScore(7 - weakAreaPenalty),
-      comment: "Ana fikir ve temel detaylari yakalama potansiyelin iyi, fakat tutarli kanit kullanimi izlenmeli.",
-      recommendation: "Her cevabi metindeki belirli bir ifade ile eslestir.",
+      comment: en
+        ? "You catch the main idea and key details well, but keep checking that each answer is backed by evidence."
+        : "Ana fikir ve temel detaylari yakalama potansiyelin iyi, fakat tutarli kanit kullanimi izlenmeli.",
+      recommendation: en
+        ? "Match every answer to a specific phrase in the text."
+        : "Her cevabi metindeki belirli bir ifade ile eslestir.",
     },
     {
       label: "Vocabulary Knowledge",
       score: clampRubricScore(profile.knownWordsLevel === "ileri" ? 8 : profile.knownWordsLevel === "orta" ? 7 : 5),
-      comment: "Kelime bilgisi sinav icin yeterli tabana sahip, ancak baglam ici ayrimlar kritik olmaya devam ediyor.",
-      recommendation: "Bugun ogrendigim her kelime icin bir collocation yaz.",
+      comment: en
+        ? "Your vocabulary base is solid for the exam, but distinctions in context are still critical."
+        : "Kelime bilgisi sinav icin yeterli tabana sahip, ancak baglam ici ayrimlar kritik olmaya devam ediyor.",
+      recommendation: en
+        ? "Write one collocation for every word you learned today."
+        : "Bugun ogrendigim her kelime icin bir collocation yaz.",
     },
     {
       label: "Contextual Meaning",
       score: clampRubricScore(profile.weakAreas.includes("vocabulary in context") ? 5 : 7),
-      comment: "Baglamdan anlam cikarma becerisi gelisiyor ama secenekler arasi ince farklar daha fazla dikkat istiyor.",
-      recommendation: "Kelimeyi tek basina degil, cumledeki goreviyle birlikte analiz et.",
+      comment: en
+        ? "Your ability to infer meaning from context is growing, but subtle differences between options need more care."
+        : "Baglamdan anlam cikarma becerisi gelisiyor ama secenekler arasi ince farklar daha fazla dikkat istiyor.",
+      recommendation: en
+        ? "Analyse each word together with its role in the sentence, not on its own."
+        : "Kelimeyi tek basina degil, cumledeki goreviyle birlikte analiz et.",
     },
     {
       label: "Inference Skill",
       score: clampRubricScore(profile.weakAreas.includes("inference") ? 5 : 7),
-      comment: "Ima edilen bilgiyi yakalamada zaman zaman detaya takilma egilimi var.",
-      recommendation: "Metinde birebir yazilmayan ama zorunlu olarak cikan sonuca odaklan.",
+      comment: en
+        ? "When looking for implied information you sometimes get stuck on details."
+        : "Ima edilen bilgiyi yakalamada zaman zaman detaya takilma egilimi var.",
+      recommendation: en
+        ? "Focus on the conclusion that necessarily follows, even if it isn't written word for word."
+        : "Metinde birebir yazilmayan ama zorunlu olarak cikan sonuca odaklan.",
     },
     {
       label: "Attention to Detail",
       score: clampRubricScore(7 - weakAreaPenalty),
-      comment: "Detay takibi genel olarak iyi, ancak zor sorularda anahtar kelime uyumu kontrol edilmeli.",
-      recommendation: "Soru kokundeki niteleyicileri ve zaman isaretlerini ciz.",
+      comment: en
+        ? "You track details well overall, but check keyword matches carefully in hard questions."
+        : "Detay takibi genel olarak iyi, ancak zor sorularda anahtar kelime uyumu kontrol edilmeli.",
+      recommendation: en
+        ? "Underline qualifiers and time markers in the question stem."
+        : "Soru kokundeki niteleyicileri ve zaman isaretlerini ciz.",
     },
     {
       label: "Paraphrase Recognition",
       score: clampRubricScore(profile.weakAreas.includes("paraphrasing") ? 5 : 7),
-      comment: "Paraphrase tuzaklarinda es anlam ve yeniden ifade kaliplarini daha bilincli takip etmelisin.",
-      recommendation: "Ayni fikrin farkli ifade edilislerini iki sutunda not et.",
+      comment: en
+        ? "Watch synonyms and rephrasing patterns more consciously to avoid paraphrase traps."
+        : "Paraphrase tuzaklarinda es anlam ve yeniden ifade kaliplarini daha bilincli takip etmelisin.",
+      recommendation: en
+        ? "Note different ways of expressing the same idea in two columns."
+        : "Ayni fikrin farkli ifade edilislerini iki sutunda not et.",
     },
     {
       label: "Exam Readiness",
       score: clampRubricScore(7),
-      comment: "Sinav odakli rutin olusuyor; sure, strateji ve tutarlilik birlikte guclendikce skor da yukselecek.",
-      recommendation: `${profile.dailyStudyTime} dakikalik calismayi soru analizi + tekrar bloklariyla tamamla.`,
+      comment: en
+        ? "An exam-focused routine is forming; as timing, strategy and consistency improve together, your score will rise."
+        : "Sinav odakli rutin olusuyor; sure, strateji ve tutarlilik birlikte guclendikce skor da yukselecek.",
+      recommendation: en
+        ? `Complete your ${profile.dailyStudyTime}-minute session with question analysis and review blocks.`
+        : `${profile.dailyStudyTime} dakikalik calismayi soru analizi + tekrar bloklariyla tamamla.`,
     },
   ];
 
   return {
     mode: "Responses can be scored question by question when the student submits answers.",
-    summary: `${profile.examType} odakli bugunku pakette ana takip alanlari: ${profile.weakAreas.join(", ")}.`,
-    strongAreas: ["Calisma disiplini", "Sinav odakli farkindalik"],
+    summary: en
+      ? `Main focus areas in today's ${profile.examType} pack: ${profile.weakAreas.join(", ")}.`
+      : `${profile.examType} odakli bugunku pakette ana takip alanlari: ${profile.weakAreas.join(", ")}.`,
+    strongAreas: en ? ["Study discipline", "Exam awareness"] : ["Calisma disiplini", "Sinav odakli farkindalik"],
     focusAreas: profile.weakAreas,
     rubric,
   };
@@ -1122,7 +1173,7 @@ function createVocabularyExamples(word: string, trMeaning: string) {
   ];
 }
 
-function createVocabularyItemFallback(item: VocabularySeed): VocabularyItem {
+function createVocabularyItemFallback(item: VocabularySeed, englishOnly = false): VocabularyItem {
   const lower = item.word.toLowerCase();
 
   return {
@@ -1132,9 +1183,15 @@ function createVocabularyItemFallback(item: VocabularySeed): VocabularyItem {
     antonym: lower === "mitigate" ? "intensify" : lower === "coherent" ? "inconsistent" : lower === "prevalent" ? "rare" : null,
     collocation: lower === "mitigate" ? "mitigate the risk" : lower === "coherent" ? "coherent argument" : lower === "prevalent" ? "prevalent view" : `${item.word} approach`,
     wordFamily: [item.word, `${item.word}ly`, `${item.word}ness`].filter((value, index, array) => array.indexOf(value) === index),
-    examNote: `${item.word} kelimesi ${DEFAULT_AI_PROFILE.examType} reading sorularinda baglamdan anlam ve paraphrase odakli kullanima uygundur.`,
-    commonMistake: `${item.word} kelimesini yalnizca sozluk anlami ile degil, cumledeki goreviyle birlikte yorumla.`,
-    examples: createVocabularyExamples(item.word, item.trMeaning),
+    examNote: englishOnly
+      ? `"${item.word}" often appears in exam reading questions that test meaning from context and paraphrasing.`
+      : `${item.word} kelimesi ${DEFAULT_AI_PROFILE.examType} reading sorularinda baglamdan anlam ve paraphrase odakli kullanima uygundur.`,
+    commonMistake: englishOnly
+      ? `Don't rely on the dictionary meaning of "${item.word}" alone; interpret it through its role in the sentence.`
+      : `${item.word} kelimesini yalnizca sozluk anlami ile degil, cumledeki goreviyle birlikte yorumla.`,
+    examples: createVocabularyExamples(item.word, item.trMeaning).map((example) =>
+      englishOnly ? { ...example, tr: "" } : example,
+    ),
   };
 }
 
@@ -1330,6 +1387,20 @@ function createReadingAnswerKey(passages: ReadingPassage[]): ReadingAnswerKeyIte
 }
 
 function createStrategyNotes(profile: AiStudentProfile, skill: FocusSkill) {
+  if (isEnglishLearner(profile)) {
+    if (skill === "vocabulary") {
+      return [
+        `In ${profile.examType} vocabulary questions, check the context first, then synonym and collocation clues.`,
+        "When you learn a new word, write an exam-trap note straight away; separate look-alike words with different meanings.",
+        "Don't learn words in isolation: reinforce each one with an example sentence and a collocation.",
+      ];
+    }
+    return [
+      `For ${profile.examType} reading, find each paragraph's function first, then the detail.`,
+      `In ${profile.weakAreas[0]} questions, look for what the text implies, not only what it states.`,
+      "Actively mark signal words such as however, therefore and despite to follow the flow of the paragraph.",
+    ];
+  }
   if (skill === "vocabulary") {
     return [
       `${profile.examType} kelime sorularinda once baglam, sonra synonym/collocation ipucunu kontrol et.`,
@@ -1426,7 +1497,7 @@ async function createAiVocabularyExamples(items: VocabularySeed[], profile: AiSt
 
   const parsed = aiText ? extractJsonArray(aiText) : null;
   if (!parsed) {
-    return items.map((item) => createVocabularyItemFallback(item)) satisfies VocabularyItem[];
+    return items.map((item) => createVocabularyItemFallback(item, isEnglishLearner(profile))) satisfies VocabularyItem[];
   }
 
   const byWord = new Map(
@@ -1479,7 +1550,7 @@ async function createAiVocabularyExamples(items: VocabularySeed[], profile: AiSt
   );
 
   return items.map((item) => {
-    const fallback = createVocabularyItemFallback(item);
+    const fallback = createVocabularyItemFallback(item, isEnglishLearner(profile));
     const aiEntry = byWord.get(item.word.toLowerCase());
 
     return aiEntry
@@ -1644,6 +1715,19 @@ async function createAiReadingQuestions(
 }
 
 function createReadingPlan(source: string, profile: AiStudentProfile) {
+  if (isEnglishLearner(profile)) {
+    const hint =
+      profile.examType === "IELTS Academic" || profile.examType === "IELTS General"
+        ? "Practise skimming and scanning under time pressure."
+        : "Keep your exam pace by finding the main idea and paragraph transitions first.";
+    return [
+      `3 min: Predict the topic from the title and source (${source}).`,
+      "8 min: Read actively, taking notes and marking transition phrases.",
+      "6 min: Summarise the main idea and supporting ideas in 3 bullet points.",
+      "8 min: Answer the comprehension questions and justify each answer.",
+      `5 min: Write two example sentences with the new words. ${hint}`,
+    ];
+  }
   const examHint =
     profile.examType === "IELTS Academic" || profile.examType === "IELTS General"
       ? "Skimming ve scanning adimini zaman baskisi altinda uygula."
@@ -1669,6 +1753,12 @@ function createSessionTitle(profile: AiStudentProfile, skill: FocusSkill, topic:
 }
 
 function createNextStep(profile: AiStudentProfile, skill: FocusSkill) {
+  if (isEnglishLearner(profile)) {
+    if (skill === "vocabulary") {
+      return `Tomorrow, keep your ${profile.weakAreas[0]} focus: write 5 new exam-style sentences with today's words, then review the collocations.`;
+    }
+    return `Tomorrow, aim to do a second set at the same level focusing on ${profile.weakAreas[0]} and paraphrase recognition.`;
+  }
   if (skill === "vocabulary") {
     return `Yarin ${profile.weakAreas[0]} odagini koruyarak bugunku kelimelerle 5 yeni exam-style cumle kur ve collocation tekrarina gec.`;
   }
@@ -1740,7 +1830,55 @@ function selectGrammarBlueprint(profile: AiStudentProfile, seed: number) {
   return pool[seed % pool.length] ?? grammarBlueprints[0];
 }
 
+/** İngilizce öğrenci için şablon metinlerini İngilizce karşılıklarıyla değiştirir. */
+function localizeGrammarBlueprint(blueprint: GrammarBlueprint, profile: AiStudentProfile): GrammarBlueprint {
+  const override = isEnglishLearner(profile) ? GRAMMAR_BLUEPRINT_EN[blueprint.id] : undefined;
+  if (!override) {
+    return blueprint;
+  }
+
+  const localizeActivity = (activity: GrammarActivity): GrammarActivity => {
+    const text = override.activities[activity.id];
+    return text
+      ? {
+          ...activity,
+          explanation: text.explanation,
+          whyOthersWrong: text.whyOthersWrong ?? activity.whyOthersWrong,
+          sampleResponse: text.sampleResponse ?? activity.sampleResponse,
+        }
+      : activity;
+  };
+
+  return {
+    ...blueprint,
+    dailyGoalTemplate: override.dailyGoalTemplate,
+    reasonTemplate: override.reasonTemplate,
+    explanation: override.explanation,
+    commonMistakes: override.commonMistakes,
+    examples: blueprint.examples.map((example, index) => ({
+      ...example,
+      tr: "",
+      note: override.exampleNotes[index] ?? example.note,
+    })),
+    activitySet: {
+      multipleChoice: blueprint.activitySet.multipleChoice.map(localizeActivity),
+      fillInTheBlanks: blueprint.activitySet.fillInTheBlanks.map(localizeActivity),
+      errorCorrection: blueprint.activitySet.errorCorrection.map(localizeActivity),
+      sentenceTransformation: blueprint.activitySet.sentenceTransformation.map(localizeActivity),
+      ruleApplication: blueprint.activitySet.ruleApplication.map(localizeActivity),
+      miniProduction: blueprint.activitySet.miniProduction.map(localizeActivity),
+    },
+  };
+}
+
 function createGrammarWarmUp(profile: AiStudentProfile, topic: string) {
+  if (isEnglishLearner(profile)) {
+    return [
+      `Describe in one sentence the most important distinction in ${topic} that challenges you.`,
+      `Which grammar trap do you want to avoid today in ${profile.examType} questions?`,
+      `For your ${profile.studentGoalScore} goal, which accuracy point should you focus on today instead of speed?`,
+    ];
+  }
   return [
     `${topic} konusunda seni zorlayan en kritik ayrimi tek cumleyle tanimla.`,
     `${profile.examType} sorularinda bugun hangi grammar tuzagina dusmeme hedefin var?`,
@@ -1754,6 +1892,13 @@ function createGrammarSessionTitle(profile: AiStudentProfile, blueprint: Grammar
 
 function createGrammarGoalSnapshot(profile: AiStudentProfile, blueprint: GrammarBlueprint) {
   const targetLevel = inferTargetLevel(profile);
+  if (isEnglishLearner(profile)) {
+    return [
+      `You are working towards ${profile.examType}, currently at ${profile.studentLevel} level with a goal of ${profile.studentGoalScore}.`,
+      blueprint.reasonTemplate.replace("{level}", profile.studentLevel).replace("{goal}", profile.studentGoalScore),
+      `This session aims to move you from your current level towards roughly ${targetLevel} with more controlled, strategic grammar decisions.`,
+    ].join(" ");
+  }
   return [
     `${profile.examType} odakli bu ogrenci su anda ${profile.studentLevel} seviyesinde ve hedefi ${profile.studentGoalScore}.`,
     blueprint.reasonTemplate
@@ -1774,6 +1919,13 @@ function createGrammarTopicReason(profile: AiStudentProfile, blueprint: GrammarB
 }
 
 function createGrammarConceptExplanation(profile: AiStudentProfile, blueprint: GrammarBlueprint) {
+  if (isEnglishLearner(profile)) {
+    return [
+      blueprint.explanation,
+      `Why it matters: for ${profile.examType}, this topic tests choosing the right structure in context and spotting traps, not just knowing the rule.`,
+      `Common mistakes: ${blueprint.commonMistakes.join(", ")}.`,
+    ].join(" ");
+  }
   const languageNote =
     profile.languageOfExplanations === "English"
       ? "Acilamada teknik terimler English korunabilir."
@@ -1790,6 +1942,13 @@ function createGrammarConceptExplanation(profile: AiStudentProfile, blueprint: G
 }
 
 function createGrammarStrategyNotes(profile: AiStudentProfile, blueprint: GrammarBlueprint) {
+  if (isEnglishLearner(profile)) {
+    return [
+      `Find the meaning relationship first, then choose the grammar pattern. In ${profile.examType} questions, look at structural clues rather than surface words.`,
+      `Today, try to catch your own mistakes in ${blueprint.commonMistakes[0]?.toLowerCase() ?? "structure choice"}.`,
+      `Keep the order in your ${profile.dailyStudyTime}-minute block: lesson, practice, then error analysis. Build accuracy before speed.`,
+    ];
+  }
   return [
     `Once anlam iliskisini bul, sonra grammar kalibini sec. ${profile.examType} sorularinda yuzeydeki kelimeye degil yapisal ipucuna bak.`,
     `Bugun ozellikle ${blueprint.commonMistakes[0]?.toLowerCase() ?? "yapi secimi"} konusunda kendi hatani yakalamaya calis.`,
@@ -1805,57 +1964,94 @@ function createGrammarPerformanceEvaluation(
   const targetScore = getLevelScore(inferTargetLevel(profile));
   const gapPenalty = Math.max(0, targetScore - currentScore);
   const accuracyBase = Math.max(4, 8 - gapPenalty);
+  const en = isEnglishLearner(profile);
 
   const rubric: GrammarPerformanceRubricItem[] = [
     {
       label: "Grammar Accuracy",
       score: clampRubricScore(accuracyBase),
-      comment: "Temel dogruluk seviyesi mevcut hedefe yaklasiyor ancak zorlu tuzaklarda karar kalitesi dalgalanabiliyor.",
-      recommendation: "Her yanlis soruda hangi kelimenin degil hangi yapinin secildigini not et.",
+      comment: en
+        ? "Your basic accuracy is close to your target, but decision quality can drop on tricky traps."
+        : "Temel dogruluk seviyesi mevcut hedefe yaklasiyor ancak zorlu tuzaklarda karar kalitesi dalgalanabiliyor.",
+      recommendation: en
+        ? "For every wrong answer, note which structure was chosen, not which word."
+        : "Her yanlis soruda hangi kelimenin degil hangi yapinin secildigini not et.",
     },
     {
       label: "Rule Awareness",
       score: clampRubricScore(accuracyBase - 1),
-      comment: "Kural bilgisi var, fakat kurali baglamla eslestirme hizinin artmasi gerekiyor.",
-      recommendation: "Her aktiviteden sonra tek cumlelik kural ozeti yaz.",
+      comment: en
+        ? "You know the rules, but you need to match them to context faster."
+        : "Kural bilgisi var, fakat kurali baglamla eslestirme hizinin artmasi gerekiyor.",
+      recommendation: en
+        ? "After each activity, write a one-sentence summary of the rule."
+        : "Her aktiviteden sonra tek cumlelik kural ozeti yaz.",
     },
     {
       label: "Contextual Usage",
       score: clampRubricScore(accuracyBase - (blueprint.level === "C1" ? 2 : 1)),
-      comment: "Baglam icinde structure secimi, hedef puan ile mevcut seviye arasindaki farki en net gosteren alandir.",
-      recommendation: "Secenegi isaretlemeden once cumlenin mantik iliskisini isimlendir.",
+      comment: en
+        ? "Choosing structures in context is where the gap between your level and your target shows most clearly."
+        : "Baglam icinde structure secimi, hedef puan ile mevcut seviye arasindaki farki en net gosteren alandir.",
+      recommendation: en
+        ? "Before marking an option, name the logical relationship in the sentence."
+        : "Secenegi isaretlemeden once cumlenin mantik iliskisini isimlendir.",
     },
     {
       label: "Sentence Control",
       score: clampRubricScore(accuracyBase - 1),
-      comment: "Transformation ve mini production adimlarinda sentence control duzenli pratikle hizla guclenebilir.",
-      recommendation: "Bugunku mini production gorevini sesli okuyarak yapisal akisi kontrol et.",
+      comment: en
+        ? "Sentence control in transformation and mini-production tasks can improve quickly with regular practice."
+        : "Transformation ve mini production adimlarinda sentence control duzenli pratikle hizla guclenebilir.",
+      recommendation: en
+        ? "Read today's mini-production task aloud to check the structure."
+        : "Bugunku mini production gorevini sesli okuyarak yapisal akisi kontrol et.",
     },
     {
       label: "Error Recognition",
       score: clampRubricScore(accuracyBase - 1),
-      comment: "Hata tespiti gelisiyor; ancak benzer gorunen iki structure arasinda karar verirken ikinci kontrol gerekli.",
-      recommendation: "Error correction sorularinda once hatali bolgeyi etiketle, sonra duzelt.",
+      comment: en
+        ? "Your error spotting is improving, but double-check when deciding between two similar-looking structures."
+        : "Hata tespiti gelisiyor; ancak benzer gorunen iki structure arasinda karar verirken ikinci kontrol gerekli.",
+      recommendation: en
+        ? "In error-correction questions, label the faulty part first, then fix it."
+        : "Error correction sorularinda once hatali bolgeyi etiketle, sonra duzelt.",
     },
     {
       label: "Exam Readiness Relative to Target Score",
       score: clampRubricScore(accuracyBase - gapPenalty),
-      comment: `Mevcut performans ${profile.studentGoalScore} hedefi icin dogru yonde, ancak ${blueprint.topic} alaninda daha tutarli otomasyon gerekiyor.`,
-      recommendation: "Bu konuyu iki gun icinde ikinci kez, daha kisa ama daha hizli bir setle tekrar et.",
+      comment: en
+        ? `Your performance is heading the right way for ${profile.studentGoalScore}, but ${blueprint.topic} needs to become more automatic.`
+        : `Mevcut performans ${profile.studentGoalScore} hedefi icin dogru yonde, ancak ${blueprint.topic} alaninda daha tutarli otomasyon gerekiyor.`,
+      recommendation: en
+        ? "Review this topic again within two days with a shorter but faster set."
+        : "Bu konuyu iki gun icinde ikinci kez, daha kisa ama daha hizli bir setle tekrar et.",
     },
   ];
 
   return {
-    summary: `${blueprint.topic} oturumu, hedef puana giden grammar boslugunu dogrudan kapatmak icin secildi.`,
-    targetScoreComment: `${profile.studentLevel} seviyesinden ${profile.studentGoalScore} hedefine giderken bu topic'te karar hizi ve hata farkindaligi birlikte yukseltilmeli.`,
-    strongAreas: ["Calisma rutini", "Kural farkindaligi"],
+    summary: en
+      ? `The ${blueprint.topic} session was chosen to close the grammar gap on the way to your target score.`
+      : `${blueprint.topic} oturumu, hedef puana giden grammar boslugunu dogrudan kapatmak icin secildi.`,
+    targetScoreComment: en
+      ? `Moving from ${profile.studentLevel} towards ${profile.studentGoalScore}, you need faster decisions and better error awareness in this topic.`
+      : `${profile.studentLevel} seviyesinden ${profile.studentGoalScore} hedefine giderken bu topic'te karar hizi ve hata farkindaligi birlikte yukseltilmeli.`,
+    strongAreas: en ? ["Study routine", "Rule awareness"] : ["Calisma rutini", "Kural farkindaligi"],
     focusAreas: blueprint.commonMistakes,
-    nextFocus: blueprint.id === "articles-prepositions" ? "Conditionals ve connector secimi" : blueprint.id === "conditionals" ? "Relative / reduced clause ayirimi" : "Formal grammar ve sentence transformation",
+    nextFocus:
+      blueprint.id === "articles-prepositions"
+        ? en ? "Conditionals and connector choice" : "Conditionals ve connector secimi"
+        : blueprint.id === "conditionals"
+          ? en ? "Relative vs reduced clauses" : "Relative / reduced clause ayirimi"
+          : en ? "Formal grammar and sentence transformation" : "Formal grammar ve sentence transformation",
     rubric,
   };
 }
 
 function createGrammarPersonalizedNextStep(profile: AiStudentProfile, blueprint: GrammarBlueprint) {
+  if (isEnglishLearner(profile)) {
+    return `Tomorrow, do a quick 10-minute review of ${blueprint.commonMistakes[0]?.toLowerCase() ?? "this topic"}, then move on to ${createGrammarPerformanceEvaluation(profile, blueprint).nextFocus.toLowerCase()}.`;
+  }
   return `Yarin ${blueprint.commonMistakes[0]?.toLowerCase() ?? "bu konu"} uzerine 10 dakikalik hizli tekrar yap, sonra ${createGrammarPerformanceEvaluation(profile, blueprint).nextFocus.toLowerCase()} basligina gec.`;
 }
 
@@ -1966,7 +2162,7 @@ export async function getDailyGrammarModule(
   const date = input instanceof Date ? input : input.date ?? new Date();
   const profile = mergeAiProfile(input instanceof Date ? undefined : input.profile);
   const seed = getDaySeed(date);
-  const blueprint = selectGrammarBlueprint(profile, seed);
+  const blueprint = localizeGrammarBlueprint(selectGrammarBlueprint(profile, seed), profile);
 
   return {
     generatedAt: date.toISOString(),

@@ -154,7 +154,7 @@ export default async function GrammarPage() {
 										</span>
 										<p className="text-sm font-semibold leading-6 text-slate-100">{example.en}</p>
 									</div>
-									<p className="ml-7 text-xs text-slate-500">{example.tr}</p>
+									{example.tr ? <p className="ml-7 text-xs text-slate-500">{example.tr}</p> : null}
 									{example.note && (
 										<div className="ml-7 mt-2 rounded-xl border border-violet-500/15 bg-violet-500/[0.06] px-3 py-2">
 											<p className="text-xs text-violet-300">{example.note}</p>
