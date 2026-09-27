@@ -1,6 +1,8 @@
 # Global İngilizce Platformu — Dönüşüm Planı
 
-> Hedef: bilalhocayds'i YDS/YÖKDİL/YDT odaklı Türkçe bir hazırlık sitesinden, **platform içinde canlı online derslerin yapıldığı**, dünya çapında öğrenci ve öğretmene hizmet veren bir İngilizce öğrenme pazaryerine dönüştürmek.
+> Hedef: bilalhocayds'i YDS/YÖKDİL/YDT odaklı Türkçe bir hazırlık sitesinden, **platform içinde canlı online derslerin yapıldığı**, dünya çapında öğrencilere hizmet veren bir İngilizce platformuna dönüştürmek.
+>
+> **Kapsam kararı:** Bu, **tek eğitmenli (Bilal Hoca) bir marka platformudur** — öğretmen pazaryeri, dış öğretmen başvurusu, komisyon veya öğretmen ödemesi yoktur. Tüm dersler, içerik ve fiyatlandırma Bilal Hoca ve admin paneli tarafından yönetilir.
 
 ---
 
@@ -9,8 +11,8 @@
 | Alan | Bugün | Global hedef için eksik |
 |---|---|---|
 | Stack | Next.js 16 (App Router), React 19, Prisma 7 + PostgreSQL, NextAuth v4, Tailwind 4 | Yeterli; ölçek için cache/queue/realtime katmanı eklenmeli |
-| Canlı ders | `LiveClass` modeli yalnızca harici `meetingLink` (Zoom/Meet) tutuyor (`src/lib/meeting-platform.ts`) | Platform içi video sınıf, öğretmen ilişkisi, kapasite, kayıt, yoklama yok |
-| Öğretmen | `TeacherProfile` (bio, expertise) — `LiveClass` ile ilişkisi yok | Öğretmen onboarding, müsaitlik takvimi, ücretlendirme, ödeme dağıtımı yok |
+| Canlı ders | `LiveClass` modeli yalnızca harici `meetingLink` (Zoom/Meet) tutuyor (`src/lib/meeting-platform.ts`) | Platform içi video sınıf, ders tipi, kapasite, kayıt, yoklama yok |
+| Eğitmen | Tek eğitmen (Bilal Hoca); `TEACHER`/`ADMIN` rolleri mevcut | Bilal Hoca için müsaitlik takvimi, birebir ders rezervasyonu, ders yönetim paneli yok |
 | Dil / bölge | `<html lang="tr">`, tüm UI metinleri Türkçe hard-coded, `date-fns/locale/tr` | i18n altyapısı, çok dilli UI, saat dilimi yönetimi yok |
 | Ödeme | PayTR (TRY), iyzico yardımcıları; `stripe` bağımlılığı var ama kullanılmıyor | Çoklu para birimi, uluslararası kart, abonelik yenileme, vergi (VAT) yok |
 | İçerik | YDS/YDT sınav modülü, AI reading/grammar/vocab, günlük içerik cron'u | CEFR (A1–C2) müfredatı, IELTS/TOEFL/genel İngilizce/Business yolları yok |
@@ -24,14 +26,18 @@
 
 ## 1. Ürün Vizyonu ve Konumlandırma
 
+**Konum:** "Bilal Hoca ile İngilizce" — kişisel marka odaklı, tek eğitmenli, global erişimli online İngilizce okulu.
+
 **Üç ürün ayağı:**
-1. **Canlı Dersler (çekirdek):** Birebir (1:1) ve küçük grup (2–8 kişi) dersler, platform içi sanal sınıf.
+1. **Bilal Hoca ile Canlı Dersler (çekirdek):** Grup dersleri, webinar/kamp formatı (büyük katılımlı) ve sınırlı sayıda birebir (1:1) premium ders — hepsi platform içi sanal sınıfta.
 2. **Kendi Kendine Öğrenme:** CEFR seviyeli AI destekli reading/grammar/vocab/listening/speaking + sınav hazırlık (YDS, YÖKDİL, IELTS, TOEFL, PTE, Cambridge).
-3. **Öğretmen Pazaryeri:** Doğrulanmış öğretmenlerin profil, takvim ve fiyat belirleyip ders sattığı yapı (platform komisyonu alır).
+3. **Kayıtlı Kurslar & Arşiv:** Canlı derslerin kayıtlarından oluşan, satın alınabilir/abonelikle erişilebilen video kurslar (Bilal Hoca'nın zamanını ölçeklemenin ana yolu).
 
 **Hedef pazar sırası:** Türkiye (mevcut) → MENA + Orta Asya (Türkçe/Arapça/Rusça konuşan öğrenciler) → Latin Amerika + Güneydoğu Asya → global.
 
-**Gelir modelleri:** abonelik (AI modülleri + grup dersleri), ders paketleri/kredi, 1:1 ders komisyonu (%15–25), kurumsal (B2B) lisans, sınav marketplace (mevcut).
+**Gelir modelleri:** abonelik (AI modülleri + grup dersleri + kayıt arşivi), tek seferlik canlı ders/kamp satışı, premium 1:1 ders paketleri, kayıtlı kurs satışı, kurumsal (B2B) grup eğitimleri, sınav marketplace (mevcut).
+
+**Ölçek stratejisi:** Tek eğitmen olduğundan büyüme; (a) büyük katılımlı canlı derslerle (webinar modu, 100+ kişi), (b) kayıtların kurslaştırılmasıyla, (c) AI modüllerinin (speaking partner, yazma değerlendirme) Bilal Hoca'nın yöntemiyle eğitilmesiyle sağlanır.
 
 ---
 
@@ -49,7 +55,7 @@
 - **Kütüphane:** `next-intl` (App Router ile uyumlu). Route yapısı: `/[locale]/...` (`/en`, `/tr`, `/ar`, `/es`...).
 - Tüm hard-coded Türkçe metinleri `messages/{locale}.json` dosyalarına taşı. Başlangıç dilleri: **EN (varsayılan), TR**; ardından AR (RTL desteği), ES, RU, PT.
 - `middleware.ts`: dil algılama (Accept-Language + cookie), mevcut auth middleware ile birleştirme.
-- **Saat dilimi:** tüm tarihler UTC saklanır; `User.timezone` alanı; `date-fns-tz` ile gösterim. Ders saatleri öğrenci/öğretmen yerel saatinde.
+- **Saat dilimi:** tüm tarihler UTC saklanır; `User.timezone` alanı; `date-fns-tz` ile gösterim. Ders saatleri öğrencinin yerel saatinde (Bilal Hoca paneli İstanbul saatiyle).
 - `User` modeline: `locale`, `timezone`, `country`, `nativeLanguage`.
 - SEO: `hreflang`, dil bazlı sitemap (`src/app/sitemap.ts`), `SeoConfig`'e locale boyutu.
 - AI içerik promptlarında açıklama dili = öğrencinin ana dili (şu an `meaningTr` sabit → `translations Json` yapısına geçiş).
@@ -65,7 +71,8 @@
 | Zoom Video SDK | Marka güveni | Pahalı, kısıtlı özelleştirme |
 
 **Sanal sınıf özellikleri (MVP → V2):**
-- MVP: video/ses, ekran paylaşımı, sohbet, el kaldırma, öğretmen moderasyonu (sessize alma, çıkarma), bekleme odası, cihaz testi.
+- MVP: video/ses, ekran paylaşımı, sohbet, el kaldırma, Bilal Hoca moderasyonu (sessize alma, çıkarma, öğrenciye söz verme), bekleme odası, cihaz testi.
+- **Webinar modu:** Bilal Hoca yayında, öğrenciler izleyici; el kaldıran öğrenci sahneye alınır (yüzlerce katılımcı için).
 - V1: ortak **beyaz tahta** (tldraw / Excalidraw), PDF/slayt paylaşımı, bulut **kayıt** (→ mevcut `live-recordings` modülüne bağlanır), otomatik yoklama.
 - V2: breakout rooms, canlı quiz/anket (mevcut soru bankasından), **AI ders notu & özet** (transkript → ders sonrası kelime listesi + ödev), canlı altyazı/çeviri.
 
@@ -78,7 +85,6 @@
 **Veri modeli (yeni / değişen):**
 ```prisma
 model LiveClass {            // mevcut → genişlet
-  teacherId       String?    // TeacherProfile ilişkisi
   type            ClassType  // ONE_ON_ONE | GROUP | WEBINAR
   capacity        Int
   cefrLevel       String?
@@ -95,21 +101,21 @@ model ClassMaterial     { liveClassId, type, url }
 ```
 - Geriye uyumluluk: `meetingLink` doluysa eski Zoom/Meet akışı çalışmaya devam eder.
 
-### Faz 3 — Öğretmen Pazaryeri (6–8 hafta)
-- **Öğretmen başvuru & onboarding:** kimlik, sertifika (CELTA/DELTA/TESOL), tanıtım videosu, deneme dersi; admin onay akışı.
-- `TeacherProfile` genişletme: `headline`, `languagesSpoken`, `specialties[]` (IELTS, Business, Kids...), `hourlyRate`, `currency`, `timezone`, `videoIntroUrl`, `rating`, `verificationStatus`.
-- **Müsaitlik & rezervasyon:** `TeacherAvailability` (haftalık tekrar eden slotlar, UTC), `Booking` (çakışma kontrolü DB transaction + unique index), iptal/yeniden planlama politikaları, hatırlatma e-postaları/push (24s, 1s önce).
-- Mevcut `ExamReviewBooking` akışı bu genel booking altyapısına taşınır.
-- **Arama & keşif:** fiyat, dil, uzmanlık, müsaitlik, puan filtreleri; öğretmen profil sayfası (SEO'lu).
-- **Değerlendirme:** `Review` modeli (ders sonrası puan + yorum), kötüye kullanım raporlama.
-- **Öğretmen ödemeleri:** Stripe Connect (Express) ile otomatik payout; platform komisyonu; öğretmen kazanç paneli.
-- Ders içi mesajlaşma (öğrenci–öğretmen), dosya paylaşımı.
+### Faz 3 — Bilal Hoca Ders Takvimi & Birebir Rezervasyon (3–4 hafta)
+- **Müsaitlik yönetimi:** Admin/öğretmen panelinden Bilal Hoca'nın haftalık uygun saatleri (`InstructorAvailability`, UTC saklanır), tatil/bloke günler.
+- **Birebir rezervasyon:** Öğrenci kendi saat diliminde boş slotu seçer → ödeme/kredi → otomatik sınıf odası oluşur. Çakışma kontrolü (transaction + unique index), iptal/yeniden planlama kuralları (ör. 24 saat öncesine kadar).
+- Mevcut `ExamReviewBooking` akışı bu ortak rezervasyon altyapısına taşınır.
+- **Hatırlatmalar:** e-posta + push (24 saat ve 1 saat önce), takvime ekle (.ics / Google Calendar).
+- **Ders yönetim paneli (`/teacher`):** günün dersleri, katılımcı listesi, ders notları, ödev atama, kayıt yönetimi.
+- **Grup ders takvimi:** kamp/dönem programları (ör. "8 haftalık IELTS kampı"), kontenjan ve bekleme listesi.
+- **Ders sonrası:** öğrenci geri bildirimi (yalnızca iç kalite takibi için), otomatik ödev ve ders özeti.
 
 ### Faz 4 — Global Ödeme ve Faturalama (3–4 hafta, Faz 2–3 ile paralel)
 - **Stripe** (zaten bağımlılıkta) → uluslararası ana sağlayıcı: Checkout, Billing (abonelik yenileme), Stripe Tax (VAT/GST), Apple/Google Pay, yerel yöntemler (iDEAL, Pix, SEPA...).
 - **PayTR/iyzico** → Türkiye'de TRY ödemeleri için korunur. `lib/payment/` altında `PaymentProvider` arayüzü ile soyutla; ülke/para birimine göre yönlendir.
+- Öğretmen ödemesi/komisyon **yok** — tüm gelir tek hesaba; Stripe Connect gerekmez.
 - Çok para birimi: fiyatlar `PlanPrice { planId, currency, amount }` tablosunda (bölgesel fiyatlandırma / satın alma gücü paritesi).
-- **Kredi sistemi:** `CreditWallet` + `CreditTransaction` (ders paketleri, iade, promosyon).
+- **Kredi sistemi:** `CreditWallet` + `CreditTransaction` (birebir ders paketleri, grup ders girişleri, iade, promosyon).
 - Webhook idempotency, fatura PDF, iade akışı, dolandırıcılık kontrolü (Stripe Radar).
 - `Float` fiyat alanları → `Decimal` veya kuruş cinsinden `Int`'e geçiş.
 
@@ -134,10 +140,10 @@ model ClassMaterial     { liveClassId, type, url }
 ## 3. Güvenlik, Uyum ve Güven
 
 - **GDPR / KVKK / CCPA:** çerez onayı, gizlilik politikası (çok dilli), veri dışa aktarma & hesap silme uç noktaları, veri işleme sözleşmeleri (LiveKit, Stripe, AI sağlayıcıları).
-- **Çocuk güvenliği:** 13/16 yaş altı için ebeveyn onayı (COPPA/GDPR-K), çocuk derslerinin kaydı zorunlu, öğretmen arka plan kontrolü.
+- **Çocuk güvenliği:** 13/16 yaş altı için ebeveyn onayı (COPPA/GDPR-K), çocuk derslerinin kaydı zorunlu.
 - **Ders kaydı onayı:** kayıt başlamadan tüm katılımcılara bildirim/onay.
-- Auth güçlendirme: e-posta doğrulama, Google/Apple OAuth, 2FA (öğretmen/admin için zorunlu), oturum yönetimi.
-- Rol/izin modelinin genişletilmesi: `STUDENT`, `TEACHER`, `ADMIN` + `ORG_ADMIN`, `SUPPORT`.
+- Auth güçlendirme: e-posta doğrulama, Google/Apple OAuth, 2FA (admin/eğitmen hesabı için zorunlu), oturum yönetimi.
+- Rol modeli: `STUDENT`, `TEACHER` (Bilal Hoca), `ADMIN` + ihtiyaç halinde `ASSISTANT` (ders asistanı/moderatör — ders vermez, sadece sınıf moderasyonu ve destek) ve `ORG_ADMIN` (kurumsal müşteri).
 - Rate limit'in Redis'e taşınması, webhook imza doğrulaması, içerik moderasyonu (sohbet + AI çıktıları).
 
 ---
@@ -147,14 +153,14 @@ model ClassMaterial     { liveClassId, type, url }
 ```
                  ┌────────── Cloudflare (CDN, WAF, DNS) ──────────┐
                  │                                                 │
-   Web (Next.js, /[locale])            Mobile (Expo)          Admin/Teacher paneli
+   Web (Next.js, /[locale])            Mobile (Expo)          Admin/Eğitmen paneli
                  │                         │
                  └──────────► API katmanı (Next.js route handlers, /api/v1)
                                    │
    ┌───────────┬──────────────┬────┴─────────┬──────────────┬──────────────┐
  PostgreSQL   Redis         Kuyruk          LiveKit Cloud  Stripe / PayTR  AI katmanı
  (Prisma,    (cache,        (BullMQ/        (SFU, Egress   (ödeme,         (OpenAI /
-  replica)    rate-limit)    Inngest)        kayıt, Agents) Connect)        Anthropic / Gemini)
+  replica)    rate-limit)    Inngest)        kayıt, Agents) abonelik)       Anthropic / Gemini)
                                    │              │
                               R2/S3 depolama ◄────┘ (kayıtlar, materyaller)
 ```
@@ -167,7 +173,7 @@ model ClassMaterial     { liveClassId, type, url }
 |---|---|
 | 1 | Faz 0 tamam; i18n altyapısı + EN/TR |
 | 2–3 | Platform içi sanal sınıf MVP (LiveKit), grup dersleri, Stripe entegrasyonu |
-| 4–5 | Öğretmen pazaryeri (onboarding, müsaitlik, 1:1 rezervasyon, Stripe Connect), kayıt + beyaz tahta |
+| 4–5 | Bilal Hoca takvimi + birebir rezervasyon, webinar modu, kayıt + beyaz tahta, kayıtlı kurs vitrini |
 | 6 | Global beta lansmanı (EN/TR/AR), CEFR yerleştirme testi, IELTS modülü |
 | 7–9 | AI Speaking Partner, mobil uygulama, B2B paneli, ek diller |
 | 10–12 | Ölçekleme, çok bölge, büyüme kampanyaları |
@@ -179,8 +185,9 @@ model ClassMaterial     { liveClassId, type, url }
 - Aylık aktif öğrenci (MAU), ülke dağılımı
 - Ders tamamlama oranı, ders başı teknik sorun oranı (< %2), ortalama bağlantı kalitesi
 - Deneme dersi → ücretli dönüşüm oranı
-- Öğretmen doluluk oranı ve öğretmen elde tutma
-- Öğrenci ortalama puanı (hedef ≥ 4.7/5), NPS
+- Bilal Hoca'nın ders doluluk oranı, canlı ders başına katılımcı sayısı
+- Kayıtlı kurs satışları / canlı ders gelirine oranı (ölçeklenme göstergesi)
+- Öğrenci memnuniyeti (hedef ≥ 4.7/5), NPS
 - MRR, LTV/CAC, iade oranı
 
 ---
@@ -191,8 +198,8 @@ model ClassMaterial     { liveClassId, type, url }
 |---|---|
 | Video maliyetlerinin hızlı artması | Dakika bazlı maliyet izleme; ölçek büyüyünce self-hosted LiveKit'e geçiş |
 | Bölgesel bağlantı kalitesi | LiveKit global edge, düşük bant genişliği modu (yalnızca ses), simulcast |
-| Öğretmen kalitesi / güven | Sıkı onboarding, deneme dersi, puanlama, kötüye kullanım raporlama |
-| Ödeme dolandırıcılığı & chargeback | Stripe Radar, ders sonrası ödeme serbest bırakma (escrow benzeri bekleme) |
+| Tek eğitmen darboğazı (zaman, hastalık, izin) | Webinar modu, kayıtlı kurslar, AI pratik modülleri, gerekirse moderatör asistan |
+| Ödeme dolandırıcılığı & chargeback | Stripe Radar, 3D Secure, net iade politikası |
 | Yasal uyum (çok ülke) | Stripe Tax, bölgesel hukuk danışmanlığı, ülke bazlı özellik bayrakları |
 | Mevcut TR kullanıcılarının etkilenmesi | Özellik bayrakları, `/tr` rotasının korunması, eski `meetingLink` akışının desteği |
 
@@ -204,6 +211,6 @@ model ClassMaterial     { liveClassId, type, url }
 2. CI: GitHub Actions — `npm ci`, `npm run lint`, `npx tsc --noEmit`.
 3. `next-intl` kurulumu, `[locale]` segmenti, ana sayfa + navbar + footer metinlerinin çevrilmesi.
 4. `User`'a `locale`, `timezone`, `country` alanları (migration).
-5. LiveKit hesabı + `POST /api/classroom/[id]/token` + `/classroom/[id]` prototip sayfası (öğretmen + 1 öğrenci).
-6. `LiveClass` ↔ `TeacherProfile` ilişkisi ve `ClassEnrollment` modeli.
+5. LiveKit hesabı + `POST /api/classroom/[id]/token` + `/classroom/[id]` prototip sayfası (Bilal Hoca + 1 öğrenci).
+6. `LiveClass` genişletmesi (`type`, `capacity`, `roomName`, `status`) ve `ClassEnrollment` modeli.
 7. `PaymentProvider` arayüzü; Stripe Checkout ile tek seferlik ders satın alma prototipi.
