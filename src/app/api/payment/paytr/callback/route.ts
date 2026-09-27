@@ -4,6 +4,18 @@ import { NextResponse } from "next/server";
 
 import { examPurchase, prisma } from "@/src/lib/prisma";
 import { sendExamPurchaseEmail, sendLiveClassPurchaseEmail } from "@/src/lib/mail";
+import { resolveSiteUrl } from "@/src/lib/site-url";
+
+/** Satın alanın dil ve saat dilimi tercihi (hesap yoksa e-postadan aranır). */
+async function findRecipientPreferences(userId: string | null | undefined, email: string) {
+  const user = await prisma.user
+    .findFirst({
+      where: userId ? { id: userId } : { email: email.toLowerCase() },
+      select: { locale: true, timezone: true },
+    })
+    .catch(() => null);
+  return { locale: user?.locale ?? null, timeZone: user?.timezone ?? null };
+}
 
 function createCallbackHash(merchantOid: string, status: string, totalAmount: string): string {
   const merchantKey = process.env.PAYTR_MERCHANT_KEY;
@@ -98,6 +110,8 @@ export async function POST(request: Request) {
           include: {
             liveClass: {
               select: {
+                id: true,
+                roomProvider: true,
                 title: true,
                 scheduledAt: true,
                 durationMinutes: true,
@@ -110,7 +124,13 @@ export async function POST(request: Request) {
         .catch(() => null);
 
       if (purchase?.liveClass) {
+        const preferences = await findRecipientPreferences(purchase.userId, purchase.email);
         await sendLiveClassPurchaseEmail({
+          ...preferences,
+          classroomUrl:
+            purchase.liveClass.roomProvider === "LIVEKIT"
+              ? `${resolveSiteUrl()}/classroom/${purchase.liveClass.id}`
+              : null,
           to: purchase.email,
           fullName: purchase.fullName,
           classTitle: purchase.liveClass.title,
@@ -145,7 +165,9 @@ export async function POST(request: Request) {
         .catch(() => null);
 
       if (purchase?.examModule) {
+        const preferences = await findRecipientPreferences(purchase.userId, purchase.email);
         await sendExamPurchaseEmail({
+          locale: preferences.locale,
           to: purchase.email,
           fullName: purchase.fullName,
           examTitle: purchase.examModule.title,
@@ -153,7 +175,7 @@ export async function POST(request: Request) {
           questionCount: purchase.examModule.questionCount,
           durationMinutes: purchase.examModule.durationMinutes,
           price: purchase.amount,
-          loginUrl: `${process.env.APP_URL ?? process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/exam`,
+          loginUrl: `${resolveSiteUrl()}/exam`,
         }).catch((err) => console.error("[mail] Failed to send exam email:", err));
       }
     }

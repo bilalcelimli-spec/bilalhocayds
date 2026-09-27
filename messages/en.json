@@ -238,6 +238,39 @@
       "validity": "This link is valid for 1 hour. If you didn't request this, you can safely ignore this email.",
       "fallbackTitle": "If the button doesn't work",
       "support": "Having trouble? Email us at {email}."
+    },
+    "brand": "Bilal Hoca",
+    "support": "If you have any problems, email us at {email}.",
+    "liveClass": {
+      "subject": "✅ Class confirmed: {title}",
+      "badge": "✓ Class purchase confirmed",
+      "greeting": "Hi {name}!",
+      "confirmed": "Your place in <strong>{title}</strong> is confirmed.",
+      "class": "Class",
+      "dateTime": "Date & time",
+      "duration": "Duration",
+      "minutes": "{count} minutes",
+      "topics": "Topics",
+      "classroomTitle": "Online classroom",
+      "classroomText": "This class takes place in our online classroom, which opens 15 minutes before the start. Log in and join from this link.",
+      "classroomButton": "Go to classroom",
+      "linkTitle": "Class link",
+      "linkText": "Click this link at class time to join.",
+      "linkLater": "The class link will be sent to this address before the class starts."
+    },
+    "examPurchase": {
+      "subject": "✅ Exam purchase: {title}",
+      "badge": "✓ Exam purchase confirmed",
+      "greeting": "Hi {name}!",
+      "confirmed": "Your purchase of the <strong>{title}</strong> exam pack is confirmed.",
+      "exam": "Exam",
+      "type": "Type",
+      "questions": "Questions",
+      "duration": "Duration",
+      "minutes": "{count} minutes",
+      "amount": "Amount",
+      "button": "Go to your exams →",
+      "afterLogin": "After logging in, you can find your purchased exams in the exam module."
     }
   },
   "payment": {

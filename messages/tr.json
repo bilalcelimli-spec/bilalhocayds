@@ -238,6 +238,39 @@
       "validity": "Bu bağlantı 1 saat boyunca geçerlidir. Eğer bu talebi sen oluşturmadıysan bu e-postayı görmezden gelebilirsin.",
       "fallbackTitle": "Buton çalışmazsa",
       "support": "Sorun yaşarsan {email} adresine yazabilirsin."
+    },
+    "brand": "Bilal Hoca",
+    "support": "Herhangi bir sorun yaşarsan {email} adresine yazabilirsin.",
+    "liveClass": {
+      "subject": "✅ Ders Onayı: {title}",
+      "badge": "✓ Ders Satın Alımı Onaylandı",
+      "greeting": "Merhaba, {name}!",
+      "confirmed": "<strong>{title}</strong> oturumuna katılımın onaylandı.",
+      "class": "Ders",
+      "dateTime": "Tarih & Saat",
+      "duration": "Süre",
+      "minutes": "{count} dakika",
+      "topics": "Konu Başlıkları",
+      "classroomTitle": "Canlı Sınıf",
+      "classroomText": "Ders sitenin canlı sınıfında yapılır. Sınıf, ders saatinden 15 dakika önce açılır; giriş yaptıktan sonra bu bağlantıdan katılabilirsin.",
+      "classroomButton": "Sınıfa Git",
+      "linkTitle": "Ders Bağlantısı",
+      "linkText": "Ders saatinde bu bağlantıya tıklayarak derse katılabilirsin.",
+      "linkLater": "Ders bağlantısı, ders saatinden önce bu adrese gönderilecektir."
+    },
+    "examPurchase": {
+      "subject": "✅ Sınav Satın Alımı: {title}",
+      "badge": "✓ Sınav Satın Alımı Onaylandı",
+      "greeting": "Merhaba, {name}!",
+      "confirmed": "<strong>{title}</strong> sınav paketi satın alımın onaylandı.",
+      "exam": "Sınav",
+      "type": "Tür",
+      "questions": "Soru",
+      "duration": "Süre",
+      "minutes": "{count} dakika",
+      "amount": "Tutar",
+      "button": "Sınavlarına Git →",
+      "afterLogin": "Giriş yaptıktan sonra satın aldığın sınavlara sınav modülünden erişebilirsin."
     }
   },
   "payment": {

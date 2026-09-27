@@ -47,7 +47,8 @@ Tarihler `NEXT_TZ` cerezindeki saat dilimine gore gosterilir (tarayici otomatik 
 - Yapilandirma: `src/i18n/`
 - Cevrilen alanlar: ogrencinin gordugu tum sayfalar (ana sayfa, fiyatlar, canli dersler/sinif, giris/kayit/sifre, ogrenci paneli ve alt sayfalari, vocabulary/reading/grammar modulleri, sinav akisi ve birebir inceleme), ilgili API mesajlari ve sifre sifirlama e-postasi.
 - AI icerik dili: `User.locale` "en" ise gunluk icerik ve adaptive sinav aciklamalari Ingilizce istenir; Ingilizce arayuzde Turkce kelime karsiliklari gizlenir. AI kullanilamadiginda devreye giren yedek sablonlarin (grammar dahil) Ingilizce karsiliklari `src/lib/ai-content-en.ts` ve `src/lib/ai-content.ts` icindedir.
-- Turkce kalanlar: admin ve ogretmen paneli, satin alma/hos geldin e-postalari, veritabanindan gelen icerik (plan adlari, ders basliklari).
+- E-postalar (sifre sifirlama, canli ders ve sinav satin alimi) alicinin `User.locale` diline ve `User.timezone` saat dilimine gore gonderilir; hesap yoksa Turkce / Istanbul saati kullanilir.
+- Turkce kalanlar: admin ve ogretmen paneli, veritabanindan gelen icerik (plan adlari, ders basliklari).
 
 ## Platform Ici Canli Sinif
 

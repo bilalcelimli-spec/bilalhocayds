@@ -11,13 +11,16 @@ import {
   TIME_ZONE_COOKIE,
 } from "@/src/i18n/config";
 
-export default getRequestConfig(async () => {
+export default getRequestConfig(async ({ locale: explicitLocale }) => {
   const [cookieStore, headerStore] = await Promise.all([cookies(), headers()]);
 
+  // getTranslations({ locale }) ile açıkça istenen dil (ör. e-postalarda alıcının dili) önceliklidir.
   const cookieLocale = cookieStore.get(LOCALE_COOKIE)?.value;
-  const locale = isLocale(cookieLocale)
-    ? cookieLocale
-    : (matchAcceptLanguage(headerStore.get("accept-language")) ?? defaultLocale);
+  const locale = isLocale(explicitLocale)
+    ? explicitLocale
+    : isLocale(cookieLocale)
+      ? cookieLocale
+      : (matchAcceptLanguage(headerStore.get("accept-language")) ?? defaultLocale);
 
   const cookieTimeZone = cookieStore.get(TIME_ZONE_COOKIE)?.value;
   const timeZone = isValidTimeZone(cookieTimeZone) ? cookieTimeZone : defaultTimeZone;
