@@ -798,13 +798,15 @@ async function ensureAdaptiveQuestionForAttempt(userId: string, attemptId: strin
   }
 
   const nextQuestionNumber = metadata.adaptiveState.history.length + 1;
+  const student = await prisma.user.findUnique({ where: { id: userId }, select: { locale: true } });
+  const isEnglishLearner = student?.locale === "en";
   const generated = await generateValidatedAdaptiveQuestion({
     skillType: metadata.adaptiveState.skillType,
     targetCefr: metadata.adaptiveState.currentLevel,
     topicTheme: metadata.adaptiveState.topicTheme,
     examContext: metadata.adaptiveState.examContext,
-    studentLocale: "tr-TR",
-    explanationLanguage: "tr",
+    studentLocale: isEnglishLearner ? "en-US" : "tr-TR",
+    explanationLanguage: isEnglishLearner ? "en" : "tr",
     questionFormat: metadata.adaptiveState.questionFormat,
   });
 

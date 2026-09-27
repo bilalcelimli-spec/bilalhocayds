@@ -5,6 +5,7 @@ import { getOrCreateStudentDailyContent, regenerateStudentDailyContent } from "@
 import { DailyContentModule } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
+import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { ArrowLeft, BookOpen, Brain, Clock, FileText, RotateCcw, Target, TrendingUp } from "lucide-react";
 
@@ -34,6 +35,7 @@ export default async function ReadingPage() {
 	const session = await getServerSession(authOptions);
 	if (!session?.user?.id) return null;
 
+	const [t, formatter, locale] = await Promise.all([getTranslations("readingPage"), getFormatter(), getLocale()]);
 	const [reading, vocabulary] = await Promise.all([
 		getOrCreateStudentDailyContent(session.user.id, DailyContentModule.READING),
 		getOrCreateStudentDailyContent(session.user.id, DailyContentModule.VOCABULARY),
@@ -45,7 +47,9 @@ export default async function ReadingPage() {
 	const totalWordCount = reading.passages.reduce((sum, p) => sum + getWordCount(p.passage), 0);
 	const avgWordCount = Math.round(totalWordCount / Math.max(reading.passages.length, 1));
 	const estMinutes = Math.max(5, Math.round(totalWordCount / 200));
-	const wordMeanings = Object.fromEntries(vocabulary.items.map((item) => [item.word.toLowerCase(), item.trMeaning]));
+	const wordMeanings = Object.fromEntries(
+		vocabulary.items.map((item) => [item.word.toLowerCase(), locale === "tr" ? item.trMeaning : item.englishDefinition]),
+	);
 
 	return (
 		<div className="min-h-screen">
@@ -66,7 +70,7 @@ export default async function ReadingPage() {
 					</span>
 					<div className="ml-auto flex items-center gap-3">
 						<span className="hidden rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.15em] text-sky-400 sm:inline-flex">
-							{new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long" })}
+							{formatter.dateTime(new Date(), { day: "numeric", month: "long" })}
 						</span>
 						<form action={refreshTodayContentAction}>
 							<button
@@ -74,14 +78,14 @@ export default async function ReadingPage() {
 								className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
 							>
 								<RotateCcw size={11} />
-								Yenile
+								{t("refresh")}
 							</button>
 						</form>
 						<Link
 							href="/live-classes"
 							className="hidden rounded-xl border border-sky-500/25 bg-sky-500/10 px-3 py-1.5 text-xs font-semibold text-sky-300 transition hover:bg-sky-500/20 sm:inline-flex"
 						>
-							Canlı Dersler
+							{t("liveClasses")}
 						</Link>
 					</div>
 				</div>
@@ -118,10 +122,10 @@ export default async function ReadingPage() {
 
 						<div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 shrink-0">
 							{[
-								{ Icon: FileText, label: "Pasaj", value: String(reading.passages.length), color: "text-sky-400" },
-								{ Icon: BookOpen, label: "Ort. Kelime", value: String(avgWordCount), color: "text-blue-400" },
-								{ Icon: Brain, label: "Soru", value: String(totalQuestionCount), color: "text-indigo-400" },
-								{ Icon: Clock, label: "Süre", value: `~${estMinutes}dk`, color: "text-cyan-400" },
+								{ Icon: FileText, label: t("statPassages"), value: String(reading.passages.length), color: "text-sky-400" },
+								{ Icon: BookOpen, label: t("statAvgWords"), value: String(avgWordCount), color: "text-blue-400" },
+								{ Icon: Brain, label: t("statQuestions"), value: String(totalQuestionCount), color: "text-indigo-400" },
+								{ Icon: Clock, label: t("statTime"), value: t("minutes", { count: estMinutes }), color: "text-cyan-400" },
 							].map(({ Icon, label, value, color }) => (
 								<div key={label} className="rounded-2xl border border-white/[0.07] bg-white/[0.04] px-4 py-3 text-center">
 									<Icon size={14} className={`mx-auto ${color}`} />
@@ -152,7 +156,7 @@ export default async function ReadingPage() {
 									<BookOpen size={13} className="text-sky-400" />
 								</div>
 								<div>
-									<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sky-500">Bu Oturum</p>
+									<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sky-500">{t("thisSession")}</p>
 									<p className="text-sm font-bold text-white">Reading Plan</p>
 								</div>
 							</div>
@@ -175,8 +179,8 @@ export default async function ReadingPage() {
 									<Target size={13} className="text-amber-400" />
 								</div>
 								<div>
-									<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-500">Sınav Stratejisi</p>
-									<p className="text-sm font-bold text-white">Odak Notları</p>
+									<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-500">{t("examStrategy")}</p>
+									<p className="text-sm font-bold text-white">{t("focusNotes")}</p>
 								</div>
 							</div>
 							<div className="space-y-2.5">
@@ -187,7 +191,7 @@ export default async function ReadingPage() {
 								))}
 							</div>
 							<p className="mt-4 text-[10px] text-slate-600">
-								{new Date(reading.generatedAt).toLocaleDateString("tr-TR")} tarihinde üretildi
+								{t("generatedOn", { date: formatter.dateTime(new Date(reading.generatedAt), { dateStyle: "medium" }) })}
 							</p>
 						</div>
 
@@ -198,8 +202,8 @@ export default async function ReadingPage() {
 									<TrendingUp size={13} className="text-emerald-400" />
 								</div>
 								<div>
-									<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-500">Performans</p>
-									<p className="text-sm font-bold text-white">Anlık Değerlendirme</p>
+									<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-500">{t("performance")}</p>
+									<p className="text-sm font-bold text-white">{t("instantReview")}</p>
 								</div>
 							</div>
 							<p className="text-sm leading-6 text-slate-400 mb-4">{reading.performanceEvaluation.summary}</p>

@@ -878,6 +878,8 @@ function createAiProfileOverridesFromStudentContext(input?: {
   dailyGoalMinutes?: number | null;
   interestTags?: string[] | null;
   focusSkill?: FocusSkill;
+  /** Öğrencinin arayüz dili: "en" ise açıklamalar İngilizce üretilir. */
+  locale?: string | null;
 }): Partial<AiStudentProfile> {
   return {
     examType: normalizeExamType(input?.targetExam),
@@ -889,6 +891,7 @@ function createAiProfileOverridesFromStudentContext(input?: {
     dailyStudyTime: normalizeStudyTime(input?.dailyGoalMinutes),
     topicPreferences: input?.interestTags?.length ? input.interestTags : undefined,
     focusSkill: input?.focusSkill,
+    languageOfExplanations: input?.locale === "en" ? "English" : undefined,
   };
 }
 
@@ -971,7 +974,14 @@ function createDefaultRubric(profile: AiStudentProfile): PerformanceEvaluation {
   };
 }
 
-function mergeAiProfile(profile?: Partial<AiStudentProfile>): AiStudentProfile {
+function mergeAiProfile(rawProfile?: Partial<AiStudentProfile>): AiStudentProfile {
+  // Tanımsız alanlar varsayılanları ezmesin (aksi halde istemlere "undefined" yazılıyordu).
+  const profile = rawProfile
+    ? (Object.fromEntries(
+        Object.entries(rawProfile).filter(([, value]) => value !== undefined),
+      ) as Partial<AiStudentProfile>)
+    : undefined;
+
   return {
     ...DEFAULT_AI_PROFILE,
     ...profile,
@@ -1406,7 +1416,9 @@ async function createAiVocabularyExamples(items: VocabularySeed[], profile: AiSt
       "Each item must follow this exact schema:",
       '{"word":"...","englishDefinition":"...","synonym":"...","antonym":"... or null","collocation":"...","wordFamily":["..."],"examNote":"...","commonMistake":"...","examples":[{"en":"...","tr":"..."},{"en":"...","tr":"..."}]}' ,
       `Target vocabulary: ${items.map((item) => `${item.word} (${item.trMeaning})`).join(", ")}`,
-      "Use Turkish translations that are natural and clear.",
+      profile.languageOfExplanations === "English"
+        ? 'The learner does not speak Turkish: write examNote and commonMistake in English and set every "tr" field to an empty string.'
+        : "Use Turkish translations that are natural and clear.",
       "Do not return markdown.",
     ].join("\n\n"),
     temperature: 0.5,

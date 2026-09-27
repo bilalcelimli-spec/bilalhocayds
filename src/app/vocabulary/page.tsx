@@ -4,6 +4,7 @@ import { getOrCreateStudentDailyContent, regenerateStudentDailyContent } from "@
 import { DailyContentModule } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
+import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { ArrowLeft, BookMarked, CheckCircle2, Layers, RotateCcw, Sparkles, Target, TrendingUp, Zap } from "lucide-react";
 
@@ -35,6 +36,9 @@ export default async function VocabularyPage() {
 
 	const session = await getServerSession(authOptions);
 	if (!session?.user?.id) return null;
+	const [t, formatter, locale] = await Promise.all([getTranslations("vocabularyPage"), getFormatter(), getLocale()]);
+	// İngilizce arayüzdeki öğrenciler Türkçe bilmeyebilir: Türkçe karşılıklar gizlenir.
+	const showTurkish = locale === "tr";
 
 	const vocab = await getOrCreateStudentDailyContent(session.user.id, DailyContentModule.VOCABULARY);
 	const todayWords = vocab.items;
@@ -59,7 +63,7 @@ export default async function VocabularyPage() {
 					</span>
 					<div className="ml-auto flex items-center gap-3">
 						<span className="hidden rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.15em] text-amber-400 sm:inline-flex">
-							{new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long" })}
+							{formatter.dateTime(new Date(), { day: "numeric", month: "long" })}
 						</span>
 						<form action={refreshTodayContentAction}>
 							<button
@@ -67,7 +71,7 @@ export default async function VocabularyPage() {
 								className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
 							>
 								<RotateCcw size={11} />
-								Yenile
+								{t("refresh")}
 							</button>
 						</form>
 					</div>
@@ -102,10 +106,10 @@ export default async function VocabularyPage() {
 
 						<div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 shrink-0">
 							{[
-								{ Icon: BookMarked, label: "Kelime", value: String(todayWords.length), color: "text-amber-400" },
-								{ Icon: Layers, label: "Aktivite", value: String(vocab.activities.length), color: "text-yellow-400" },
+								{ Icon: BookMarked, label: t("statWords"), value: String(todayWords.length), color: "text-amber-400" },
+								{ Icon: Layers, label: t("statActivities"), value: String(vocab.activities.length), color: "text-yellow-400" },
 								{ Icon: Zap, label: "Model", value: vocab.model, color: "text-orange-400" },
-								{ Icon: TrendingUp, label: "Güncelleme", value: "Günlük", color: "text-red-400" },
+								{ Icon: TrendingUp, label: t("statUpdate"), value: t("daily"), color: "text-red-400" },
 							].map(({ Icon, label, value, color }) => (
 								<div key={label} className="rounded-2xl border border-white/[0.07] bg-white/[0.04] px-4 py-3 text-center">
 									<Icon size={14} className={`mx-auto ${color}`} />
@@ -125,7 +129,7 @@ export default async function VocabularyPage() {
 								<Zap size={13} className="text-amber-400" />
 							</div>
 							<div>
-								<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-500">Oturum Başlangıcı</p>
+								<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-500">{t("sessionStart")}</p>
 								<p className="text-sm font-bold text-white">Warm-Up</p>
 							</div>
 						</div>
@@ -144,16 +148,16 @@ export default async function VocabularyPage() {
 								<CheckCircle2 size={13} className="text-emerald-400" />
 							</div>
 							<div>
-								<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-500">Çalışma Yöntemi</p>
+								<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-500">{t("method")}</p>
 								<p className="text-sm font-bold text-white">Study Flow</p>
 							</div>
 						</div>
 						<div className="space-y-2">
 							{[
-								"Kelimeleri sesli oku ve vurgu düzenini fark et.",
-								"Her kelime için bağlam ipuçları bulmaya çalış.",
-								"AI örnek cümlesini oku ve kendi cümleni yaz.",
-								"Oturumun sonunda kısa bir retrieval quiz yap.",
+								t("step1"),
+								t("step2"),
+								t("step3"),
+								t("step4"),
 							].map((step, i) => (
 								<div key={step} className="flex items-start gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] px-4 py-3">
 									<span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-zinc-900">
@@ -173,8 +177,8 @@ export default async function VocabularyPage() {
 							<BookMarked size={15} className="text-amber-400" />
 						</div>
 						<div>
-							<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-500">Günün Seti</p>
-							<h2 className="text-lg font-black text-white">Bugünün {todayWords.length} Akademik Kelimesi</h2>
+							<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-500">{t("todaysSet")}</p>
+							<h2 className="text-lg font-black text-white">{t("todayWords", { count: todayWords.length })}</h2>
 						</div>
 					</div>
 
@@ -203,8 +207,8 @@ export default async function VocabularyPage() {
 
 									{/* meanings */}
 									<div className="mt-3 space-y-1">
-										<p className="text-sm font-semibold text-amber-300">{item.trMeaning}</p>
-										<p className="text-xs leading-5 text-slate-400">{item.englishDefinition}</p>
+										{showTurkish ? <p className="text-sm font-semibold text-amber-300">{item.trMeaning}</p> : null}
+										<p className={showTurkish ? "text-xs leading-5 text-slate-400" : "text-sm leading-6 text-amber-200"}>{item.englishDefinition}</p>
 									</div>
 
 									{/* synonym + collocation */}
@@ -223,7 +227,7 @@ export default async function VocabularyPage() {
 									{item.examples[0] && (
 										<div className="mt-3 rounded-xl border border-amber-500/15 bg-amber-500/[0.06] px-3 py-2.5">
 											<p className="text-xs leading-5 text-amber-100 font-medium">&ldquo;{item.examples[0].en}&rdquo;</p>
-											<p className="mt-1 text-xs text-slate-500">{item.examples[0].tr}</p>
+											{showTurkish && item.examples[0].tr ? <p className="mt-1 text-xs text-slate-500">{item.examples[0].tr}</p> : null}
 										</div>
 									)}
 								</div>
@@ -241,12 +245,12 @@ export default async function VocabularyPage() {
 									<Sparkles size={13} className="text-amber-400" />
 								</div>
 								<div>
-									<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-500">Bağlam Okuma</p>
-									<h2 className="text-base font-bold text-white">Günlük AI Reading Parçası</h2>
+									<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-500">{t("contextReading")}</p>
+									<h2 className="text-base font-bold text-white">{t("dailyReading")}</h2>
 								</div>
 							</div>
 							<span className="rounded-full border border-amber-400/25 bg-amber-400/10 px-3 py-1 text-[11px] font-semibold text-amber-300">
-								Bugünkü hedef kelimeler bu parçada geçiyor
+								{t("targetWordsNote")}
 							</span>
 						</div>
 						<h3 className="text-lg font-bold text-slate-100 mb-3">{reading.title}</h3>
@@ -269,8 +273,8 @@ export default async function VocabularyPage() {
 								<Target size={13} className="text-amber-400" />
 							</div>
 							<div>
-								<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-500">Pratik</p>
-								<h2 className="text-base font-bold text-white">Sınav Aktiviteleri</h2>
+								<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-500">{t("practice")}</p>
+								<h2 className="text-base font-bold text-white">{t("activities")}</h2>
 							</div>
 						</div>
 						<VocabularyPracticePanel activities={vocab.activities} />
@@ -284,8 +288,8 @@ export default async function VocabularyPage() {
 									<Zap size={13} className="text-yellow-400" />
 								</div>
 								<div>
-									<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-yellow-500">Strateji</p>
-									<p className="text-sm font-bold text-white">Sınav Refleksi</p>
+									<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-yellow-500">{t("strategy")}</p>
+									<p className="text-sm font-bold text-white">{t("examReflex")}</p>
 								</div>
 							</div>
 							<div className="space-y-2.5">
@@ -304,8 +308,8 @@ export default async function VocabularyPage() {
 									<TrendingUp size={13} className="text-emerald-400" />
 								</div>
 								<div>
-									<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-500">Gelişim</p>
-									<p className="text-sm font-bold text-white">Performans</p>
+									<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-500">{t("progress")}</p>
+									<p className="text-sm font-bold text-white">{t("performance")}</p>
 								</div>
 							</div>
 							<p className="text-sm leading-6 text-slate-400 mb-4">{vocab.performanceEvaluation.summary}</p>

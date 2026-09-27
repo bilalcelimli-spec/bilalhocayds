@@ -1,5 +1,6 @@
 "use client";
 
+import { useFormatter, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { BookMarked, FileText, Highlighter, NotebookPen, Star, X } from "lucide-react";
 
@@ -61,13 +62,15 @@ function createGapFillQuestions(passage: string, keyVocabulary: string[]) {
 	});
 }
 
-const TAB_CONFIG: { id: TabId; icon: typeof FileText; label: string }[] = [
-	{ id: "activities", icon: FileText, label: "Aktiviteler" },
-	{ id: "words", icon: BookMarked, label: "Kelimelerim" },
-	{ id: "notes", icon: NotebookPen, label: "Notlarım" },
+const TAB_CONFIG: { id: TabId; icon: typeof FileText; labelKey: "tabActivities" | "tabWords" | "tabNotes" }[] = [
+	{ id: "activities", icon: FileText, labelKey: "tabActivities" },
+	{ id: "words", icon: BookMarked, labelKey: "tabWords" },
+	{ id: "notes", icon: NotebookPen, labelKey: "tabNotes" },
 ];
 
 export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticleReaderProps) {
+	const t = useTranslations("articleReader");
+	const formatter = useFormatter();
 	const [activeTab, setActiveTab] = useState<TabId>("activities");
 	const [savedWords, setSavedWords] = useState<string[]>([]);
 	const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
@@ -106,23 +109,23 @@ export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticl
 					<span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">{passage.source}</span>
 					<span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-slate-600">
 						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-						~{readingMinutes} dk okuma
+						{t("readingTime", { minutes: readingMinutes })}
 					</span>
 				</div>
 
 				<h2 className="mt-4 text-3xl font-black leading-tight text-slate-950">{passage.title}</h2>
 
 				<div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-slate-400">
-					<span>{new Date(generatedAt).toLocaleDateString("tr-TR")}</span>
+					<span>{formatter.dateTime(new Date(generatedAt), { dateStyle: "medium" })}</span>
 					<span>{wordCount} kelime</span>
 					<span className="flex items-center gap-1.5 text-fuchsia-600">
 						<Highlighter size={13} />
-						{highlightedWords.size} hedef kelime işaretlendi
+						{t("highlighted", { count: highlightedWords.size })}
 					</span>
 				</div>
 
 				<div className="mt-6 rounded-2xl border border-sky-100 bg-sky-50/60 px-4 py-3 text-sm text-sky-700">
-					<strong>İpucu:</strong> Mor ile vurgulanan kelimelere tıklayarak &ldquo;Kelimelerim&rdquo; listenize ekleyebilirsiniz.
+					{t.rich("tip", { strong: (chunks) => <strong>{chunks}</strong> })}
 				</div>
 
 				{/* passage text */}
@@ -146,7 +149,7 @@ export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticl
 									type="button"
 									onClick={() => onWordClick(token)}
 									className="mx-0.5 cursor-pointer rounded-md border-b-2 border-fuchsia-400 bg-fuchsia-50 px-1 py-0.5 font-semibold text-fuchsia-800 transition-all hover:bg-fuchsia-100 hover:shadow-[0_0_0_2px_rgba(192,38,211,0.15)]"
-									title="Kelime listeme ekle"
+									title={t("addToList")}
 								>
 									{token}
 								</button>
@@ -159,11 +162,11 @@ export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticl
 				<div className="mt-4 flex flex-wrap gap-5 text-xs text-slate-500">
 					<span className="flex items-center gap-1.5">
 						<span className="inline-block h-3 w-3 rounded-sm bg-fuchsia-200" />
-						Vurgulanan hedef kelime
+						{t("highlightLegend")}
 					</span>
 					<span className="flex items-center gap-1.5">
 						<Star size={12} className="text-amber-500" />
-						Tıkla &rarr; Kelimelerim listesine ekle
+						{t("clickToAdd")}
 					</span>
 				</div>
 			</div>
@@ -172,7 +175,7 @@ export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticl
 			<div className="border-t border-slate-100 bg-slate-50 p-5 lg:border-l lg:border-t-0">
 				{/* tab bar */}
 				<div className="flex gap-1 rounded-2xl border border-slate-200 bg-white p-1">
-					{TAB_CONFIG.map(({ id, icon: Icon, label }) => (
+					{TAB_CONFIG.map(({ id, icon: Icon, labelKey }) => (
 						<button
 							key={id}
 							type="button"
@@ -184,7 +187,7 @@ export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticl
 							}`}
 						>
 							<Icon size={12} />
-							{label}
+							{t(labelKey)}
 						</button>
 					))}
 				</div>
@@ -192,7 +195,7 @@ export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticl
 				{/* tab: activities */}
 				{activeTab === "activities" && (
 					<div className="mt-4 space-y-4">
-						<p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Gap-Fill Aktiviteleri</p>
+						<p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{t("gapFillTitle")}</p>
 						{questionSet.map((question, index) => {
 							const selected = selectedAnswers[index];
 							const isCorrect = selected === question.answer;
@@ -228,7 +231,7 @@ export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticl
 									</div>
 									{selected && (
 										<div className={`mt-2.5 rounded-xl px-3 py-2 text-xs font-semibold ${isCorrect ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
-											{isCorrect ? "✓ Doğru!" : `✗ Doğru cevap: ${question.answer}`}
+											{isCorrect ? t("correct") : t("wrong", { answer: question.answer })}
 										</div>
 									)}
 								</div>
@@ -242,7 +245,7 @@ export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticl
 					<div className="mt-4 space-y-3">
 						<div className="flex items-center justify-between">
 							<p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-								Kelimelerim ({savedWords.length})
+								{t("savedWords", { count: savedWords.length })}
 							</p>
 							{savedWords.length > 0 && (
 								<button
@@ -250,13 +253,13 @@ export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticl
 									onClick={() => setSavedWords([])}
 									className="text-xs text-slate-400 transition hover:text-red-500"
 								>
-									Temizle
+									{t("clear")}
 								</button>
 							)}
 						</div>
 						{savedWords.length === 0 ? (
 							<div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-400">
-								Pasajdaki mor kelimelerden birini tıklayın ve buraya ekleyin.
+								{t("emptyWords")}
 							</div>
 						) : (
 							savedWords.map((word) => (
@@ -264,7 +267,7 @@ export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticl
 									<div className="flex-1 min-w-0">
 										<p className="text-sm font-black uppercase tracking-wide text-slate-900">{word}</p>
 										<p className="mt-1 text-xs leading-5 text-slate-500">
-											{wordMeanings[word] ?? "Anlam bugünün listesinde bulunamadı"}
+											{wordMeanings[word] ?? t("noMeaning")}
 										</p>
 									</div>
 									<button
@@ -283,33 +286,33 @@ export function AiArticleReader({ passage, generatedAt, wordMeanings }: AiArticl
 				{/* tab: notes */}
 				{activeTab === "notes" && (
 					<div className="mt-4">
-						<p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 mb-3">Okuma Notlarım</p>
+						<p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 mb-3">{t("notesTitle")}</p>
 						<div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
 							<textarea
 								value={note}
 								onChange={(e) => setNote(e.target.value)}
 								className="h-52 w-full resize-none rounded-2xl px-4 py-3 text-sm leading-7 text-slate-700 outline-none focus:ring-2 focus:ring-sky-300"
-								placeholder="Ana fikri, destekleyici detayları ve dikkatini çeken yeni kelimeleri buraya yaz..."
+								placeholder={t("notesPlaceholder")}
 							/>
 						</div>
 						<div className="mt-2 flex items-center justify-between px-1">
-							<p className="text-xs text-slate-400">{note.trim().length} karakter</p>
+							<p className="text-xs text-slate-400">{t("characters", { count: note.trim().length })}</p>
 							{note.trim().length > 0 && (
 								<button
 									type="button"
 									onClick={() => setNote("")}
 									className="text-xs text-slate-400 hover:text-red-500 transition"
 								>
-									Temizle
+									{t("clear")}
 								</button>
 							)}
 						</div>
 						<div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3">
-							<p className="text-xs font-semibold text-sky-700">Not alma ipuçları</p>
+							<p className="text-xs font-semibold text-sky-700">{t("notesTips")}</p>
 							<ul className="mt-2 space-y-1 text-xs text-sky-600">
-								<li>→ Ana fikri 1-2 cümleyle özetle</li>
-								<li>→ Öğrendiğin yeni kelimeleri yaz</li>
-								<li>→ Sınav sorusu gelebilecek noktaları işaretle</li>
+								<li>{t("tip1")}</li>
+								<li>{t("tip2")}</li>
+								<li>{t("tip3")}</li>
 							</ul>
 						</div>
 					</div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { formatDurationLabel } from "@/src/lib/exam-workspace";
 
@@ -53,6 +54,7 @@ export function LiveExamShell({
   const [flaggedQuestions, setFlaggedQuestions] = useState<Record<string, boolean>>(
     Object.fromEntries(questions.map((question) => [question.id, question.isFlaggedForReview])),
   );
+  const t = useTranslations("examShell");
   const [submitPending, setSubmitPending] = useState(false);
   const [savePendingQuestionId, setSavePendingQuestionId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -121,7 +123,7 @@ export function LiveExamShell({
       return;
     }
 
-    setError(data.error ?? "Cevap kaydedilemedi.");
+    setError(data.error ?? t("saveFailed"));
   }
 
   async function submitAttempt(auto = false) {
@@ -140,7 +142,7 @@ export function LiveExamShell({
 
     if (!response.ok) {
       const data = (await response.json()) as { error?: string };
-      setError(data.error ?? (auto ? "Sinav otomatik gonderilemedi." : "Sinav gonderilemedi."));
+      setError(data.error ?? (auto ? t("autoSubmitFailed") : t("submitFailed")));
       return;
     }
 
@@ -175,29 +177,29 @@ export function LiveExamShell({
       <header className="sticky top-4 z-20 rounded-[28px] border border-white/10 bg-[rgba(18,20,28,0.95)] px-6 py-4 shadow-[0_20px_60px_rgba(0,0,0,0.24)] backdrop-blur-xl">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300">Live Attempt</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300">{t("badge")}</p>
             <h1 className="mt-2 text-2xl font-black text-white">{title}</h1>
-            <p className="mt-1 text-sm text-zinc-400">Attempt ID: {attemptId} · {deliveryMode === "ADAPTIVE" ? "Adaptive akış aktif" : "Autosave aktif · OMR paneli sağda sabit"}</p>
+            <p className="mt-1 text-sm text-zinc-400">{deliveryMode === "ADAPTIVE" ? t("adaptiveActive") : t("autosaveActive")}</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-zinc-200">{answeredCount}/{deliveryMode === "ADAPTIVE" ? questionList.length : totalQuestions} işaretlendi</div>
-            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-200">Kalan süre: {formatDurationLabel(remainingSeconds)}</div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-zinc-200">{t("answered", { done: answeredCount, total: deliveryMode === "ADAPTIVE" ? questionList.length : totalQuestions })}</div>
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-200">{t("timeLeft", { time: formatDurationLabel(remainingSeconds) })}</div>
             <button
               type="button"
               onClick={() => void submitAttempt(false)}
               disabled={submitPending}
               className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {submitPending ? "Gönderiliyor..." : "Sınavı Gönder"}
+              {submitPending ? t("submitting") : t("submit")}
             </button>
           </div>
         </div>
         {deliveryMode === "ADAPTIVE" && adaptiveState ? (
           <div className="mt-4 flex flex-wrap gap-3 text-xs text-zinc-300">
             <span className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1">{adaptiveState.skillType}</span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Current level {adaptiveState.currentLevel}</span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Confidence %{Math.round(adaptiveState.currentConfidence * 100)}</span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Tema: {adaptiveState.topicTheme}</span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{t("currentLevel", { level: adaptiveState.currentLevel })}</span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{t("confidence", { percent: Math.round(adaptiveState.currentConfidence * 100) })}</span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{t("theme", { theme: adaptiveState.topicTheme })}</span>
           </div>
         ) : null}
       </header>
@@ -213,7 +215,7 @@ export function LiveExamShell({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{currentQuestion.section}</p>
-              <h2 className="mt-2 text-xl font-black text-white">Soru {currentQuestion.number}</h2>
+              <h2 className="mt-2 text-xl font-black text-white">{t("question", { number: currentQuestion.number })}</h2>
             </div>
             <button
               type="button"
@@ -232,7 +234,7 @@ export function LiveExamShell({
                   : "border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"
               } ${deliveryMode === "ADAPTIVE" ? "cursor-not-allowed opacity-60" : ""}`}
             >
-              {flaggedQuestions[currentQuestion.id] ? "Review işaretli" : "Review için işaretle"}
+              {flaggedQuestions[currentQuestion.id] ? t("flagged") : t("flag")}
             </button>
           </div>
 
@@ -279,7 +281,7 @@ export function LiveExamShell({
               onClick={() => setCurrentQuestionIndex((current) => Math.max(current - 1, 0))}
               className={`rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300 transition hover:bg-white/10 ${deliveryMode === "ADAPTIVE" ? "cursor-not-allowed opacity-50" : ""}`}
             >
-              Önceki
+              {t("previous")}
             </button>
             <div className="flex gap-3">
               <button
@@ -294,7 +296,7 @@ export function LiveExamShell({
                 }}
                 className={`rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300 transition hover:bg-white/10 ${deliveryMode === "ADAPTIVE" ? "cursor-not-allowed opacity-50" : ""}`}
               >
-                Cevabı temizle
+                {t("clear")}
               </button>
               <button
                 type="button"
@@ -302,15 +304,15 @@ export function LiveExamShell({
                 onClick={() => setCurrentQuestionIndex((current) => Math.min(current + 1, questionList.length - 1))}
                 className={`rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200 ${deliveryMode === "ADAPTIVE" ? "cursor-not-allowed opacity-50" : ""}`}
               >
-                Sonraki
+                {t("next")}
               </button>
             </div>
           </div>
         </div>
 
         <aside className="rounded-[32px] border border-white/10 bg-[rgba(18,20,28,0.95)] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.22)]">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">{deliveryMode === "ADAPTIVE" ? "Adaptive Trail" : "Optical Sheet"}</p>
-          <p className="mt-2 text-sm text-zinc-400">{deliveryMode === "ADAPTIVE" ? "Adaptive akışta önceki sorular kilitlenir; son kart sıradaki aktif soruyu gösterir." : "Tıkla ve soruya atla. Cevaplanan, boş ve review işaretli sorular ayrı görünür."}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">{deliveryMode === "ADAPTIVE" ? t("adaptiveTrail") : t("answerSheet")}</p>
+          <p className="mt-2 text-sm text-zinc-400">{deliveryMode === "ADAPTIVE" ? t("adaptiveHint") : t("sheetHint")}</p>
 
           <div className="mt-5 grid grid-cols-5 gap-2">
             {Array.from({ length: deliveryMode === "ADAPTIVE" ? questionList.length : totalQuestions }, (_, index) => {
@@ -352,7 +354,7 @@ export function LiveExamShell({
       </div>
 
       {savePendingQuestionId ? (
-        <p className="text-right text-xs text-zinc-500">Soru kaydediliyor: {savePendingQuestionId}</p>
+        <p className="text-right text-xs text-zinc-500">{t("saving")}</p>
       ) : null}
     </div>
   );

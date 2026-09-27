@@ -31,9 +31,9 @@ function parseScheduleInput(value: string) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function createDateAtHour(reference: Date, hour: number) {
-  return new Date(reference.getFullYear(), reference.getMonth(), reference.getDate(), hour, 0, 0, 0);
-}
+// Birebir inceleme saatleri Bilal Hoca'nın İstanbul saatine göre sunulur.
+// Türkiye 2016'dan beri yaz saati uygulamadığı için sabit UTC+3 kullanılabilir.
+const INSTRUCTOR_UTC_OFFSET_HOURS = 3;
 
 function formatSlotLabel(date: Date) {
   return new Intl.DateTimeFormat("tr-TR", {
@@ -42,6 +42,7 @@ function formatSlotLabel(date: Date) {
     month: "long",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Europe/Istanbul",
   }).format(date);
 }
 
@@ -117,22 +118,31 @@ export function mergeReviewBookingNotes(rawValue: string | null | undefined, pat
   });
 }
 
-export function getReviewSlotOptions(now = new Date()): ReviewSlotOption[] {
+export function getReviewSlotOptions(
+  now = new Date(),
+  formatLabel: (date: Date) => string = formatSlotLabel,
+): ReviewSlotOption[] {
   const options: ReviewSlotOption[] = [];
   const earliestAllowed = new Date(now.getTime() + SLOT_MIN_LEAD_HOURS * 60 * 60 * 1000);
+  const instructorNow = new Date(now.getTime() + INSTRUCTOR_UTC_OFFSET_HOURS * 60 * 60 * 1000);
 
   for (let dayOffset = 0; dayOffset < SLOT_LOOKAHEAD_DAYS; dayOffset += 1) {
-    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset);
-
     for (const hour of REVIEW_SLOT_HOURS) {
-      const slot = createDateAtHour(day, hour);
+      const slot = new Date(
+        Date.UTC(
+          instructorNow.getUTCFullYear(),
+          instructorNow.getUTCMonth(),
+          instructorNow.getUTCDate() + dayOffset,
+          hour - INSTRUCTOR_UTC_OFFSET_HOURS,
+        ),
+      );
       if (slot <= earliestAllowed) {
         continue;
       }
 
       options.push({
-        value: slot.toISOString().slice(0, 16),
-        label: formatSlotLabel(slot),
+        value: slot.toISOString(),
+        label: formatLabel(slot),
       });
     }
   }
@@ -152,8 +162,7 @@ export function normalizeReviewSlotSelection(value: string | null | undefined) {
   }
 
   const allowedValues = new Set(getReviewSlotOptions().map((option) => option.value));
-  const parsedValue = parsed.toISOString().slice(0, 16);
-  return allowedValues.has(parsedValue) ? parsed : null;
+  return allowedValues.has(parsed.toISOString()) ? parsed : null;
 }
 
 function buildScheduledEndAt(startAt: Date | null, durationMinutes: number) {

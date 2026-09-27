@@ -1,25 +1,16 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { format } from "date-fns";
-import { tr } from "date-fns/locale";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { CalendarDays, Clock3, ExternalLink, ShieldCheck, Video } from "lucide-react";
 
 import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
 import { getLiveRecordingAccessSubscription } from "@/src/lib/live-recordings-access";
-import { getMeetingPlatformLabel } from "@/src/lib/meeting-platform";
+import { detectMeetingPlatform } from "@/src/lib/meeting-platform";
+import { getPanelRoleLabel, getStudentNavItems } from "@/src/lib/panel-nav";
 import { prisma } from "@/src/lib/prisma";
 
-const studentNavItems = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Canlı Ders Kayıtları", href: "/dashboard/live-recordings" },
-  { label: "Vocabulary", href: "/vocabulary" },
-  { label: "Reading", href: "/reading" },
-  { label: "Grammar", href: "/grammar" },
-  { label: "Canlı Dersler", href: "/live-classes" },
-  { label: "Fiyatlandırma", href: "/pricing" },
-];
 
 export default async function DashboardLiveRecordingsPage() {
   const session = await getServerSession(authOptions);
@@ -29,6 +20,16 @@ export default async function DashboardLiveRecordingsPage() {
   if (session.user.role === "TEACHER") redirect("/teacher");
 
   const now = new Date();
+  const [t, formatter, studentNavItems, roleLabel] = await Promise.all([
+    getTranslations("recordings"),
+    getFormatter(),
+    getStudentNavItems(session.user),
+    getPanelRoleLabel(session.user.role),
+  ]);
+  const platformLabel = (url: string | null) => {
+    const platform = detectMeetingPlatform(url);
+    return platform === "zoom" ? "Zoom" : platform === "google-meet" ? "Google Meet" : t("externalLink");
+  };
 
   const [accessSubscription, recordingCount, recordings] = await Promise.all([
     getLiveRecordingAccessSubscription(session.user.id),
@@ -64,40 +65,40 @@ export default async function DashboardLiveRecordingsPage() {
   return (
     <DashboardShell
       navItems={studentNavItems}
-      roleLabel="Öğrenci Paneli"
-      title="Canlı Ders Kayıtları"
-      subtitle="Canlı ders içeren bir program satın aldıysan geçmiş ders kayıtlarını istediğin zaman izleyebilirsin."
+      roleLabel={roleLabel}
+      title={t("title")}
+      subtitle={t("subtitle")}
       userName={session.user.name ?? undefined}
       userRole={session.user.role}
     >
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-[28px] border border-sky-500/20 bg-sky-500/8 p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
-          <p className="text-xs font-semibold uppercase tracking-wide text-sky-300">Toplam Kayıt</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-sky-300">{t("total")}</p>
           <p className="mt-2 text-3xl font-black text-white">{recordingCount}</p>
         </div>
         <div className="rounded-[28px] border border-emerald-500/20 bg-emerald-500/8 p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">Erişim Durumu</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">{t("accessStatus")}</p>
           <p className="mt-2 text-sm font-semibold text-white">
-            {hasLiveRecordingsAccess ? "Aktif" : "Pasif"}
+            {hasLiveRecordingsAccess ? t("active") : t("inactive")}
           </p>
           <p className="mt-1 text-xs text-zinc-300">
             {accessSubscription
-              ? `${accessSubscription.plan.name} programı satın alındığı için erişim açık`
+              ? t("accessPlan", { plan: accessSubscription.plan.name })
               : session.user.hasLiveRecordingsAccess
-                ? "Admin tarafından canlı ders kayıt erişimi tanımlandığı için arşiv açık"
-              : "Canlı ders içeren bir program satın aldığında kayıt arşivi açılır."}
+                ? t("accessManual")
+              : t("accessNone")}
           </p>
         </div>
         <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
-          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Üyelik Bitişi</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">{t("membershipEnd")}</p>
           <p className="mt-2 text-sm font-semibold text-white">
             {accessSubscription?.endDate
-              ? format(accessSubscription.endDate, "d MMMM yyyy", { locale: tr })
+              ? formatter.dateTime(accessSubscription.endDate, { dateStyle: "long" })
               : session.user.hasLiveRecordingsAccess
-                ? "Admin erişimi"
+                ? t("manualAccess")
               : accessSubscription
-                ? "Süre sınırı yok"
-                : "Üyelik bulunamadı"}
+                ? t("noLimit")
+                : t("noMembership")}
           </p>
         </div>
       </div>
@@ -106,17 +107,17 @@ export default async function DashboardLiveRecordingsPage() {
         <div className="rounded-[30px] border border-amber-400/30 bg-amber-400/10 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.16)]">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-amber-200">Erişim Kilitli</p>
-              <h2 className="mt-1 text-lg font-bold text-white">Canlı ders kayıtları program satın alımıyla açılır</h2>
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-200">{t("lockedBadge")}</p>
+              <h2 className="mt-1 text-lg font-bold text-white">{t("lockedTitle")}</h2>
               <p className="mt-2 text-sm text-zinc-200">
-                Admin isterse bu arşivi manuel olarak da açabilir. Aksi durumda canlı ders içeren bir program satın aldığında geçmiş kayıtları sistemden izleyebilirsin.
+                {t("lockedText")}
               </p>
             </div>
             <Link
               href="/pricing"
               className="inline-flex items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-zinc-200"
             >
-              Planları Gör
+              {t("viewPlans")}
             </Link>
           </div>
         </div>
@@ -131,18 +132,18 @@ export default async function DashboardLiveRecordingsPage() {
                 <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
                   <span className="inline-flex items-center gap-1">
                     <CalendarDays size={12} />
-                    {format(item.scheduledAt, "d MMMM yyyy · HH:mm", { locale: tr })}
+                    {formatter.dateTime(item.scheduledAt, { dateStyle: "long", timeStyle: "short" })}
                   </span>
                   <span className="inline-flex items-center gap-1">
                     <Clock3 size={12} />
-                    {item.durationMinutes} dk
+                    {t("minutes", { count: item.durationMinutes })}
                   </span>
                   <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-sky-200">
-                    {getMeetingPlatformLabel(item.meetingLink ?? item.recordingUrl)}
+                    {platformLabel(item.meetingLink ?? item.recordingUrl)}
                   </span>
                 </div>
                 {item.topicOutline ? (
-                  <p className="mt-2 text-sm text-zinc-300">Konu: {item.topicOutline}</p>
+                  <p className="mt-2 text-sm text-zinc-300">{t("topic", { topic: item.topicOutline })}</p>
                 ) : null}
                 {item.description ? (
                   <p className="mt-1 text-xs text-zinc-500">{item.description}</p>
@@ -154,7 +155,7 @@ export default async function DashboardLiveRecordingsPage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-sm font-semibold text-sky-200 transition hover:bg-sky-500/20"
               >
-                Kaydı İzle
+                {t("watch")}
                 <ExternalLink size={14} />
               </Link>
             </div>
@@ -164,7 +165,7 @@ export default async function DashboardLiveRecordingsPage() {
         {hasLiveRecordingsAccess && recordings.length === 0 ? (
           <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-10 text-center shadow-[0_20px_60px_rgba(0,0,0,0.22)]">
             <Video size={28} className="mx-auto text-zinc-500" />
-            <p className="mt-3 text-sm text-zinc-400">Henüz yayınlanmış canlı ders kaydı bulunmuyor.</p>
+            <p className="mt-3 text-sm text-zinc-400">{t("empty")}</p>
           </div>
         ) : null}
       </div>
@@ -173,9 +174,9 @@ export default async function DashboardLiveRecordingsPage() {
         <div className="flex items-start gap-3">
           <ShieldCheck size={18} className="mt-0.5 text-emerald-400" />
           <div>
-            <p className="text-sm font-semibold text-white">Erişim Politikası</p>
+            <p className="text-sm font-semibold text-white">{t("policyTitle")}</p>
             <p className="mt-1 text-xs text-zinc-400">
-              Canlı ders içeren bir programı satın alan öğrenciler, katılamadıkları derslerin kayıtlarını da sonradan izleyebilir.
+              {t("policyText")}
             </p>
           </div>
         </div>

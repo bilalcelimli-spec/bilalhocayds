@@ -3,6 +3,7 @@ import { authOptions } from "@/src/auth";
 import { getOrCreateStudentDailyContent } from "@/src/lib/student-daily-content";
 import { DailyContentModule } from "@prisma/client";
 import { getServerSession } from "next-auth";
+import { getFormatter, getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { ArrowLeft, BookOpen, BrainCircuit, FlaskConical, GraduationCap, Lightbulb, RotateCcw, Target, TrendingUp } from "lucide-react";
 
@@ -12,6 +13,7 @@ export default async function GrammarPage() {
 	const session = await getServerSession(authOptions);
 	if (!session?.user?.id) return null;
 
+	const [t, formatter] = await Promise.all([getTranslations("grammarPage"), getFormatter()]);
 	const grammar = await getOrCreateStudentDailyContent(session.user.id, DailyContentModule.GRAMMAR);
 
 	const activityGroups = [
@@ -44,13 +46,13 @@ export default async function GrammarPage() {
 					</span>
 					<div className="ml-auto flex items-center gap-3">
 						<span className="hidden rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.15em] text-violet-400 sm:inline-flex">
-							{new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long" })}
+							{formatter.dateTime(new Date(), { day: "numeric", month: "long" })}
 						</span>
 						<Link
 							href="/pricing"
 							className="hidden rounded-xl border border-violet-500/25 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-300 transition hover:bg-violet-500/20 sm:inline-flex"
 						>
-							Tam Konu Paketi
+							{t("fullPack")}
 						</Link>
 					</div>
 				</div>
@@ -84,9 +86,9 @@ export default async function GrammarPage() {
 
 						<div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 shrink-0">
 							{[
-								{ Icon: GraduationCap, label: "Bugünkü Konu", value: grammar.focusTopic.split(" ").slice(0, 2).join(" "), color: "text-violet-400" },
-								{ Icon: FlaskConical, label: "Format", value: "6 adet", color: "text-purple-400" },
-								{ Icon: Target, label: "Aktivite", value: String(totalActivities), color: "text-indigo-400" },
+								{ Icon: GraduationCap, label: t("statTopic"), value: grammar.focusTopic.split(" ").slice(0, 2).join(" "), color: "text-violet-400" },
+								{ Icon: FlaskConical, label: "Format", value: t("statFormatValue"), color: "text-purple-400" },
+								{ Icon: Target, label: t("statActivities"), value: String(totalActivities), color: "text-indigo-400" },
 								{ Icon: RotateCcw, label: "Model", value: grammar.model, color: "text-pink-400" },
 							].map(({ Icon, label, value, color }) => (
 								<div key={label} className="rounded-2xl border border-white/[0.07] bg-white/[0.04] px-4 py-3 text-center">
@@ -108,7 +110,7 @@ export default async function GrammarPage() {
 								<Lightbulb size={13} className="text-violet-400" />
 							</div>
 							<div>
-								<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-500">Konu Anlatımı</p>
+								<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-500">{t("conceptBadge")}</p>
 								<p className="text-sm font-bold text-white">Concept Explanation</p>
 							</div>
 						</div>
@@ -138,11 +140,11 @@ export default async function GrammarPage() {
 								<BookOpen size={13} className="text-blue-400" />
 							</div>
 							<div>
-								<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-500">Örnek Cümleler</p>
+								<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-500">{t("examplesBadge")}</p>
 								<p className="text-sm font-bold text-white">Model Examples</p>
 							</div>
 						</div>
-						<p className="text-xs text-slate-500 mb-3">Kolaydan sınav odaklı kullanıma doğru:</p>
+						<p className="text-xs text-slate-500 mb-3">{t("examplesNote")}</p>
 						<div className="space-y-3">
 							{grammar.modelExamples.map((example, i) => (
 								<div key={example.en} className="rounded-2xl border border-white/[0.07] bg-[#0e1117] p-4">
@@ -173,7 +175,7 @@ export default async function GrammarPage() {
 								<FlaskConical size={13} className="text-violet-400" />
 							</div>
 							<div>
-								<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-500">Alıştırma</p>
+								<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-500">{t("practiceBadge")}</p>
 								<h2 className="text-base font-bold text-white">Practice Activities</h2>
 							</div>
 						</div>
@@ -189,7 +191,7 @@ export default async function GrammarPage() {
 									<Target size={13} className="text-blue-400" />
 								</div>
 								<div>
-									<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-500">Strateji</p>
+									<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-500">{t("strategyBadge")}</p>
 									<p className="text-sm font-bold text-white">Strategy Notes</p>
 								</div>
 							</div>
@@ -212,8 +214,8 @@ export default async function GrammarPage() {
 									<TrendingUp size={13} className="text-emerald-400" />
 								</div>
 								<div>
-									<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-500">Performans</p>
-									<p className="text-sm font-bold text-white">Değerlendirme</p>
+									<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-500">{t("performanceBadge")}</p>
+									<p className="text-sm font-bold text-white">{t("evaluation")}</p>
 								</div>
 							</div>
 							<p className="text-sm leading-6 text-slate-400 mb-2">{grammar.performanceEvaluation.summary}</p>
@@ -239,7 +241,7 @@ export default async function GrammarPage() {
 							</div>
 							<p className="mt-4 text-xs font-semibold text-emerald-400">→ {grammar.personalizedNextStep}</p>
 							<p className="mt-2 text-[10px] text-slate-600">
-								{new Date(grammar.generatedAt).toLocaleDateString("tr-TR")} tarihinde üretildi
+								{t("generatedOn", { date: formatter.dateTime(new Date(grammar.generatedAt), { dateStyle: "medium" }) })}
 							</p>
 						</div>
 					</div>

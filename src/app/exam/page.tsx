@@ -1,11 +1,13 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Clock3, FileText, LibraryBig } from "lucide-react";
 
 import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
 import { ExamMarketplacePurchase } from "@/src/components/payment/exam-marketplace-purchase";
+import { getStudentNavItems, getTeacherNavItems } from "@/src/lib/panel-nav";
 import { examPurchase, prisma } from "@/src/lib/prisma";
 
 type ExamQuestion = {
@@ -19,9 +21,6 @@ type NormalizedExamContent = {
   questions: ExamQuestion[];
 };
 
-function isDefined<T>(value: T | null): value is T {
-  return value !== null;
-}
 
 function parseQuestions(value: unknown): ExamQuestion[] {
   if (!Array.isArray(value)) {
@@ -68,7 +67,7 @@ function normalizeExamContent(value: unknown): NormalizedExamContent {
   const questions = parseQuestions(record.questions);
   const sections = Array.isArray(record.sections)
     ? record.sections
-        .map((section) => {
+        .map((section, index) => {
           if (!section || typeof section !== "object") {
             return null;
           }
@@ -80,7 +79,7 @@ function normalizeExamContent(value: unknown): NormalizedExamContent {
           }
 
           return {
-            title: String(sectionRecord.title ?? sectionRecord.name ?? "Bölüm").trim() || "Bölüm",
+            title: String(sectionRecord.title ?? sectionRecord.name ?? "").trim() || `#${index + 1}`,
             questions: sectionQuestions,
           };
         })
@@ -95,6 +94,7 @@ export default async function ExamPage() {
 
   if (!session) redirect("/login");
   if (session.user.role === "ADMIN") redirect("/admin");
+  const [t, tNav] = await Promise.all([getTranslations("examPage"), getTranslations("panelNav")]);
 
   const exams = await prisma.examModule.findMany({
     where: { isActive: true, isPublished: true },
@@ -149,50 +149,29 @@ export default async function ExamPage() {
   const accessibleExamDetailsMap = new Map(
     accessibleExamDetails.map((exam) => [exam.id, exam]),
   );
-  const studentNavItems = [
-    { label: "Dashboard", href: "/dashboard" },
-    { label: "Siparişlerim", href: "/dashboard/orders" },
-    session.user.hasLiveRecordingsAccess
-      ? { label: "Canlı Ders Kayıtları", href: "/dashboard/live-recordings" }
-      : null,
-    session.user.hasContentLibraryAccess
-      ? { label: "Paylaşılan İçerikler", href: "/dashboard/content-library" }
-      : null,
-    session.user.hasVocabAccess ? { label: "Vocabulary", href: "/vocabulary" } : null,
-    session.user.hasReadingAccess ? { label: "Reading", href: "/reading" } : null,
-    session.user.hasGrammarAccess ? { label: "Grammar", href: "/grammar" } : null,
-    { label: "Sınav", href: "/exam" },
-    session.user.hasLiveClassesAccess ? { label: "Canlı Dersler", href: "/live-classes" } : null,
-    { label: "Fiyatlandırma", href: "/pricing" },
-  ].filter(isDefined);
+  const [studentNavItems, teacherNavItems] = await Promise.all([
+    getStudentNavItems(session.user),
+    getTeacherNavItems(),
+  ]);
   const accessibleExamCount = fullExamAccess
     ? exams.length
     : accessibleExamIds.length;
 
   return (
     <DashboardShell
-      navItems={session.user.role === "TEACHER" ? [
-        { label: "Dashboard", href: "/teacher" },
-        { label: "Paylaşılan İçerikler", href: "/dashboard/content-library" },
-        { label: "Reading Modülü", href: "/reading" },
-        { label: "Grammar Modülü", href: "/grammar" },
-        { label: "Vocabulary Modülü", href: "/vocabulary" },
-        { label: "Sınav Modülü", href: "/exam" },
-        { label: "Canlı Dersler", href: "/live-classes" },
-        { label: "Admin Paneli", href: "/admin" },
-      ] : studentNavItems}
-      roleLabel={session.user.role === "TEACHER" ? "Öğretmen Paneli" : "Öğrenci Paneli"}
-      title="Sınav Modülü"
-      subtitle="API ile eklenen, admin onaylı sınav setlerini tek yerden çöz."
+      navItems={session.user.role === "TEACHER" ? teacherNavItems : studentNavItems}
+      roleLabel={session.user.role === "TEACHER" ? tNav("teacherRole") : tNav("studentRole")}
+      title={t("title")}
+      subtitle={t("subtitle")}
       userName={session.user.name ?? undefined}
       userRole={session.user.role}
     >
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: "Yayınlı Sınav", value: exams.length, Icon: FileText, tone: "border-emerald-500/20 bg-emerald-500/8", color: "text-emerald-300" },
-          { label: "Toplam Soru", value: exams.reduce((sum, exam) => sum + exam.questionCount, 0), Icon: LibraryBig, tone: "border-blue-500/20 bg-blue-500/8", color: "text-blue-300" },
-          { label: "En Uzun Oturum", value: `${Math.max(...exams.map((exam) => exam.durationMinutes), 0)} dk`, Icon: Clock3, tone: "border-violet-500/20 bg-violet-500/8", color: "text-violet-300" },
-          { label: "Erişim", value: fullExamAccess ? "Tam" : accessibleExamCount > 0 ? `${accessibleExamCount} sınav açık` : "Kilitli", Icon: CheckCircle2, tone: "border-amber-500/20 bg-amber-500/8", color: "text-amber-300" },
+          { label: t("statPublished"), value: exams.length, Icon: FileText, tone: "border-emerald-500/20 bg-emerald-500/8", color: "text-emerald-300" },
+          { label: t("statQuestions"), value: exams.reduce((sum, exam) => sum + exam.questionCount, 0), Icon: LibraryBig, tone: "border-blue-500/20 bg-blue-500/8", color: "text-blue-300" },
+          { label: t("statLongest"), value: t("minutes", { count: Math.max(...exams.map((exam) => exam.durationMinutes), 0) }), Icon: Clock3, tone: "border-violet-500/20 bg-violet-500/8", color: "text-violet-300" },
+          { label: t("statAccess"), value: fullExamAccess ? t("accessFull") : accessibleExamCount > 0 ? t("accessCount", { count: accessibleExamCount }) : t("locked"), Icon: CheckCircle2, tone: "border-amber-500/20 bg-amber-500/8", color: "text-amber-300" },
         ].map((item) => (
           <div key={item.label} className={`rounded-[28px] border p-5 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur-xl ${item.tone}`}>
             <div className="flex items-center justify-between">
@@ -210,14 +189,14 @@ export default async function ExamPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300">Exam Access</p>
-            <h2 className="mt-2 text-2xl font-black text-white">Yayınlı deneme sınavları</h2>
+            <h2 className="mt-2 text-2xl font-black text-white">{t("listTitle")}</h2>
             <p className="mt-2 max-w-2xl text-sm leading-7 text-zinc-400">
-              Admin panelinden eklenen tüm sınavlar burada listelenir. Aynı modül ayrı ürün olarak satılabilir veya mevcut paketlere entegre edilebilir.
+              {t("listText")}
             </p>
           </div>
           {!fullExamAccess ? (
             <Link href="/pricing" className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-zinc-200">
-              Tam modül erişimini aç
+              {t("unlockFull")}
               <ArrowRight size={14} />
             </Link>
           ) : null}
@@ -239,19 +218,19 @@ export default async function ExamPage() {
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300">{exam.examType}</p>
                   <h3 className="mt-2 text-xl font-black text-white">{exam.title}</h3>
-                  <p className="mt-2 text-sm leading-7 text-zinc-400">{exam.description ?? "Bu sınav seti admin tarafından yayınlandı."}</p>
+                  <p className="mt-2 text-sm leading-7 text-zinc-400">{exam.description ?? t("defaultDescription")}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {exam.cefrLevel ? <span className="rounded-xl bg-blue-500/15 px-3 py-1 text-xs font-semibold text-blue-300">{exam.cefrLevel}</span> : null}
-                  <span className="rounded-xl bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300">{exam.questionCount} soru</span>
-                  <span className="rounded-xl bg-violet-500/15 px-3 py-1 text-xs font-semibold text-violet-300">{exam.durationMinutes} dk</span>
-                  <span className={`rounded-xl px-3 py-1 text-xs font-semibold ${hasAccess ? "bg-emerald-500/15 text-emerald-300" : "bg-amber-500/15 text-amber-300"}`}>{hasAccess ? "Erişim açık" : "Satın alınabilir"}</span>
+                  <span className="rounded-xl bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300">{t("questions", { count: exam.questionCount })}</span>
+                  <span className="rounded-xl bg-violet-500/15 px-3 py-1 text-xs font-semibold text-violet-300">{t("minutes", { count: exam.durationMinutes })}</span>
+                  <span className={`rounded-xl px-3 py-1 text-xs font-semibold ${hasAccess ? "bg-emerald-500/15 text-emerald-300" : "bg-amber-500/15 text-amber-300"}`}>{hasAccess ? t("accessOpen") : t("purchasable")}</span>
                 </div>
               </div>
 
               {hasAccess && examDetail?.instructions ? (
                 <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Talimatlar</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{t("instructions")}</p>
                   <p className="mt-2 text-sm leading-7 text-zinc-300">{examDetail.instructions}</p>
                 </div>
               ) : null}
@@ -261,7 +240,7 @@ export default async function ExamPage() {
                   {content.sections.slice(0, 2).map((section, index) => (
                     <div key={`${exam.id}-section-${index}`} className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3">
                       <p className="text-sm font-semibold text-white">{section.title}</p>
-                      <p className="mt-1 text-xs text-zinc-500">{section.questions.length} soru</p>
+                      <p className="mt-1 text-xs text-zinc-500">{t("questions", { count: section.questions.length })}</p>
                     </div>
                   ))}
                 </div>
@@ -302,11 +281,11 @@ export default async function ExamPage() {
                 </div>
               ) : !hasAccess ? (
                 <div className="mt-4 rounded-2xl border border-dashed border-amber-400/20 bg-amber-500/5 px-4 py-6 text-sm text-amber-100/80">
-                  Bu sınav için ayrı satın alım ya da sınav modülü erişimi gerekiyor.
+                  {t("needsPurchase")}
                 </div>
               ) : (
                 <div className="mt-4 rounded-2xl border border-dashed border-white/10 px-4 py-6 text-sm text-zinc-500">
-                  Ön izlenecek soru bulunamadı. İçerik API ile eklendiğinde soru dizisi burada listelenir.
+                  {t("noPreview")}
                 </div>
               )}
             </article>
@@ -316,7 +295,7 @@ export default async function ExamPage() {
 
       {exams.length === 0 ? (
         <div className="rounded-[30px] border border-dashed border-white/10 px-6 py-12 text-center text-zinc-500">
-          Henüz yayınlanmış sınav bulunmuyor. Admin panelinden ilk sınavı eklediğinde burada görünecek.
+          {t("empty")}
         </div>
       ) : null}
     </DashboardShell>

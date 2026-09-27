@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { CheckCircle2, ChevronDown, ChevronUp, XCircle } from "lucide-react";
 
@@ -38,6 +39,7 @@ const TYPE_BADGE: Record<string, string> = {
 };
 
 export function VocabularyPracticePanel({ activities }: VocabularyPracticePanelProps) {
+	const t = useTranslations("practice");
 	const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
 	const [textAnswers, setTextAnswers] = useState<Record<number, string>>({});
 	const [revealedItems, setRevealedItems] = useState<Record<number, boolean>>({});
@@ -51,7 +53,7 @@ export function VocabularyPracticePanel({ activities }: VocabularyPracticePanelP
 		<div className="space-y-3">
 			{/* progress bar */}
 			<div className="flex items-center justify-between mb-2">
-				<p className="text-xs font-semibold text-slate-500">{answeredCount}/{activities.length} tamamlandı</p>
+				<p className="text-xs font-semibold text-slate-500">{t("completed", { done: answeredCount, total: activities.length })}</p>
 				<div className="flex-1 mx-4 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
 					<div
 						className="h-full rounded-full bg-gradient-to-r from-amber-600 to-amber-400 transition-all duration-500"
@@ -136,7 +138,7 @@ export function VocabularyPracticePanel({ activities }: VocabularyPracticePanelP
 									value={textAnswer}
 									onChange={(e) => !isRevealed && setTextAnswers((s) => ({ ...s, [index]: e.target.value }))}
 									rows={3}
-									placeholder="Cevabını buraya yaz..."
+									placeholder={t("answerPlaceholder")}
 									className="mt-4 w-full resize-none rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-slate-200 outline-none placeholder:text-slate-600 focus:border-amber-500/40 focus:bg-amber-500/[0.04]"
 									readOnly={isRevealed}
 								/>
@@ -156,19 +158,19 @@ export function VocabularyPracticePanel({ activities }: VocabularyPracticePanelP
 									{isRevealed ? (
 										<>
 											<ChevronUp size={13} />
-											Gizle
+											{t("hide")}
 										</>
 									) : (
 										<>
 											<ChevronDown size={13} />
-											{hasOptions ? "Cevabı Kontrol Et" : "Örnek Cevabı Gör"}
+											{hasOptions ? t("checkAnswer") : t("showSample")}
 										</>
 									)}
 								</button>
 								{hasOptions && isRevealed && (
 									<span className={`flex items-center gap-1.5 text-sm font-bold ${isCorrect ? "text-emerald-400" : "text-rose-400"}`}>
 										{isCorrect ? <CheckCircle2 size={15} /> : <XCircle size={15} />}
-										{isCorrect ? "Doğru!" : "Tekrar dene"}
+										{isCorrect ? t("correct") : t("tryAgain")}
 									</span>
 								)}
 							</div>
@@ -177,7 +179,7 @@ export function VocabularyPracticePanel({ activities }: VocabularyPracticePanelP
 						{/* feedback panel */}
 						{isRevealed && (
 					<div className={`border-t px-5 py-4 ${isCorrect && hasOptions ? "border-emerald-600/35 bg-emerald-950/55" : "border-slate-600/30 bg-[#0b1018]"}`}>
-						<p className="text-sm font-bold text-white mb-1">Referans Cevap</p>
+						<p className="text-sm font-bold text-white mb-1">{t("referenceAnswer")}</p>
 						<p className="text-sm leading-6 text-slate-200">{activity.answer}</p>
 						<p className="mt-2.5 text-xs leading-5 text-slate-400">{activity.explanation}</p>
 							</div>

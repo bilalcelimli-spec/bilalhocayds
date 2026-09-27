@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { CheckCircle2, ChevronDown, ChevronUp, XCircle } from "lucide-react";
 
@@ -63,6 +64,7 @@ const DEFAULT_ACCENT = {
 };
 
 export function GrammarPracticePanel({ groups }: GrammarPracticePanelProps) {
+	const t = useTranslations("practice");
 	const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
 	const [textAnswers, setTextAnswers] = useState<Record<string, string>>({});
 	const [revealedItems, setRevealedItems] = useState<Record<string, boolean>>({});
@@ -80,7 +82,7 @@ export function GrammarPracticePanel({ groups }: GrammarPracticePanelProps) {
 		<div className="space-y-4">
 			{/* progress */}
 			<div className="flex items-center justify-between mb-1">
-				<p className="text-xs font-semibold text-slate-500">{answeredCount}/{totalActivities} tamamlandı</p>
+				<p className="text-xs font-semibold text-slate-500">{t("completed", { done: answeredCount, total: totalActivities })}</p>
 				<div className="flex-1 mx-4 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
 					<div
 						className="h-full rounded-full bg-gradient-to-r from-violet-600 to-violet-400 transition-all duration-500"
@@ -200,7 +202,7 @@ export function GrammarPracticePanel({ groups }: GrammarPracticePanelProps) {
 													setTextAnswers((s) => ({ ...s, [item.id]: e.target.value }))
 												}
 												rows={3}
-												placeholder="Cevabını buraya yaz..."
+												placeholder={t("answerPlaceholder")}
 												className="mt-4 w-full resize-none rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-slate-200 outline-none placeholder:text-slate-600 focus:border-violet-500/40 focus:bg-violet-500/[0.04]"
 												readOnly={isRevealed}
 											/>
@@ -220,15 +222,15 @@ export function GrammarPracticePanel({ groups }: GrammarPracticePanelProps) {
 												}`}
 											>
 												{isRevealed ? (
-													<><ChevronUp size={13} /> Gizle</>
+													<><ChevronUp size={13} /> {t("hide")}</>
 												) : (
-													<><ChevronDown size={13} /> {hasOptions ? "Cevabı Kontrol Et" : "Referans Cevabı Gör"}</>
+													<><ChevronDown size={13} /> {hasOptions ? t("checkAnswer") : t("showReference")}</>
 												)}
 											</button>
 											{hasOptions && isRevealed && (
 												<span className={`flex items-center gap-1.5 text-sm font-bold ${isCorrect ? "text-emerald-400" : "text-rose-400"}`}>
 													{isCorrect ? <CheckCircle2 size={15} /> : <XCircle size={15} />}
-													{isCorrect ? "Doğru!" : "Referans cevabı incele"}
+													{isCorrect ? t("correct") : t("reviewReference")}
 												</span>
 											)}
 										</div>
@@ -237,12 +239,12 @@ export function GrammarPracticePanel({ groups }: GrammarPracticePanelProps) {
 									{/* feedback */}
 									{isRevealed && (
 									<div className={`border-t px-5 py-4 ${isCorrect && hasOptions ? "border-emerald-600/35 bg-emerald-950/55" : "border-slate-600/30 bg-[#0b1018]"}`}>
-										<p className="text-sm font-bold text-white mb-1">Referans Cevap</p>
+										<p className="text-sm font-bold text-white mb-1">{t("referenceAnswer")}</p>
 										<p className="text-sm leading-6 text-slate-200">{item.answer}</p>
 										<p className="mt-2 text-xs leading-5 text-slate-400">{item.explanation}</p>
 											{item.sampleResponse && (
 												<div className="mt-3 rounded-xl border border-amber-500/15 bg-amber-500/[0.07] px-3 py-2">
-													<p className="text-xs font-semibold text-amber-400">Örnek üretim:</p>
+													<p className="text-xs font-semibold text-amber-400">{t("sampleProduction")}</p>
 													<p className="mt-1 text-xs text-amber-200">{item.sampleResponse}</p>
 												</div>
 											)}

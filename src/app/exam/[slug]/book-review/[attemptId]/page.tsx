@@ -1,11 +1,13 @@
 import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
+import { getFormatter, getTranslations } from "next-intl/server";
 
 import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
 import { ReviewBookingCheckout } from "@/src/components/exam/review-booking-checkout";
 import { getExamAttemptResult } from "@/src/lib/exam-attempts";
+import { getExamFlowNavItems, getPanelRoleLabel } from "@/src/lib/panel-nav";
 import { getReviewFollowUpActionLabel, getReviewSlotOptions, parseReviewBookingNotes, updateStudentReviewBookingPreference } from "@/src/lib/exam-review-bookings";
 import { formatCurrency } from "@/src/lib/exam-workspace";
 import { prisma } from "@/lib/prisma";
@@ -53,7 +55,15 @@ export default async function MockExamBookReviewPage({ params }: PageProps) {
 
   const reviewPriceLabel = formatCurrency(exam.lessonReviewPrice, exam.lessonCurrency);
   const examId = result.exam.id;
-  const slotOptions = getReviewSlotOptions();
+  const [t, formatter, examNav, roleLabel] = await Promise.all([
+    getTranslations("bookReview"),
+    getFormatter(),
+    getExamFlowNavItems(),
+    getPanelRoleLabel(session.user.role),
+  ]);
+  const formatSlot = (date: Date) =>
+    formatter.dateTime(date, { weekday: "short", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+  const slotOptions = getReviewSlotOptions(new Date(), formatSlot);
   const parsedNotes = parseReviewBookingNotes(latestBooking?.lessonNotes);
   const canSellReview = Boolean(exam.lessonReviewPrice && exam.lessonReviewPrice > 0);
   const latestPaymentStatus = latestBooking?.payments[0]?.status ?? null;
@@ -93,21 +103,21 @@ export default async function MockExamBookReviewPage({ params }: PageProps) {
   }
 
   return (
-    <DashboardShell navItems={[{ label: "Dashboard", href: "/dashboard" }, { label: "Sınav", href: "/exam" }]} roleLabel="Öğrenci Paneli" title="30 Dakikalık Review Lesson" subtitle="Attempt-linked ödeme ve slot seçimi" userName={session.user.name ?? undefined} userRole={session.user.role}>
+    <DashboardShell navItems={examNav} roleLabel={roleLabel} title={t("title")} subtitle={t("subtitle")} userName={session.user.name ?? undefined} userRole={session.user.role}>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <section className="rounded-[32px] border border-white/10 bg-[rgba(18,20,28,0.95)] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.22)]">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-200">Lesson Value</p>
-          <h2 className="mt-2 text-2xl font-black text-white">Yanlışlarını Bilal Hoca ile birebir incele</h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-200">{t("valueBadge")}</p>
+          <h2 className="mt-2 text-2xl font-black text-white">{t("valueTitle")}</h2>
           <ul className="mt-5 space-y-3 text-sm leading-7 text-zinc-300">
-            <li>Bu denemedeki yanlışların ders öncesi otomatik olarak öğretmen paneline aktarılır.</li>
-            <li>Reading inference, grammar trap ve vocabulary choice hataları odaklı analiz edilir.</li>
-            <li>Ders sonrası kısa öğretmen notu bırakılabilir.</li>
+            <li>{t("value1")}</li>
+            <li>{t("value2")}</li>
+            <li>{t("value3")}</li>
           </ul>
           <div className="mt-6 grid gap-3 md:grid-cols-3">
             {[
-              ["Duration", "30 dakika"],
-              ["Wrong questions", String(result.incorrectCount + result.blankCount)],
-              ["Price", reviewPriceLabel],
+              [t("duration"), t("durationValue")],
+              [t("wrongQuestions"), String(result.incorrectCount + result.blankCount)],
+              [t("price"), reviewPriceLabel],
             ].map(([label, value]) => (
               <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">{label}</p>
@@ -118,13 +128,13 @@ export default async function MockExamBookReviewPage({ params }: PageProps) {
 
           {latestBooking ? (
             <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-zinc-300">
-              <p className="font-semibold text-white">Mevcut booking durumu: {latestBooking.status}</p>
-              <p className="mt-2">Son ödeme kaydı: {latestBooking.payments[0]?.status ?? "Henüz yok"}</p>
-              {latestBooking.scheduledStartAt ? <p className="mt-2">Planlanan slot: {latestBooking.scheduledStartAt.toLocaleString("tr-TR")}</p> : null}
-              {latestBooking.teacher ? <p className="mt-2">Öğretmen: {latestBooking.teacher.name ?? latestBooking.teacher.email}</p> : null}
-              {parsedNotes.studentNote ? <p className="mt-2">Booking notu: {parsedNotes.studentNote}</p> : null}
-              {latestBooking.status === "COMPLETED" && parsedNotes.lessonSummary ? <p className="mt-2">Ders özeti: {parsedNotes.lessonSummary}</p> : null}
-              {latestBooking.status === "COMPLETED" && parsedNotes.followUpAction ? <p className="mt-2">Takip aksiyonu: {getReviewFollowUpActionLabel(parsedNotes.followUpAction)}</p> : null}
+              <p className="font-semibold text-white">{t("bookingStatus", { status: latestBooking.status })}</p>
+              <p className="mt-2">{t("lastPayment", { status: latestBooking.payments[0]?.status ?? t("none") })}</p>
+              {latestBooking.scheduledStartAt ? <p className="mt-2">{t("plannedSlot", { slot: formatSlot(latestBooking.scheduledStartAt) })}</p> : null}
+              {latestBooking.teacher ? <p className="mt-2">{t("teacher", { name: latestBooking.teacher.name ?? latestBooking.teacher.email })}</p> : null}
+              {parsedNotes.studentNote ? <p className="mt-2">{t("bookingNote", { note: parsedNotes.studentNote })}</p> : null}
+              {latestBooking.status === "COMPLETED" && parsedNotes.lessonSummary ? <p className="mt-2">{t("lessonSummary", { summary: parsedNotes.lessonSummary })}</p> : null}
+              {latestBooking.status === "COMPLETED" && parsedNotes.followUpAction ? <p className="mt-2">{t("followUp", { action: getReviewFollowUpActionLabel(parsedNotes.followUpAction) })}</p> : null}
             </div>
           ) : null}
         </section>
@@ -132,16 +142,16 @@ export default async function MockExamBookReviewPage({ params }: PageProps) {
         {canUpdatePreference && latestBooking ? (
           <form action={updatePreferenceAction} className="rounded-[32px] border border-white/10 bg-[rgba(18,20,28,0.95)] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.22)]">
             <input type="hidden" name="bookingId" value={latestBooking.id} />
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">Slot Tercihi</p>
-            <h3 className="mt-3 text-2xl font-black text-white">Review randevunu guncelle</h3>
-            <p className="mt-3 text-sm leading-7 text-zinc-300">Odemen tamamlandigi icin tercih ettigin saati ve ek notunu admin tarafina iletebilirsin.</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">{t("prefBadge")}</p>
+            <h3 className="mt-3 text-2xl font-black text-white">{t("prefTitle")}</h3>
+            <p className="mt-3 text-sm leading-7 text-zinc-300">{t("prefText")}</p>
             <div className="mt-5 grid gap-3">
               <select
                 name="scheduledStartAt"
-                defaultValue={latestBooking.scheduledStartAt ? latestBooking.scheduledStartAt.toISOString().slice(0, 16) : ""}
+                defaultValue={latestBooking.scheduledStartAt ? latestBooking.scheduledStartAt.toISOString() : ""}
                 className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white"
               >
-                <option value="">Uygun slot sec...</option>
+                <option value="">{t("pickSlot")}</option>
                 {slotOptions.map((slot) => (
                   <option key={slot.value} value={slot.value}>
                     {slot.label}
@@ -152,12 +162,12 @@ export default async function MockExamBookReviewPage({ params }: PageProps) {
                 name="lessonNotes"
                 rows={4}
                 defaultValue={parsedNotes.studentNote ?? ""}
-                placeholder="Ek not veya odaklanilacak konu"
+                placeholder={t("notePlaceholder")}
                 className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white"
               />
             </div>
             <button type="submit" className="mt-5 inline-flex rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200">
-              Tercihimi guncelle
+              {t("updatePref")}
             </button>
           </form>
         ) : canSellReview ? (
@@ -170,16 +180,16 @@ export default async function MockExamBookReviewPage({ params }: PageProps) {
             initialFullName={session.user.name ?? ""}
             initialEmail={session.user.email ?? ""}
             slotOptions={slotOptions}
-            initialPreferredSlot={latestBooking?.scheduledStartAt ? latestBooking.scheduledStartAt.toISOString().slice(0, 16) : ""}
+            initialPreferredSlot={latestBooking?.scheduledStartAt ? latestBooking.scheduledStartAt.toISOString() : ""}
             initialBookingNote={parsedNotes.studentNote ?? ""}
           />
         ) : latestBooking ? (
           <aside className="rounded-[32px] border border-white/10 bg-[rgba(18,20,28,0.95)] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.22)] text-sm leading-7 text-zinc-300">
-            Booking talebin olusturulmus durumda. Ogretmen atamasi yapildiginda burada kesin slot bilgisini goreceksin.
+            {t("pending")}
           </aside>
         ) : (
           <aside className="rounded-[32px] border border-white/10 bg-[rgba(18,20,28,0.95)] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.22)] text-sm leading-7 text-zinc-300">
-            Bu sınav için lesson review satışı henüz aktif değil.
+            {t("notAvailable")}
           </aside>
         )}
       </div>

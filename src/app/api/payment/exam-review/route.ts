@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import { authOptions } from "@/src/auth";
@@ -47,9 +48,10 @@ function parsePreferredSlot(value?: string) {
 }
 
 export async function POST(request: Request) {
+  const [t, tErrors] = await Promise.all([getTranslations("bookReview.api"), getTranslations("apiErrors")]);
   const rateKey = getClientKey(request);
   if (isRateLimited(rateKey)) {
-    return NextResponse.json({ error: "Cok fazla deneme. Lutfen bir dakika sonra tekrar deneyin." }, { status: 429 });
+    return NextResponse.json({ error: tErrors("tooManyRequests") }, { status: 429 });
   }
 
   const session = await getServerSession(authOptions);
@@ -59,7 +61,7 @@ export async function POST(request: Request) {
 
   const payload = requestSchema.safeParse(await request.json());
   if (!payload.success) {
-    return NextResponse.json({ error: "Gecersiz istek." }, { status: 400 });
+    return NextResponse.json({ error: tErrors("invalidData") }, { status: 400 });
   }
 
   const { attemptId, fullName, email, phone, preferredSlot, bookingNote } = payload.data;
@@ -92,23 +94,23 @@ export async function POST(request: Request) {
   });
 
   if (!attempt) {
-    return NextResponse.json({ error: "Attempt bulunamadi veya henuz gonderilmedi." }, { status: 404 });
+    return NextResponse.json({ error: t("attemptNotFound") }, { status: 404 });
   }
 
   const amount = attempt.examModule.lessonReviewPrice;
   const currency = attempt.examModule.lessonCurrency || "TRY";
   if (!amount || amount <= 0) {
-    return NextResponse.json({ error: "Bu sinav icin review satisi aktif degil." }, { status: 400 });
+    return NextResponse.json({ error: t("notAvailable") }, { status: 400 });
   }
 
   const normalizedPhone = phone.replace(/\D/g, "");
   if (normalizedPhone.length < 10 || normalizedPhone.length > 15) {
-    return NextResponse.json({ error: "Telefon numarasi gecersiz." }, { status: 400 });
+    return NextResponse.json({ error: t("invalidPhone") }, { status: 400 });
   }
 
   const parsedPreferredSlot = parsePreferredSlot(preferredSlot);
   if (parsedPreferredSlot === "INVALID") {
-    return NextResponse.json({ error: "Slot tarihi gecersiz." }, { status: 400 });
+    return NextResponse.json({ error: t("invalidSlot") }, { status: 400 });
   }
 
   const selectedQuestionIds = attempt.answers.map((answer) => answer.questionId);

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { Brain, CheckCircle2, ChevronDown, ChevronUp, Circle, XCircle } from "lucide-react";
 
@@ -47,6 +48,7 @@ function getOptionLabel(index: number) {
 }
 
 export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
+	const t = useTranslations("readingExam");
 	const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
 	const [submitted, setSubmitted] = useState(false);
 	const [expandedPassages, setExpandedPassages] = useState<Record<number, boolean>>({});
@@ -81,17 +83,17 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
 							<div>
 								<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-500">Reading Exam Lab</p>
 								<h2 className="text-lg font-black text-white">
-									{passages.length} pasaj &middot; {questionList.length} çoktan seçmeli soru
+									{t("summary", { passages: passages.length, questions: questionList.length })}
 								</h2>
 							</div>
 						</div>
 						<p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-							Her pasaj farklı bir konu alanını hedefler. Main idea, detail, inference, vocabulary in context ve tone soruları yer alır.
+							{t("intro")}
 						</p>
 					</div>
 					<div className="flex flex-wrap items-center gap-3 shrink-0">
 						<div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-slate-300">
-							{answeredCount}/{questionList.length} cevaplandı
+							{t("answered", { done: answeredCount, total: questionList.length })}
 						</div>
 						{submitted && (
 							<div className={`rounded-2xl border px-4 py-2.5 text-sm font-black ${score >= 70 ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300" : "border-rose-500/25 bg-rose-500/10 text-rose-300"}`}>
@@ -103,7 +105,7 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
 							onClick={() => setSubmitted((s) => !s)}
 							className="rounded-2xl bg-white px-5 py-2.5 text-sm font-bold text-slate-950 shadow-lg transition hover:bg-slate-100 active:scale-95"
 						>
-							{submitted ? "Sonuçları Gizle" : "Cevapları Kontrol Et"}
+							{submitted ? t("hideResults") : t("checkAnswers")}
 						</button>
 					</div>
 				</div>
@@ -131,11 +133,11 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
 									<span>{getWordCount(passage.passage)} kelime</span>
 								</div>
 								<h3 className="mt-2 text-lg font-black text-white">
-									Pasaj {passageIndex + 1}: {passage.title}
+									{t("passageTitle", { number: passageIndex + 1, title: passage.title })}
 								</h3>
 								{submitted && (
 									<p className={`mt-1 text-xs font-semibold ${passageScore >= 70 ? "text-emerald-400" : "text-rose-400"}`}>
-										{passageCorrect}/{passage.questions.length} doğru — %{passageScore}
+										{t("passageScore", { correct: passageCorrect, total: passage.questions.length, score: passageScore })}
 									</p>
 								)}
 							</div>
@@ -157,7 +159,7 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
 							{/* summary */}
 							<div className="flex items-start gap-3 rounded-2xl border border-cyan-700/40 bg-cyan-950/60 px-4 py-3">
 									<span className="mt-0.5 text-cyan-400 shrink-0">ℹ</span>
-									<p className="text-sm leading-6 text-cyan-100"><strong>Özet:</strong> {passage.summary}</p>
+									<p className="text-sm leading-6 text-cyan-100"><strong>{t("summaryLabel")}</strong> {passage.summary}</p>
 								</div>
 
 								{/* questions */}
@@ -227,10 +229,10 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
 															)}
 															<p className={`text-sm font-bold ${isCorrect ? "text-emerald-300" : isWrong ? "text-rose-300" : "text-amber-300"}`}>
 																{isCorrect
-																	? "Doğru cevap!"
+																	? t("correct")
 																	: isWrong
-																		? `Yanlış. Doğru cevap: ${question.answer}`
-																		: `Cevap verilmedi. Doğru cevap: ${question.answer}`}
+																		? t("wrong", { answer: question.answer })
+																		: t("unanswered", { answer: question.answer })}
 															</p>
 														</div>
 														<p className="mt-2 text-sm leading-6 text-slate-300">{question.explanation}</p>

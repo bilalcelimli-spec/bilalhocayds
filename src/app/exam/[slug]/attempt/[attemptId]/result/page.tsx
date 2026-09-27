@@ -1,8 +1,10 @@
 import { getServerSession } from "next-auth";
+import { getTranslations } from "next-intl/server";
 import { notFound, redirect } from "next/navigation";
 
 import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
+import { getExamFlowNavItems, getPanelRoleLabel } from "@/src/lib/panel-nav";
 import { MockExamResult } from "@/src/components/exam/mock-exam-result";
 import { getExamAttemptResult } from "@/src/lib/exam-attempts";
 import { formatCurrency } from "@/src/lib/exam-workspace";
@@ -27,8 +29,14 @@ export default async function MockExamResultPage({ params }: PageProps) {
   });
   if (!exam) notFound();
 
+  const [t, examNav, roleLabel] = await Promise.all([
+    getTranslations("examFlow"),
+    getExamFlowNavItems(),
+    getPanelRoleLabel(session.user.role),
+  ]);
+
   return (
-    <DashboardShell navItems={[{ label: "Dashboard", href: "/dashboard" }, { label: "Sınav", href: "/exam" }]} roleLabel="Öğrenci Paneli" title="Result Screen" subtitle="Instant scoring, review and upsell surface" userName={session.user.name ?? undefined} userRole={session.user.role}>
+    <DashboardShell navItems={examNav} roleLabel={roleLabel} title={t("result.title")} subtitle={t("result.subtitle")} userName={session.user.name ?? undefined} userRole={session.user.role}>
       <MockExamResult
         attemptId={attemptId}
         examSlug={slug}

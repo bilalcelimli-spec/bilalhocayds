@@ -208,7 +208,7 @@ model ClassMaterial     { liveClassId, type, url }
 
 **Durum (Sprint 1):** ✅ 1, 2, 4, 5, 6 tamamlandı — platform içi sınıf (LiveKit), webhook ile yoklama, `/api/health`, CI, `User.locale/timezone/country`. Kurulum: [live-classroom-setup.md](live-classroom-setup.md). ✅ Reading tabloları için eksik migration eklendi.
 
-**Durum (Sprint 2):** 🟡 3 büyük ölçüde tamam — `next-intl` altyapısı (TR/EN, çerez + Accept-Language, kullanıcı tercihi, tarayıcı saat dilimi); ana sayfa, fiyatlar, canlı dersler, giriş/kayıt/şifre, öğrenci paneli ve ilgili API'ler çevrildi. Sırada: öğrenme modülleri (reading/grammar/vocabulary/sınav), kalan e-postalar, URL önekli (`/en`) SEO sayfaları. ❌ 7 (Stripe) iptal — ödemeler PayTR ile devam.
+**Durum (Sprint 2):** ✅ 3 öğrenci tarafı tamam — `next-intl` (TR/EN, çerez + Accept-Language, kullanıcı tercihi, tarayıcı saat dilimi); öğrencinin gördüğü tüm sayfalar ve API mesajları çevrildi; AI içerik dili kullanıcının diline bağlandı. Sırada: yedek içerik şablonlarının İngilizcesi, kalan e-postalar, URL önekli (`/en`) SEO sayfaları. ❌ 7 (Stripe) iptal — ödemeler PayTR ile devam.
 
 
 1. `src/app/api/health/route.ts` ekle.

@@ -17,6 +17,7 @@ import {
 
 import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
+import { getPanelRoleLabel, getStudentNavItems } from "@/src/lib/panel-nav";
 import { prisma } from "@/src/lib/prisma";
 import { getTodayStudentDailyContentSnapshot } from "@/src/lib/student-daily-content";
 
@@ -112,22 +113,10 @@ export default async function DashboardPage() {
         }
       : null,
   ].filter(isDefined);
-  const studentNavItems = [
-    { label: t("navDashboard"), href: "/dashboard" },
-    { label: t("navOrders"), href: "/dashboard/orders" },
-    session.user.hasLiveRecordingsAccess
-      ? { label: t("navRecordings"), href: "/dashboard/live-recordings" }
-      : null,
-    session.user.hasContentLibraryAccess
-      ? { label: t("navLibrary"), href: "/dashboard/content-library" }
-      : null,
-    session.user.hasVocabAccess ? { label: "Vocabulary", href: "/vocabulary" } : null,
-    session.user.hasReadingAccess ? { label: "Reading", href: "/reading" } : null,
-    session.user.hasGrammarAccess ? { label: "Grammar", href: "/grammar" } : null,
-    { label: t("navExam"), href: "/exam" },
-    session.user.hasLiveClassesAccess ? { label: t("navLive"), href: "/live-classes" } : null,
-    { label: t("navPricing"), href: "/pricing" },
-  ].filter(isDefined);
+  const [studentNavItems, roleLabel] = await Promise.all([
+    getStudentNavItems(session.user),
+    getPanelRoleLabel(session.user.role),
+  ]);
   const moduleCards = [
     session.user.hasVocabAccess && dailyContent.vocabulary
       ? {
@@ -209,7 +198,7 @@ export default async function DashboardPage() {
   return (
     <DashboardShell
       navItems={studentNavItems}
-      roleLabel={t("roleLabel")}
+      roleLabel={roleLabel}
       title={t("title", { greeting, name: session.user.name ?? t("defaultName") })}
       subtitle={t("subtitle")}
       userName={session.user.name ?? undefined}

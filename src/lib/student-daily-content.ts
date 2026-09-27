@@ -147,16 +147,20 @@ function getIstanbulDayKey(date = new Date()) {
 }
 
 async function getStudentProfileContext(userId: string) {
-  const profile = await prisma.studentProfile.findUnique({
-    where: { userId },
-    select: {
-      interestTags: true,
-      targetExam: true,
-      targetScore: true,
-      currentLevel: true,
-      dailyGoalMinutes: true,
-    },
-  });
+  const [profile, user] = await Promise.all([
+    prisma.studentProfile.findUnique({
+      where: { userId },
+      select: {
+        interestTags: true,
+        targetExam: true,
+        targetScore: true,
+        currentLevel: true,
+        dailyGoalMinutes: true,
+      },
+    }),
+    prisma.user.findUnique({ where: { id: userId }, select: { locale: true } }),
+  ]);
+  const locale = user?.locale ?? null;
 
   return {
     profile,
@@ -166,6 +170,7 @@ async function getStudentProfileContext(userId: string) {
       targetScore: profile?.targetScore,
       dailyGoalMinutes: profile?.dailyGoalMinutes,
       interestTags: profile?.interestTags,
+      locale,
       focusSkill: "vocabulary",
     }),
     readingProfile: createAiProfileOverridesFromStudentContext({
@@ -174,6 +179,7 @@ async function getStudentProfileContext(userId: string) {
       targetScore: profile?.targetScore,
       dailyGoalMinutes: profile?.dailyGoalMinutes,
       interestTags: profile?.interestTags,
+      locale,
       focusSkill: "reading",
     }),
     grammarProfile: createAiProfileOverridesFromStudentContext({
@@ -182,6 +188,7 @@ async function getStudentProfileContext(userId: string) {
       targetScore: profile?.targetScore,
       dailyGoalMinutes: profile?.dailyGoalMinutes,
       interestTags: profile?.interestTags,
+      locale,
     }),
   };
 }

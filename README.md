@@ -45,8 +45,9 @@ Tarihler `NEXT_TZ` cerezindeki saat dilimine gore gosterilir (tarayici otomatik 
 
 - Metinler: `messages/tr.json`, `messages/en.json` (anahtarlar tip kontrolunden gecer; eksik anahtar derleme hatasi verir)
 - Yapilandirma: `src/i18n/`
-- Cevrilen alanlar: ana sayfa (seviye testi ve danismanlik formu dahil), fiyatlar ve plan detay, canli dersler ve canli sinif, giris/kayit/sifre sifirlama, ogrenci paneli, odeme sonuc sayfalari, ilgili API hata mesajlari ve sifre sifirlama e-postasi.
-- Turkce kalanlar: admin paneli, ogretmen paneli, reading/grammar/vocabulary/sinav modul ekranlari, satin alma ve hos geldin e-postalari, veritabanindan gelen icerik (plan adlari, ders basliklari).
+- Cevrilen alanlar: ogrencinin gordugu tum sayfalar (ana sayfa, fiyatlar, canli dersler/sinif, giris/kayit/sifre, ogrenci paneli ve alt sayfalari, vocabulary/reading/grammar modulleri, sinav akisi ve birebir inceleme), ilgili API mesajlari ve sifre sifirlama e-postasi.
+- AI icerik dili: `User.locale` "en" ise gunluk icerik ve adaptive sinav aciklamalari Ingilizce istenir; Ingilizce arayuzde Turkce kelime karsiliklari gizlenir. AI anahtari yokken kullanilan yedek sablonlar hala Turkcedir.
+- Turkce kalanlar: admin ve ogretmen paneli, satin alma/hos geldin e-postalari, veritabanindan gelen icerik (plan adlari, ders basliklari).
 
 ## Platform Ici Canli Sinif
 
