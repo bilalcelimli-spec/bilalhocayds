@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import { prisma } from "@/src/lib/prisma";
+import { getStudentProgressSummary } from "@/src/lib/student-progress";
 
 function getJwtSecret(): Uint8Array {
   const secret = process.env.NEXTAUTH_SECRET;
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, name: true, email: true },
+      select: { id: true, name: true, email: true, timezone: true },
     });
 
     if (!user) {
@@ -48,15 +49,22 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
+    const progress = await getStudentProgressSummary(user.id, user.timezone);
+
     return NextResponse.json({
-      user,
+      user: { id: user.id, name: user.name, email: user.email },
       activeSubscription: activeSubscription
         ? {
             plan: activeSubscription.plan,
             expiresAt: activeSubscription.endDate?.toISOString() ?? null,
           }
         : null,
-      stats: null, // İleride eklenebilir
+      stats: {
+        streakDays: progress.streakDays,
+        performance: progress.performance,
+        practicedToday: [...progress.practicedToday],
+        examSubmittedToday: progress.examSubmittedToday,
+      },
     });
   } catch (err) {
     console.error("[dashboard] error:", err);

@@ -6,6 +6,7 @@ import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
 import { getExamFlowNavItems, getPanelRoleLabel } from "@/src/lib/panel-nav";
 import { getExamAttemptResult } from "@/src/lib/exam-attempts";
+import { getSectionStrategy } from "@/src/lib/exam-recommendation";
 
 type PageProps = { params: Promise<{ slug: string; attemptId: string }> };
 
@@ -16,8 +17,9 @@ export default async function MockExamReviewPage({ params }: PageProps) {
   const result = await getExamAttemptResult(session.user.id, attemptId).catch(() => null);
   if (!result || result.exam.slug !== slug) notFound();
 
-  const [t, examNav, roleLabel] = await Promise.all([
+  const [t, tStrategy, examNav, roleLabel] = await Promise.all([
     getTranslations("examFlow"),
+    getTranslations("examStrategy"),
     getExamFlowNavItems(),
     getPanelRoleLabel(session.user.role),
   ]);
@@ -41,7 +43,7 @@ export default async function MockExamReviewPage({ params }: PageProps) {
               <p className="text-xs uppercase tracking-[0.18em] text-cyan-300">{t("review.aiExplanation")}</p>
               <p className="mt-3 text-sm font-semibold text-white">{explanation?.shortReason ?? t("review.correctAnswer", { answer: question.correctAnswer })}</p>
               <p className="mt-2 text-sm leading-7 text-zinc-200">{explanation?.detailed ?? question.explanation ?? t("review.noExplanation")}</p>
-              <p className="mt-3 text-sm text-cyan-100">{t("review.examTip", { tip: explanation?.examTip ?? t("review.defaultTip") })}</p>
+              <p className="mt-3 text-sm text-cyan-100">{t("review.examTip", { tip: explanation?.examTip ?? tStrategy(getSectionStrategy(question.sectionType)) })}</p>
             </div>
           </div>
           );

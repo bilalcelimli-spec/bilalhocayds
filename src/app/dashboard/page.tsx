@@ -20,6 +20,7 @@ import { DashboardShell } from "@/src/components/dashboard/shell";
 import { getPanelRoleLabel, getStudentNavItems } from "@/src/lib/panel-nav";
 import { prisma } from "@/src/lib/prisma";
 import { getTodayStudentDailyContentSnapshot } from "@/src/lib/student-daily-content";
+import { getStudentProgressSummary, PRACTICE_PERFORMANCE_WINDOW_DAYS } from "@/src/lib/student-progress";
 
 function isDefined<T>(value: T | null): value is T {
   return value !== null;
@@ -55,23 +56,24 @@ export default async function DashboardPage() {
     : null;
   const hasBundledExamAccess = (session.user.accessibleExamIds?.length ?? 0) > 0;
   const hasAnyExamAccess = session.user.hasExamAccess || hasBundledExamAccess;
-  const dailyContent = session.user.id
-    ? await getTodayStudentDailyContentSnapshot(session.user.id, session.user)
-    : {};
+  const [dailyContent, progress] = await Promise.all([
+    session.user.id ? getTodayStudentDailyContentSnapshot(session.user.id, session.user) : Promise.resolve({} as Awaited<ReturnType<typeof getTodayStudentDailyContentSnapshot>>),
+    getStudentProgressSummary(session.user.id, timeZone),
+  ]);
   const todayTasks = [
     session.user.hasVocabAccess && dailyContent.vocabulary
       ? {
           id: 1,
           label: t("taskVocab", { count: dailyContent.vocabulary.items.length }),
           module: "Vocabulary",
-          done: false,
+          done: progress.practicedToday.has("VOCABULARY"),
         }
       : session.user.hasVocabAccess
         ? {
             id: 1,
             label: t("taskVocabStart"),
             module: "Vocabulary",
-            done: false,
+            done: progress.practicedToday.has("VOCABULARY"),
           }
       : null,
     session.user.hasReadingAccess && dailyContent.reading
@@ -79,14 +81,14 @@ export default async function DashboardPage() {
           id: 2,
           label: t("taskReading", { count: dailyContent.reading.passages[0]?.questions.length ?? 0 }),
           module: "Reading",
-          done: false,
+          done: progress.practicedToday.has("READING"),
         }
       : session.user.hasReadingAccess
         ? {
             id: 2,
             label: t("taskReadingStart"),
             module: "Reading",
-            done: false,
+            done: progress.practicedToday.has("READING"),
           }
       : null,
     session.user.hasGrammarAccess && dailyContent.grammar
@@ -94,14 +96,14 @@ export default async function DashboardPage() {
           id: 3,
           label: t("taskGrammar", { topic: dailyContent.grammar.focusTopic }),
           module: "Grammar",
-          done: false,
+          done: progress.practicedToday.has("GRAMMAR"),
         }
       : session.user.hasGrammarAccess
         ? {
             id: 3,
             label: t("taskGrammarStart"),
             module: "Grammar",
-            done: false,
+            done: progress.practicedToday.has("GRAMMAR"),
           }
       : null,
     hasAnyExamAccess
@@ -109,7 +111,7 @@ export default async function DashboardPage() {
           id: 4,
           label: t("taskExam"),
           module: "Exam",
-          done: false,
+          done: progress.examSubmittedToday,
         }
       : null,
   ].filter(isDefined);
@@ -237,7 +239,7 @@ export default async function DashboardPage() {
             </div>
             <div className="flex items-center gap-1.5 rounded-2xl border border-orange-500/20 bg-orange-500/10 px-3 py-2">
               <Flame size={13} className="text-orange-400" />
-              <span className="text-xs font-semibold text-orange-300">{t("streak")}</span>
+              <span className="text-xs font-semibold text-orange-300">{t("streak", { count: progress.streakDays })}</span>
             </div>
           </div>
 
@@ -265,27 +267,40 @@ export default async function DashboardPage() {
 
         <div className="space-y-4">
           <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl">
-            <h2 className="mb-5 text-lg font-bold text-white">{t("performance")}</h2>
+            <h2 className="text-lg font-bold text-white">{t("performance")}</h2>
+            <p className="mb-5 mt-0.5 text-xs uppercase tracking-[0.18em] text-zinc-500">
+              {t("performanceMeta", { days: PRACTICE_PERFORMANCE_WINDOW_DAYS })}
+            </p>
             <div className="space-y-4">
               {[
-                { label: t("perfVocab"), val: 78, color: "bg-blue-500" },
-                { label: t("perfGrammar"), val: 69, color: "bg-violet-500" },
-                { label: t("perfReading"), val: 74, color: "bg-indigo-500" },
-              ].map((item) => (
-                <div key={item.label}>
-                  <div className="mb-1.5 flex justify-between text-xs">
-                    <span className="text-zinc-400">{item.label}</span>
-                    <span className="font-semibold text-white">{formatter.number(item.val / 100, { style: "percent" })}</span>
+                { label: t("perfVocab"), stats: progress.performance.VOCABULARY, color: "bg-blue-500", enabled: session.user.hasVocabAccess },
+                { label: t("perfGrammar"), stats: progress.performance.GRAMMAR, color: "bg-violet-500", enabled: session.user.hasGrammarAccess },
+                { label: t("perfReading"), stats: progress.performance.READING, color: "bg-indigo-500", enabled: session.user.hasReadingAccess },
+              ]
+                .filter((item) => item.enabled || item.stats.total > 0)
+                .map((item) => (
+                  <div key={item.label}>
+                    <div className="mb-1.5 flex justify-between text-xs">
+                      <span className="text-zinc-400">{item.label}</span>
+                      <span className="font-semibold text-white">
+                        {item.stats.accuracy === null ? t("perfEmpty") : formatter.number(item.stats.accuracy / 100, { style: "percent" })}
+                      </span>
+                    </div>
+                    <div className="h-2 rounded-full bg-white/10">
+                      <div
+                        className={`h-full rounded-full ${item.color} transition-all`}
+                        style={{ width: `${item.stats.accuracy ?? 0}%` }}
+                      />
+                    </div>
+                    {item.stats.total > 0 ? (
+                      <p className="mt-1 text-[11px] text-zinc-500">{t("perfCount", { correct: item.stats.correct, total: item.stats.total })}</p>
+                    ) : null}
                   </div>
-                  <div className="h-2 rounded-full bg-white/10">
-                    <div
-                      className={`h-full rounded-full ${item.color} transition-all`}
-                      style={{ width: `${item.val}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
+            {progress.performance.VOCABULARY.total + progress.performance.GRAMMAR.total + progress.performance.READING.total === 0 ? (
+              <p className="mt-4 text-xs leading-5 text-zinc-500">{t("perfHint")}</p>
+            ) : null}
           </div>
 
           {session.user.hasLiveClassesAccess ? (

@@ -47,6 +47,7 @@ export default async function AdminExamPreviewPage({ params }: PageProps) {
           id: question.id,
           number: question.questionNumber,
           section: question.section.title,
+          sectionType: question.sectionType,
           prompt: question.questionText,
           correctAnswer: question.correctAnswer,
           selectedAnswer: null,

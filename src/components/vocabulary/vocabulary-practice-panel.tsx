@@ -4,6 +4,8 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { CheckCircle2, ChevronDown, ChevronUp, XCircle } from "lucide-react";
 
+import { recordPracticeAnswers } from "@/src/lib/practice-client";
+
 type VocabularyActivity = {
 	type:
 		| "fill-in-the-blanks"
@@ -148,7 +150,12 @@ export function VocabularyPracticePanel({ activities }: VocabularyPracticePanelP
 							<div className="mt-4 flex flex-wrap items-center gap-3">
 								<button
 									type="button"
-									onClick={() => setRevealedItems((s) => ({ ...s, [index]: !s[index] }))}
+									onClick={() => {
+										if (!isRevealed && hasOptions && selectedAnswer) {
+											recordPracticeAnswers("VOCABULARY", [{ itemKey: `v${index}-${activity.type}`, isCorrect }]);
+										}
+										setRevealedItems((s) => ({ ...s, [index]: !s[index] }));
+									}}
 									className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-all ${
 										isRevealed
 											? "border border-white/[0.08] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]"

@@ -210,6 +210,8 @@ model ClassMaterial     { liveClassId, type, url }
 
 **Durum (Sprint 2):** ✅ 3 öğrenci tarafı tamam — `next-intl` (TR/EN, çerez + Accept-Language, kullanıcı tercihi, tarayıcı saat dilimi); öğrencinin gördüğü tüm sayfalar ve API mesajları çevrildi; AI içerik dili kullanıcının diline bağlandı. ✅ Yedek içerik şablonlarının İngilizcesi, e-postaların alıcı diline/saat dilimine göre gönderimi, URL önekli (`/en`) SEO sayfaları (canonical + hreflang + iki dilli site haritası; Türkçe sayfalarda admin SEO ayarları uygulanıyor). ❌ 7 (Stripe) iptal — ödemeler PayTR ile devam.
 
+**Durum (öğrenci verisi):** ✅ Modül alıştırma cevapları `StudentPracticeAnswer` tablosuna kaydediliyor; öğrenci panelindeki seri, modül doğruluk oranları ve "bugün yapıldı" işaretleri gerçek veriden geliyor (mobil `/api/dashboard` de aynı özeti döndürüyor). ✅ Deneme sonuç ekranındaki sabit ipucu kaldırıldı; öneriler en zayıf bölüm, boş/yanlış oranı ve başarı seviyesine göre üretiliyor (`src/lib/exam-recommendation.ts`).
+
 
 1. `src/app/api/health/route.ts` ekle.
 2. CI: GitHub Actions — `npm ci`, `npm run lint`, `npx tsc --noEmit`.

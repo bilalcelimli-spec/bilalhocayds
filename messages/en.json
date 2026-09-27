@@ -844,11 +844,11 @@
     "setsOpen": "{count} sets open",
     "tasksTitle": "Today's tasks",
     "tasksMeta": "{count} tasks · About 90 min",
-    "streak": "7-day streak",
+    "streak": "{count, plural, =0 {Start your streak today} one {# day streak} other {# day streak}}",
     "performance": "Performance",
     "perfVocab": "Vocabulary accuracy",
     "perfGrammar": "Grammar accuracy",
-    "perfReading": "Reading completion",
+    "perfReading": "Reading accuracy",
     "nextLive": "Next live class",
     "nextLiveNone": "Coming soon",
     "details": "See details",
@@ -865,7 +865,11 @@
     "readerBadge": "AI Feature",
     "readerTitle": "Interactive Article Reader is on",
     "readerText": "Clickable word analysis, gap-fill exercises and a notes panel right on the text.",
-    "readerCta": "Open Reader"
+    "readerCta": "Open Reader",
+    "performanceMeta": "Your answers from the last {days} days",
+    "perfEmpty": "No answers yet",
+    "perfCount": "{correct}/{total} correct",
+    "perfHint": "As you check your answers in the modules, your real accuracy shows up here."
   },
   "vocabularyPage": {
     "refresh": "Refresh",
@@ -1063,8 +1067,7 @@
       "aiExplanation": "AI explanation",
       "correctAnswer": "Correct answer: {answer}",
       "noExplanation": "There's no saved explanation for this question yet.",
-      "examTip": "Exam tip: {tip}",
-      "defaultTip": "Before choosing an option, read the context, key connectors and the question stem together."
+      "examTip": "Exam tip: {tip}"
     }
   },
   "examShell": {
@@ -1116,12 +1119,32 @@
     "strongest": "Strongest area:",
     "weakest": "Weakest area:",
     "none": "None yet",
-    "genericTip": "For reading inference and contrast-linker questions, follow the flow of the context instead of matching surface keywords.",
     "adaptiveClosed": "The adaptive test finished at level {level} with {percent}% confidence.",
     "premiumReview": "1-on-1 review",
     "premiumTitle": "Go over your mistakes 1-on-1 with Bilal Hoca",
     "premiumText": "Book a focused 30-minute session based on the mistakes in this exam. Bilal Hoca will have your mistakes ready before the lesson.",
-    "openBooking": "Choose a time and pay"
+    "openBooking": "Choose a time and pay",
+    "tips": {
+      "perfect": "No wrong or blank answers in this exam. To keep your level, move on to harder timed practice exams.",
+      "weakSection": "Your weakest section was {section}: you missed {missed} of {total} questions ({accuracy}% correct).",
+      "blanks": "You left {blank} of {total} questions blank. A wrong answer costs 0.25 net, so on a five-option question, answering pays off on average if you can rule out at least one option; if you can rule out none, leave it blank. If many were left blank, practise dividing your time across sections.",
+      "wrongs": "Your {wrong} wrong answers cost you {netLost, number} net {netLost, plural, one {point} other {points}}. When unsure, first rule out options you know are wrong; if you can rule out none, leaving it blank is safer.",
+      "foundation": "Your accuracy is {accuracy}%. Build the foundation first: finish the vocabulary and grammar modules every day, focus less on time in practice exams and note why each answer was wrong.",
+      "developing": "Your accuracy is {accuracy}%. The basics are in place; you can raise your score by focusing on your weakest section and reviewing your mistakes.",
+      "strong": "Your accuracy is {accuracy}%. You are close to your goal; build speed with full-length timed exams and study the trap types behind your remaining mistakes.",
+      "practice": "Go to the matching module"
+    }
+  },
+  "examStrategy": {
+    "vocabulary": "In vocabulary questions, find the overall meaning of the sentence and whether the word should be positive or negative; study synonyms and common collocations together.",
+    "grammar": "In grammar questions, first check tense and subject–verb agreement, then look for the structure the sentence’s connectors and prepositions require.",
+    "cloze": "In cloze tests, read both before and after the gap; connectors, prepositions and tense usually depend on context spread over several sentences.",
+    "sentenceCompletion": "In sentence completion, first identify the connector and tense of the given half; rule out options that don’t match in meaning or tense.",
+    "translation": "In translation questions, match the main verb and tense first, then compare clauses and modifiers; watch for options that match word for word but shift the meaning.",
+    "paragraphCompletion": "In paragraph completion, read the sentences before and after the gap together; rule out options that break the flow or start a new topic.",
+    "reading": "In reading questions, answer from a sentence you can point to in the text, not from your own knowledge; find the question’s key word in the text and read around it carefully.",
+    "dialogue": "In dialogue questions, consider the speakers’ attitudes and the reply after the gap together; rule out options that don’t fit the next line.",
+    "general": "Before choosing an option, read the context, key connectors and the question stem together."
   },
   "bookReview": {
     "title": "30-Minute 1-on-1 Review",

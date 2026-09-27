@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
+import { buildExamRecommendations, type ExamTip } from "@/src/lib/exam-recommendation";
+
 type MockExamResultProps = {
   attemptId: string;
   examSlug: string;
@@ -19,6 +21,7 @@ type MockExamResultProps = {
       id: string;
       number: number;
       section: string;
+      sectionType?: string | null;
       prompt: string;
       correctAnswer: string;
       selectedAnswer: string | null;
@@ -45,6 +48,35 @@ export function MockExamResult({
   previewMode = false,
 }: MockExamResultProps) {
   const t = useTranslations("examResult");
+  const tStrategy = useTranslations("examStrategy");
+  const tips = buildExamRecommendations(result);
+
+  function renderTip(tip: ExamTip) {
+    switch (tip.kind) {
+      case "perfect":
+        return <p>{t("tips.perfect")}</p>;
+      case "weakSection":
+        return (
+          <>
+            <p className="font-semibold text-white">
+              {t("tips.weakSection", { section: tip.section, missed: tip.missed, total: tip.total, accuracy: tip.accuracy })}
+            </p>
+            <p className="mt-1">{tStrategy(tip.strategy)}</p>
+            {tip.practice && !previewMode ? (
+              <Link href={`/${tip.practice}`} className="mt-2 inline-flex text-xs font-semibold text-emerald-300 transition hover:text-emerald-200">
+                {t("tips.practice")} →
+              </Link>
+            ) : null}
+          </>
+        );
+      case "blanks":
+        return <p>{t("tips.blanks", { blank: tip.blank, total: tip.total })}</p>;
+      case "wrongs":
+        return <p>{t("tips.wrongs", { wrong: tip.wrong, netLost: tip.netLost })}</p>;
+      case "level":
+        return <p>{t(`tips.${tip.band}`, { accuracy: tip.accuracy })}</p>;
+    }
+  }
   const incorrectQuestions = result.answers.filter((question) => question.selectedAnswer !== question.correctAnswer);
 
   return (
@@ -131,7 +163,11 @@ export function MockExamResult({
             <div className="mt-4 space-y-3 text-sm text-zinc-300">
               <p><span className="font-semibold text-white">{t("strongest")}</span> {result.strongestSection ?? t("none")}</p>
               <p><span className="font-semibold text-white">{t("weakest")}</span> {result.weakestSection ?? t("none")}</p>
-              <p>{t("genericTip")}</p>
+              {tips.map((tip) => (
+                <div key={tip.kind} className="rounded-2xl border border-white/8 bg-white/[0.03] p-3 leading-6">
+                  {renderTip(tip)}
+                </div>
+              ))}
               {result.deliveryMode === "ADAPTIVE" && result.adaptiveSummary ? (
                 <p>{t("adaptiveClosed", { level: result.adaptiveSummary.finalLevel, percent: Math.round(result.adaptiveSummary.finalConfidence * 100) })}</p>
               ) : null}

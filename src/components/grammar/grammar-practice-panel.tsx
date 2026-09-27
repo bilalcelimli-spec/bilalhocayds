@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+
+import { recordPracticeAnswers } from "@/src/lib/practice-client";
 import { CheckCircle2, ChevronDown, ChevronUp, XCircle } from "lucide-react";
 
 type GrammarActivity = {
@@ -212,9 +214,12 @@ export function GrammarPracticePanel({ groups }: GrammarPracticePanelProps) {
 										<div className="mt-4 flex flex-wrap items-center gap-3">
 											<button
 												type="button"
-												onClick={() =>
-													setRevealedItems((s) => ({ ...s, [item.id]: !s[item.id] }))
-												}
+												onClick={() => {
+													if (!isRevealed && hasOptions && selectedAnswer) {
+														recordPracticeAnswers("GRAMMAR", [{ itemKey: item.id, isCorrect }]);
+													}
+													setRevealedItems((s) => ({ ...s, [item.id]: !s[item.id] }));
+												}}
 												className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-all ${
 													isRevealed
 														? "border border-white/[0.08] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]"

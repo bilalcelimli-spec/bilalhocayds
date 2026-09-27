@@ -844,11 +844,11 @@
     "setsOpen": "{count} set açık",
     "tasksTitle": "Bugünkü Görevler",
     "tasksMeta": "{count} görev · Tahmini 90 dk",
-    "streak": "7 günlük seri",
+    "streak": "{count, plural, =0 {Bugün seriyi başlat} other {# günlük seri}}",
     "performance": "Performans",
     "perfVocab": "Kelime Doğruluğu",
     "perfGrammar": "Grammar Doğruluğu",
-    "perfReading": "Reading Tamamlama",
+    "perfReading": "Reading Doğruluğu",
     "nextLive": "Sonraki Canlı Ders",
     "nextLiveNone": "Yakında planlanacak",
     "details": "Detayları gör",
@@ -865,7 +865,11 @@
     "readerBadge": "AI Feature",
     "readerTitle": "Interactive Article Reader aktif",
     "readerText": "Metin üzerinde tıklanabilir kelime analizi, boşluk doldurma ve not paneli.",
-    "readerCta": "Reader'ı Aç"
+    "readerCta": "Reader'ı Aç",
+    "performanceMeta": "Son {days} gündeki cevapların",
+    "perfEmpty": "Henüz cevap yok",
+    "perfCount": "{correct}/{total} doğru",
+    "perfHint": "Modüllerde cevaplarını kontrol ettikçe burada gerçek doğruluk oranın görünür."
   },
   "vocabularyPage": {
     "refresh": "Yenile",
@@ -1063,8 +1067,7 @@
       "aiExplanation": "AI Açıklaması",
       "correctAnswer": "Doğru cevap: {answer}",
       "noExplanation": "Bu soru için henüz kayıtlı bir açıklama yok.",
-      "examTip": "Sınav ipucu: {tip}",
-      "defaultTip": "Şık seçmeden önce bağlam, anahtar bağlaçlar ve soru kökünü birlikte oku."
+      "examTip": "Sınav ipucu: {tip}"
     }
   },
   "examShell": {
@@ -1116,12 +1119,32 @@
     "strongest": "En güçlü alan:",
     "weakest": "En zayıf alan:",
     "none": "Henüz yok",
-    "genericTip": "Reading inference ve contrast linker sorularında karar verirken yüzeysel anahtar kelime eşleşmesi yerine bağlam akışını takip etmek gerekiyor.",
     "adaptiveClosed": "Adaptive akış bu denemeyi {level} seviyesinde kapattı. Güven %{percent} olarak kaydedildi.",
     "premiumReview": "Birebir İnceleme",
     "premiumTitle": "Yanlışlarını Bilal Hoca ile birebir incele",
     "premiumText": "Bu denemedeki yanlışlarına göre 30 dakikalık odaklı analiz oturumu planla. Yanlışların ders öncesi Bilal Hoca'nın ekranında hazır olur.",
-    "openBooking": "Randevu ve ödeme adımını aç"
+    "openBooking": "Randevu ve ödeme adımını aç",
+    "tips": {
+      "perfect": "Bu denemede hiç yanlışın ya da boşun yok. Seviyeni korumak için bir üst zorlukta, süre tutarak deneme çözmeye devam et.",
+      "weakSection": "En çok zorlandığın bölüm {section}: {total} sorunun {missed} tanesini kaçırdın (başarı %{accuracy}).",
+      "blanks": "{total} sorunun {blank} tanesini boş bıraktın. Yanlış cevap 0,25 net götürdüğü için beş şıklı bir soruda en az bir şıkkı eleyebiliyorsan işaretlemek ortalamada net kazandırır; hiçbir şıkkı eleyemiyorsan boş bırak. Çok boş kaldıysa süreyi bölümlere paylaştırarak çalış.",
+      "wrongs": "{wrong} yanlış cevap netinden {netLost, number} puan götürdü. Emin olmadığın sorularda önce yanlış olduğundan emin olduğun şıkları ele; hiçbirini eleyemiyorsan boş bırakmak daha güvenli.",
+      "foundation": "Başarın %{accuracy}. Önce temeli güçlendir: her gün kelime ve gramer modüllerini tamamla, deneme çözerken süreyi ikinci planda tut ve her yanlışın nedenini not al.",
+      "developing": "Başarın %{accuracy}. Temel oturmuş; artık zayıf bölümüne odaklı çalışarak ve yanlışlarını tekrar ederek neti yükseltebilirsin.",
+      "strong": "Başarın %{accuracy}. Hedefine yakınsın; tam süreli denemelerle hız kazan ve kalan yanlışlarındaki tuzak tiplerini incele.",
+      "practice": "İlgili modüle git"
+    }
+  },
+  "examStrategy": {
+    "vocabulary": "Kelime sorularında cümlenin genel anlamını ve kelimenin olumlu/olumsuz tonunu bul; eş anlamlıları ve sık geçen kalıpları (collocation) birlikte çalış.",
+    "grammar": "Gramer sorularında önce zaman ve özne-yüklem uyumunu kontrol et, sonra cümledeki bağlaç ve edatların gerektirdiği yapıyı ara.",
+    "cloze": "Boşluk doldurmada boşluğun hem öncesini hem sonrasını oku; bağlaç, edat ve zaman uyumu genellikle birkaç cümleye yayılan bağlamdan çıkar.",
+    "sentenceCompletion": "Cümle tamamlamada önce verilen yarım cümlenin bağlacını ve zamanını belirle; anlam ve zaman bakımından uyuşmayan şıkları ele.",
+    "translation": "Çeviri sorularında önce ana yüklemi ve zamanı eşleştir, sonra yan cümleleri ve niteleyicileri karşılaştır; kelimesi kelimesine eşleşen ama anlamı kayan şıklara dikkat et.",
+    "paragraphCompletion": "Paragraf tamamlamada boşluktan önceki ve sonraki cümleyi birlikte oku; akışı bozan ya da yeni konu açan şıkları ele.",
+    "reading": "Okuma sorularında cevabı kendi bilgine göre değil metinde gösterebileceğin cümleye göre ver; soru kökündeki anahtar kelimeyi metinde bul ve çevresini dikkatle oku.",
+    "dialogue": "Diyalog sorularında konuşmacıların tutumunu ve boşluktan sonraki cevabı birlikte düşün; sonraki replikle uyuşmayan şıkları ele.",
+    "general": "Şık seçmeden önce bağlamı, anahtar bağlaçları ve soru kökünü birlikte oku."
   },
   "bookReview": {
     "title": "30 Dakikalık Birebir İnceleme",

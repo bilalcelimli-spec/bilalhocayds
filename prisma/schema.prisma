@@ -269,6 +269,7 @@ model User {
   readingAssignments StudentReadingAssignment[]
   readingAttempts  StudentReadingAttempt[]
   liveClassAttendances LiveClassAttendance[]
+  practiceAnswers StudentPracticeAnswer[]
 }
 
 model StudentProfile {
@@ -331,6 +332,23 @@ model StudentDailyContent {
 
   @@unique([userId, dayKey, moduleKey])
   @@index([userId, dayKey])
+}
+
+// Öğrencinin günlük modül alıştırmalarındaki cevapları (dashboard performansı ve seri için).
+// Aynı soru için ilk cevap saklanır.
+model StudentPracticeAnswer {
+  id         String             @id @default(cuid())
+  userId     String
+  moduleKey  DailyContentModule
+  dayKey     String
+  itemKey    String
+  isCorrect  Boolean
+  answeredAt DateTime           @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, moduleKey, dayKey, itemKey])
+  @@index([userId, answeredAt])
 }
 
 model TeacherProfile {

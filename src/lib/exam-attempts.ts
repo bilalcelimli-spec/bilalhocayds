@@ -540,6 +540,7 @@ function serializeQuestion(question: ExamQuestion & { section: { title: string }
     id: question.id,
     number: question.questionNumber,
     section: question.section.title,
+    sectionType: question.sectionType,
     prompt: question.questionText,
     options: [question.optionA, question.optionB, question.optionC, question.optionD, question.optionE],
     correctAnswer: question.correctAnswer,

@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
+
+import { recordPracticeAnswers } from "@/src/lib/practice-client";
 import { Brain, CheckCircle2, ChevronDown, ChevronUp, Circle, XCircle } from "lucide-react";
 
 type ReadingExamQuestion = {
@@ -102,7 +104,17 @@ export function ReadingExamPanel({ passages }: ReadingExamPanelProps) {
 						)}
 						<button
 							type="button"
-							onClick={() => setSubmitted((s) => !s)}
+							onClick={() => {
+								if (!submitted) {
+									recordPracticeAnswers(
+										"READING",
+										questionList
+											.filter(({ question }) => Boolean(selectedAnswers[question.id]))
+											.map(({ question }) => ({ itemKey: question.id, isCorrect: selectedAnswers[question.id] === question.answer })),
+									);
+								}
+								setSubmitted((s) => !s);
+							}}
 							className="rounded-2xl bg-white px-5 py-2.5 text-sm font-bold text-slate-950 shadow-lg transition hover:bg-slate-100 active:scale-95"
 						>
 							{submitted ? t("hideResults") : t("checkAnswers")}
