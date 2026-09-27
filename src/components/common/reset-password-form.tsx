@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Eye, EyeOff, KeyRound, ShieldAlert } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 type ValidationState = "checking" | "valid" | "invalid";
 
 export function ResetPasswordForm() {
   const searchParams = useSearchParams();
+  const t = useTranslations("resetPassword");
+  const tErrors = useTranslations("apiErrors");
   const token = searchParams.get("token") ?? "";
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -22,7 +25,7 @@ export function ResetPasswordForm() {
   useEffect(() => {
     if (!token) {
       setValidationState("invalid");
-      setError("Sıfırlama bağlantısı eksik veya geçersiz.");
+      setError(t("missingLink"));
       return;
     }
 
@@ -39,7 +42,7 @@ export function ResetPasswordForm() {
 
         if (!response.ok || !data.valid) {
           setValidationState("invalid");
-          setError(data.error ?? "Bu sıfırlama bağlantısı geçersiz veya süresi dolmuş.");
+          setError(data.error ?? t("invalidOrExpired"));
           return;
         }
 
@@ -48,7 +51,7 @@ export function ResetPasswordForm() {
       } catch {
         if (!cancelled) {
           setValidationState("invalid");
-          setError("Sıfırlama bağlantısı doğrulanamadı.");
+          setError(t("verifyFailed"));
         }
       }
     }
@@ -58,7 +61,7 @@ export function ResetPasswordForm() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, t]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -66,7 +69,7 @@ export function ResetPasswordForm() {
     setSuccess("");
 
     if (password !== confirmPassword) {
-      setError("Yeni şifreler birbiriyle aynı olmalı.");
+      setError(t("passwordsMismatch"));
       return;
     }
 
@@ -84,16 +87,16 @@ export function ResetPasswordForm() {
       const data = (await response.json()) as { error?: string; message?: string };
 
       if (!response.ok) {
-        setError(data.error ?? "Şifre güncellenemedi.");
+        setError(data.error ?? t("updateFailed"));
         return;
       }
 
-      setSuccess(data.message ?? "Şifren başarıyla güncellendi.");
+      setSuccess(data.message ?? t("updated"));
       setPassword("");
       setConfirmPassword("");
       setValidationState("invalid");
     } catch {
-      setError("Bağlantı kurulamadı. Lütfen tekrar dene.");
+      setError(tErrors("network"));
     } finally {
       setPending(false);
     }
@@ -102,7 +105,7 @@ export function ResetPasswordForm() {
   if (validationState === "checking") {
     return (
       <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6 text-sm leading-7 text-slate-300">
-        Sıfırlama bağlantısı doğrulanıyor...
+        {t("verifying")}
       </div>
     );
   }
@@ -116,18 +119,18 @@ export function ResetPasswordForm() {
               <ShieldAlert size={18} />
             </div>
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-red-300">Bağlantı Geçersiz</p>
-              <p className="mt-2 text-sm leading-7 text-red-100/85">{error || "Bu sıfırlama bağlantısı geçersiz veya süresi dolmuş."}</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-red-300">{t("invalidTitle")}</p>
+              <p className="mt-2 text-sm leading-7 text-red-100/85">{error || t("invalidOrExpired")}</p>
             </div>
           </div>
         </div>
 
         <div className="flex flex-wrap gap-3">
           <Link href="/forgot-password" className="rounded-[18px] border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm font-semibold text-amber-200 transition hover:bg-amber-400/15">
-            Yeni bağlantı iste
+            {t("requestNew")}
           </Link>
           <Link href="/login" className="rounded-[18px] border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.05]">
-            Giriş sayfasına dön
+            {t("backToLogin")}
           </Link>
         </div>
       </div>
@@ -137,7 +140,7 @@ export function ResetPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label className="mb-2 block text-sm font-medium text-slate-300">Yeni şifre</label>
+        <label className="mb-2 block text-sm font-medium text-slate-300">{t("newPassword")}</label>
         <div className="relative">
           <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
             <KeyRound size={16} />
@@ -148,7 +151,7 @@ export function ResetPasswordForm() {
             minLength={8}
             autoComplete="new-password"
             className="w-full rounded-[22px] border border-white/12 bg-white/[0.04] px-12 py-3.5 pr-16 text-white outline-none placeholder:text-slate-500 transition focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/20"
-            placeholder="En az 8 karakter"
+            placeholder={t("newPasswordPlaceholder")}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
@@ -157,7 +160,7 @@ export function ResetPasswordForm() {
             onClick={() => setShowPassword((value) => !value)}
             className="absolute right-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-slate-400 transition hover:text-white"
             tabIndex={-1}
-            aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
+            aria-label={showPassword ? t("hidePassword") : t("showPassword")}
           >
             {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
           </button>
@@ -165,7 +168,7 @@ export function ResetPasswordForm() {
       </div>
 
       <div>
-        <label className="mb-2 block text-sm font-medium text-slate-300">Yeni şifre tekrar</label>
+        <label className="mb-2 block text-sm font-medium text-slate-300">{t("confirmPassword")}</label>
         <div className="relative">
           <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
             <KeyRound size={16} />
@@ -176,7 +179,7 @@ export function ResetPasswordForm() {
             minLength={8}
             autoComplete="new-password"
             className="w-full rounded-[22px] border border-white/12 bg-white/[0.04] px-12 py-3.5 pr-16 text-white outline-none placeholder:text-slate-500 transition focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/20"
-            placeholder="Yeni şifreni tekrar gir"
+            placeholder={t("confirmPasswordPlaceholder")}
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
           />
@@ -185,7 +188,7 @@ export function ResetPasswordForm() {
             onClick={() => setShowConfirmPassword((value) => !value)}
             className="absolute right-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-slate-400 transition hover:text-white"
             tabIndex={-1}
-            aria-label={showConfirmPassword ? "Şifreyi gizle" : "Şifreyi göster"}
+            aria-label={showConfirmPassword ? t("hidePassword") : t("showPassword")}
           >
             {showConfirmPassword ? <EyeOff size={15} /> : <Eye size={15} />}
           </button>
@@ -203,23 +206,23 @@ export function ResetPasswordForm() {
               <CheckCircle2 size={18} />
             </div>
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-300">Şifre Güncellendi</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-300">{t("updatedTitle")}</p>
               <p className="mt-2 text-sm leading-7 text-emerald-100/85">{success}</p>
             </div>
           </div>
           <Link href="/login" className="mt-5 inline-flex rounded-[18px] border border-white/10 bg-white/[0.05] px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/[0.08]">
-            Giriş yap
+            {t("login")}
           </Link>
         </div>
       ) : (
         <>
           <div className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
             <div className="flex items-center justify-between gap-4 text-xs">
-              <span className="font-semibold uppercase tracking-[0.18em] text-amber-300">Yeni Giriş Bilgisi</span>
-              <span className="text-slate-500">Güvenli şifre seç</span>
+              <span className="font-semibold uppercase tracking-[0.18em] text-amber-300">{t("infoTitle")}</span>
+              <span className="text-slate-500">{t("infoTag")}</span>
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-400">
-              Güçlü bir şifre belirle. Bu işlem tamamlandığında eski şifren geçersiz olur.
+              {t("infoText")}
             </p>
           </div>
 
@@ -228,7 +231,7 @@ export function ResetPasswordForm() {
             disabled={pending}
             className="w-full rounded-[22px] bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] px-5 py-3.5 font-bold text-zinc-950 shadow-[0_12px_30px_rgba(212,168,67,0.32)] transition hover:brightness-105 disabled:opacity-50"
           >
-            {pending ? "Şifre güncelleniyor..." : "Yeni Şifreyi Kaydet"}
+            {pending ? t("submitting") : t("submit")}
           </button>
         </>
       )}

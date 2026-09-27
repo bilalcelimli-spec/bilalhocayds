@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import { authOptions } from "@/src/auth";
@@ -36,17 +37,19 @@ function isRateLimited(key: string) {
 }
 
 export async function POST(request: Request) {
+  const [t, tPurchase, tErrors] = await Promise.all([
+    getTranslations("liveClassPurchase.api"),
+    getTranslations("liveClassPurchase"),
+    getTranslations("apiErrors"),
+  ]);
   const rateKey = getClientKey(request);
   if (isRateLimited(rateKey)) {
-    return NextResponse.json(
-      { error: "Cok fazla deneme. Lutfen bir dakika sonra tekrar deneyin." },
-      { status: 429 },
-    );
+    return NextResponse.json({ error: tErrors("tooManyRequests") }, { status: 429 });
   }
 
   const payload = requestSchema.safeParse(await request.json());
   if (!payload.success) {
-    return NextResponse.json({ error: "Gecersiz istek." }, { status: 400 });
+    return NextResponse.json({ error: tErrors("invalidData") }, { status: 400 });
   }
 
   const { liveClassId, fullName, email, phone } = payload.data;
@@ -63,24 +66,24 @@ export async function POST(request: Request) {
   });
 
   if (!liveClass) {
-    return NextResponse.json({ error: "Canli ders bulunamadi." }, { status: 404 });
+    return NextResponse.json({ error: t("notFound") }, { status: 404 });
   }
 
   if (liveClass.status === "CANCELLED") {
-    return NextResponse.json({ error: "Bu ders iptal edildi." }, { status: 400 });
+    return NextResponse.json({ error: t("cancelled") }, { status: 400 });
   }
 
   if (!liveClass.singlePrice || liveClass.singlePrice <= 0) {
-    return NextResponse.json({ error: "Bu ders icin tek ders satin alma aktif degil." }, { status: 400 });
+    return NextResponse.json({ error: tPurchase("notAvailable") }, { status: 400 });
   }
 
   if (liveClass.scheduledAt <= new Date()) {
-    return NextResponse.json({ error: "Gecmis ders icin satin alma yapilamaz." }, { status: 400 });
+    return NextResponse.json({ error: t("past") }, { status: 400 });
   }
 
   const normalizedPhone = phone.replace(/\D/g, "");
   if (normalizedPhone.length < 10 || normalizedPhone.length > 15) {
-    return NextResponse.json({ error: "Telefon numarasi gecersiz." }, { status: 400 });
+    return NextResponse.json({ error: t("invalidPhone") }, { status: 400 });
   }
 
   const [firstName, ...rest] = fullName.trim().split(" ");

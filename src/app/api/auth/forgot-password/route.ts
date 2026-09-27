@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import { prisma } from "@/src/lib/prisma";
@@ -14,13 +15,12 @@ const forgotPasswordSchema = z.object({
   email: z.email(),
 });
 
-const genericResponse = {
-  message: "Eğer bu e-posta adresiyle kayıtlı bir hesap varsa, şifre sıfırlama bağlantısı gönderildi.",
-};
-
 export async function POST(request: Request) {
+  const [t, tErrors] = await Promise.all([getTranslations("forgotPassword.api"), getTranslations("apiErrors")]);
+  const genericResponse = { message: t("sent") };
+
   if (isRateLimited(`forgot-password:${getClientIp(request)}`, 5, 60_000)) {
-    return Response.json({ error: "Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin." }, { status: 429 });
+    return Response.json({ error: tErrors("tooManyRequests") }, { status: 429 });
   }
 
   try {
@@ -28,13 +28,13 @@ export async function POST(request: Request) {
     const parsed = forgotPasswordSchema.safeParse(body);
 
     if (!parsed.success) {
-      return Response.json({ error: "Geçersiz e-posta adresi." }, { status: 400 });
+      return Response.json({ error: t("invalidEmail") }, { status: 400 });
     }
 
     const normalizedEmail = parsed.data.email.toLowerCase();
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
-      select: { id: true, email: true, name: true, password: true },
+      select: { id: true, email: true, name: true, password: true, locale: true },
     });
 
     await prisma.passwordResetToken.deleteMany({
@@ -67,10 +67,11 @@ export async function POST(request: Request) {
       to: user.email,
       fullName: user.name?.trim() || user.email,
       resetUrl,
+      locale: user.locale,
     });
 
     return Response.json(genericResponse);
   } catch {
-    return Response.json({ error: "Sunucu hatası" }, { status: 500 });
+    return Response.json({ error: tErrors("serverError") }, { status: 500 });
   }
 }

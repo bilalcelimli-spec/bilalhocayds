@@ -2,9 +2,13 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowUpRight, KeyRound, LockKeyhole, ShieldCheck } from "lucide-react";
 
+import { getTranslations } from "next-intl/server";
+
 import { ResetPasswordForm } from "@/src/components/common/reset-password-form";
 
-export default function ResetPasswordPage() {
+export default async function ResetPasswordPage() {
+  const t = await getTranslations("resetPassword");
+
   return (
     <div className="relative overflow-hidden">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_top,rgba(212,168,67,0.14),transparent_55%)]" />
@@ -16,11 +20,11 @@ export default function ResetPasswordPage() {
           <div className="relative">
             <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">
               <span className="h-2 w-2 rounded-full bg-amber-400" />
-              Yeni Şifre
+              {t("badge")}
             </div>
-            <h1 className="mt-6 max-w-xl text-4xl font-black leading-tight text-white md:text-5xl">Güvenli bir yeni şifre belirle</h1>
+            <h1 className="mt-6 max-w-xl text-4xl font-black leading-tight text-white md:text-5xl">{t("title")}</h1>
             <p className="mt-5 max-w-xl text-base leading-8 text-slate-300">
-              Geçerli sıfırlama bağlantın varsa yeni şifreni tanımla ve hesabına tekrar erişim kazan.
+              {t("intro")}
             </p>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -30,8 +34,8 @@ export default function ResetPasswordPage() {
                     <ShieldCheck size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white">Tek kullanımlık işlem</p>
-                    <p className="mt-1 text-xs leading-6 text-slate-400">Bağlantı kullanıldığında aynı token tekrar geçersiz olur.</p>
+                    <p className="text-sm font-semibold text-white">{t("oneTimeTitle")}</p>
+                    <p className="mt-1 text-xs leading-6 text-slate-400">{t("oneTimeText")}</p>
                   </div>
                 </div>
               </div>
@@ -41,8 +45,8 @@ export default function ResetPasswordPage() {
                     <LockKeyhole size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white">Eski şifre iptal edilir</p>
-                    <p className="mt-1 text-xs leading-6 text-slate-400">Güncelleme sonrası sadece yeni şifren geçerli kalır.</p>
+                    <p className="text-sm font-semibold text-white">{t("oldRevokedTitle")}</p>
+                    <p className="mt-1 text-xs leading-6 text-slate-400">{t("oldRevokedText")}</p>
                   </div>
                 </div>
               </div>
@@ -54,18 +58,18 @@ export default function ResetPasswordPage() {
                   <KeyRound size={18} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300">Önemli</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300">{t("importantTitle")}</p>
                   <p className="mt-2 text-sm leading-7 text-amber-100/85">
-                    Şifre değişikliği tamamlandığında aynı link tekrar kullanılamaz. Gerekirse yeni bir sıfırlama talebi oluştur.
+                    {t("importantText")}
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="mt-8 flex items-center gap-3 text-sm text-slate-300">
-              <span>Giriş ekranına dönmek ister misin?</span>
+              <span>{t("backQuestion")}</span>
               <Link href="/login" className="inline-flex items-center gap-1 font-semibold text-white transition hover:text-amber-300">
-                Giriş yap
+                {t("login")}
                 <ArrowUpRight size={14} />
               </Link>
             </div>
@@ -77,16 +81,16 @@ export default function ResetPasswordPage() {
           <div className="pointer-events-none absolute -left-8 bottom-10 h-40 w-40 rounded-full bg-amber-400/10 blur-3xl" />
 
           <div className="relative">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Şifre Güncelleme</p>
-            <h2 className="mt-3 text-3xl font-black text-white">Yeni Şifreni Tanımla</h2>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">{t("formBadge")}</p>
+            <h2 className="mt-3 text-3xl font-black text-white">{t("formTitle")}</h2>
             <p className="mt-3 text-sm leading-7 text-slate-400">
-              Bağlantı geçerliyse aşağıdan yeni şifreni belirleyebilirsin.
+              {t("formIntro")}
             </p>
             <div className="mt-8">
               <Suspense
                 fallback={
                   <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6 text-sm leading-7 text-slate-300">
-                    Sıfırlama ekranı hazırlanıyor...
+                    {t("preparing")}
                   </div>
                 }
               >

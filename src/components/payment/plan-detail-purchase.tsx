@@ -1,5 +1,6 @@
 "use client";
 
+import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { Button } from "@/src/components/common/button";
@@ -15,18 +16,6 @@ type PlanDetailPurchaseProps = {
   initialCycle: "MONTHLY" | "YEARLY";
 };
 
-function formatPrice(price: number | null) {
-  if (price === null || price <= 0) {
-    return "Teklif al";
-  }
-
-  return new Intl.NumberFormat("tr-TR", {
-    style: "currency",
-    currency: "TRY",
-    maximumFractionDigits: 0,
-  }).format(price);
-}
-
 function resolvePaytrRedirectUrl(payment?: { redirectUrl?: string; token?: string }) {
   if (typeof payment?.redirectUrl === "string" && payment.redirectUrl.trim()) {
     return payment.redirectUrl;
@@ -40,6 +29,13 @@ function resolvePaytrRedirectUrl(payment?: { redirectUrl?: string; token?: strin
 }
 
 export default function PlanDetailPurchase({ plan, initialCycle }: PlanDetailPurchaseProps) {
+  const t = useTranslations("planDetail.purchase");
+  const tDetail = useTranslations("planDetail");
+  const formatter = useFormatter();
+  const formatPrice = (price: number | null) =>
+    price === null || price <= 0
+      ? tDetail("requestQuote")
+      : formatter.number(price, { style: "currency", currency: "TRY", maximumFractionDigits: 0 });
   const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "YEARLY">(initialCycle);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -66,13 +62,13 @@ export default function PlanDetailPurchase({ plan, initialCycle }: PlanDetailPur
     }
 
     const text = await response.text();
-    return { error: text || "Beklenmeyen sunucu cevabi alindi." };
+    return { error: text || t("unexpectedResponse") };
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!amount || amount <= 0) {
-      setError("Bu plan için geçerli bir ödeme tutarı bulunmuyor.");
+      setError(t("invalidAmount"));
       return;
     }
 
@@ -98,7 +94,7 @@ export default function PlanDetailPurchase({ plan, initialCycle }: PlanDetailPur
       setPending(false);
 
       if (!response.ok) {
-        setError(data.error ?? "Satış işlemi başlatılamadı.");
+        setError(data.error ?? t("startFailed"));
         return;
       }
 
@@ -111,19 +107,17 @@ export default function PlanDetailPurchase({ plan, initialCycle }: PlanDetailPur
 
       if (data.payment?.token) {
         setSuccess(
-          data.payment.message ??
-            "Ödeme oturumu oluşturuldu ama yönlendirme URL'i üretilemedi.",
+          data.payment.message ?? t("noRedirect"),
         );
         return;
       }
 
       setSuccess(
-        data.payment?.message ??
-          "Satış süreci başlatıldı. Ödeme yönlendirmesi ve takip için sizinle iletişime geçilecektir.",
+        data.payment?.message ?? t("started"),
       );
     } catch (error) {
       setPending(false);
-      setError(error instanceof Error ? error.message : "Satış işlemi sırasında beklenmeyen bir hata oluştu.");
+      setError(error instanceof Error ? error.message : t("unexpectedError"));
     }
   }
 
@@ -131,7 +125,7 @@ export default function PlanDetailPurchase({ plan, initialCycle }: PlanDetailPur
     <div className="sticky top-24 rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(20,22,30,0.96),rgba(12,14,20,0.92))] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Satış Paneli</p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">{t("panelTitle")}</p>
           <h3 className="mt-1 text-2xl font-black text-white">{plan.name}</h3>
         </div>
         <div className="inline-flex rounded-2xl border border-white/10 bg-white/5 p-1">
@@ -142,7 +136,7 @@ export default function PlanDetailPurchase({ plan, initialCycle }: PlanDetailPur
               billingCycle === "MONTHLY" ? "bg-white text-zinc-950" : "text-slate-400"
             }`}
           >
-            Aylık
+            {t("monthly")}
           </button>
           <button
             type="button"
@@ -151,19 +145,19 @@ export default function PlanDetailPurchase({ plan, initialCycle }: PlanDetailPur
               billingCycle === "YEARLY" ? "bg-white text-zinc-950" : "text-slate-400"
             }`}
           >
-            Yıllık
+            {t("yearly")}
           </button>
         </div>
       </div>
 
       <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Seçilen ödeme tipi</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">{t("selectedCycle")}</p>
         <p className="mt-3 text-4xl font-black text-white">{formatPrice(amount)}</p>
         <p className="mt-1 text-sm text-slate-400">
-          {billingCycle === "YEARLY" ? "Yıllık paket satış akışı" : "Aylık paket satış akışı"}
+          {billingCycle === "YEARLY" ? t("yearlyFlow") : t("monthlyFlow")}
         </p>
         <div className="mt-4 rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-xs leading-6 text-amber-100/85">
-          Canlı ders içeren paketlerde haftada 4 saatlik program akışı planlanır. İstersen tek tek canlı ders satın alma modeliyle ilerleyebilirsin.
+          {t("liveNote")}
         </div>
       </div>
 
@@ -171,7 +165,7 @@ export default function PlanDetailPurchase({ plan, initialCycle }: PlanDetailPur
         <input
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          placeholder="Ad Soyad"
+          placeholder={t("fullName")}
           className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-slate-500"
           required
         />
@@ -179,14 +173,14 @@ export default function PlanDetailPurchase({ plan, initialCycle }: PlanDetailPur
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="E-posta"
+          placeholder={t("email")}
           className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-slate-500"
           required
         />
         <input
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          placeholder="Telefon"
+          placeholder={t("phone")}
           className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-slate-500"
           required
         />
@@ -195,7 +189,7 @@ export default function PlanDetailPurchase({ plan, initialCycle }: PlanDetailPur
         {success ? <p className="text-sm text-emerald-400">{success}</p> : null}
 
         <Button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] text-zinc-950 shadow-[0_20px_50px_rgba(212,168,67,0.28)] hover:brightness-105" disabled={pending} size="lg">
-          {pending ? "Satış başlatılıyor..." : "Satışı Başlat"}
+          {pending ? t("submitting") : t("submit")}
         </Button>
       </form>
     </div>

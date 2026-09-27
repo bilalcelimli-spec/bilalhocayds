@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { ArrowLeft, Mail, Send } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 export function ForgotPasswordForm() {
+  const t = useTranslations("forgotPassword");
+  const tErrors = useTranslations("apiErrors");
   const [email, setEmail] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -28,14 +31,14 @@ export function ForgotPasswordForm() {
       const data = (await response.json()) as { error?: string; message?: string };
 
       if (!response.ok) {
-        setError(data.error ?? "İstek gönderilemedi.");
+        setError(data.error ?? t("requestFailed"));
         return;
       }
 
-      setSuccess(data.message ?? "Sıfırlama bağlantısı gönderildi.");
+      setSuccess(data.message ?? t("sent"));
       setEmail("");
     } catch {
-      setError("Bağlantı kurulamadı. Lütfen tekrar dene.");
+      setError(tErrors("network"));
     } finally {
       setPending(false);
     }
@@ -44,7 +47,7 @@ export function ForgotPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label className="mb-2 block text-sm font-medium text-slate-300">E-posta</label>
+        <label className="mb-2 block text-sm font-medium text-slate-300">{t("email")}</label>
         <div className="relative">
           <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
             <Mail size={16} />
@@ -54,7 +57,7 @@ export function ForgotPasswordForm() {
             required
             autoComplete="email"
             className="w-full rounded-[22px] border border-white/12 bg-white/[0.04] px-12 py-3.5 text-white outline-none placeholder:text-slate-500 transition focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/20"
-            placeholder="ornek@mail.com"
+            placeholder={t("emailPlaceholder")}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
@@ -71,11 +74,11 @@ export function ForgotPasswordForm() {
 
       <div className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
         <div className="flex items-center justify-between gap-4 text-xs">
-          <span className="font-semibold uppercase tracking-[0.18em] text-amber-300">Sıfırlama Linki</span>
-          <span className="text-slate-500">1 saat geçerli</span>
+          <span className="font-semibold uppercase tracking-[0.18em] text-amber-300">{t("linkTitle")}</span>
+          <span className="text-slate-500">{t("linkTag")}</span>
         </div>
         <p className="mt-2 text-sm leading-6 text-slate-400">
-          Kayıtlı e-posta adresini gir. Geçerli bir hesabın varsa yeni şifreni belirlemen için bağlantı göndeririz.
+          {t("linkText")}
         </p>
       </div>
 
@@ -85,12 +88,12 @@ export function ForgotPasswordForm() {
         className="flex w-full items-center justify-center gap-2 rounded-[22px] bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] px-5 py-3.5 font-bold text-zinc-950 shadow-[0_12px_30px_rgba(212,168,67,0.32)] transition hover:brightness-105 disabled:opacity-50"
       >
         <Send size={16} />
-        {pending ? "Bağlantı gönderiliyor..." : "Sıfırlama Bağlantısı Gönder"}
+        {pending ? t("submitting") : t("submit")}
       </button>
 
       <Link href="/login" className="inline-flex items-center gap-2 text-sm font-medium text-slate-300 transition hover:text-white">
         <ArrowLeft size={16} />
-        Giriş ekranına dön
+        {t("backToLogin")}
       </Link>
     </form>
   );

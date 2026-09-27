@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth";
+import { getFormatter, getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { ArrowUpRight, CalendarDays, ShieldCheck, Sparkles } from "lucide-react";
 import { prisma } from "@/src/lib/prisma";
@@ -17,8 +18,10 @@ function reorderPopularToMiddle<T extends { slug: string }>(items: T[]): T[] {
 }
 
 export default async function PricingPage() {
-	const [session, rawPlans] = await Promise.all([
+	const [session, t, formatter, rawPlans] = await Promise.all([
 		getServerSession(authOptions),
+		getTranslations("pricing"),
+		getFormatter(),
 		prisma.plan.findMany({
 			where: { isActive: true },
 			orderBy: { monthlyPrice: "asc" },
@@ -101,28 +104,28 @@ export default async function PricingPage() {
 					<div>
 						<div className="inline-flex max-w-full flex-wrap items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-300 shadow-[0_0_24px_rgba(212,168,67,0.12)] sm:text-xs sm:tracking-[0.28em]">
 							<span className="h-2 w-2 rounded-full bg-amber-400" />
-							Üyelik Planları
+							{t("badge")}
 						</div>
 
 						<div className="mt-7 flex flex-wrap items-center gap-3 text-[11px] font-medium uppercase tracking-[0.24em] text-slate-400">
-							<span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">AI Planlama</span>
-							<span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Haftada 4 Saat Canlı Ders</span>
-							<span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Esnek Paket Yapısı</span>
+							<span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">{t("chipPlanning")}</span>
+							<span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">{t("chipLive")}</span>
+							<span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">{t("chipFlexible")}</span>
 						</div>
 
 						<h1 className="mt-8 max-w-4xl text-4xl font-black leading-[0.96] text-white sm:text-5xl md:text-6xl xl:text-7xl">
-							<span className="block">Hedefine uygun</span>
+							<span className="block">{t("title1")}</span>
 							<span className="mt-2 block bg-gradient-to-r from-[#fff2b8] via-[#f7d96b] to-[#d4a843] bg-clip-text text-transparent">
-								premium planı seç
+								{t("title2")}
 							</span>
 						</h1>
 
 						<p className="mt-7 max-w-2xl text-base leading-8 text-slate-300 md:text-xl md:leading-9">
-							Vocabulary, reading, grammar, AI planner ve canlı ders erişimini ihtiyacına göre şekillendir. Her paket daha net bir çalışma ritmi ve daha güçlü bir takip sistemi için hazırlandı.
+							{t("intro")}
 						</p>
 
 						<p className="mt-4 max-w-2xl text-sm leading-7 text-amber-300/90 md:text-base">
-							Canlı ders içeren paketlerde program haftada 4 saat olarak planlanır. Dilersen tek tek canlı ders satın alma seçeneğini de kullanabilirsin.
+							{t("liveNote")}
 						</p>
 					</div>
 
@@ -131,8 +134,8 @@ export default async function PricingPage() {
 							<div className="rounded-[26px] border border-white/10 bg-[#0d1017]/90 p-5">
 								<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 									<div className="min-w-0">
-										<p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Plan Özeti</p>
-										<h2 className="mt-3 break-words text-2xl font-black text-white">Hızlı karar için net çerçeve</h2>
+										<p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">{t("summaryBadge")}</p>
+										<h2 className="mt-3 break-words text-2xl font-black text-white">{t("summaryTitle")}</h2>
 									</div>
 									<div className="w-fit rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
 										<Sparkles size={18} />
@@ -146,11 +149,13 @@ export default async function PricingPage() {
 												<ShieldCheck size={16} />
 											</div>
 											<div>
-												<p className="text-sm font-semibold text-white">Başlangıç fiyatı</p>
+												<p className="text-sm font-semibold text-white">{t("startingPriceTitle")}</p>
 												<p className="mt-1 text-xs leading-6 text-slate-400">
 													{premiumPlan
-														? `${new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(premiumPlan.monthlyPrice ?? 0)} seviyesinden başlayan planlar`
-														: "Farklı ihtiyaç seviyeleri için plan seçenekleri"}
+														? t("startingPriceText", {
+																price: formatter.number(premiumPlan.monthlyPrice ?? 0, { style: "currency", currency: "TRY", maximumFractionDigits: 0 }),
+															})
+														: t("startingPriceFallback")}
 												</p>
 											</div>
 										</div>
@@ -162,8 +167,8 @@ export default async function PricingPage() {
 												<CalendarDays size={16} />
 											</div>
 											<div>
-												<p className="text-sm font-semibold text-white">Canlı ders erişimi</p>
-												<p className="mt-1 text-xs leading-6 text-slate-400">{liveClassPlanCount} plan içinde haftada 4 saat canlı ders programı yer alıyor.</p>
+												<p className="text-sm font-semibold text-white">{t("liveAccessTitle")}</p>
+												<p className="mt-1 text-xs leading-6 text-slate-400">{t("liveAccessText", { count: liveClassPlanCount })}</p>
 											</div>
 										</div>
 									</div>
@@ -171,8 +176,8 @@ export default async function PricingPage() {
 									<div className="rounded-2xl border border-amber-400/18 bg-[linear-gradient(135deg,rgba(212,168,67,0.14),rgba(255,255,255,0.03))] p-4">
 										<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 											<div className="min-w-0">
-												<p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Detaylı İnceleme</p>
-												<p className="mt-2 break-words text-base font-bold text-white">Paketleri tek tek aç, kapsamı karşılaştır, en doğru ritmi seç.</p>
+												<p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">{t("detailBadge")}</p>
+												<p className="mt-2 break-words text-base font-bold text-white">{t("detailText")}</p>
 											</div>
 											<Link href="#pricing-cards" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-white transition hover:bg-white/14">
 												<ArrowUpRight size={18} />
@@ -194,14 +199,14 @@ export default async function PricingPage() {
 				<div className="mt-12 rounded-[32px] border border-emerald-500/20 bg-[linear-gradient(180deg,rgba(13,28,24,0.96),rgba(10,17,15,0.96))] p-8 shadow-[0_24px_70px_rgba(0,0,0,0.24)]">
 					<div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
 						<div>
-							<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-300">Ayrı Satın Alma</p>
-							<h2 className="mt-3 text-3xl font-black text-white">Sınav modülünü tek başına da alabilirsin</h2>
+							<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-300">{t("standaloneBadge")}</p>
+							<h2 className="mt-3 text-3xl font-black text-white">{t("standaloneTitle")}</h2>
 							<p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-300">
-								API ile eklenen deneme sınavları, süreli sınav akışı ve cevap anahtarı erişimi bu ürünle tek başına da açılabilir.
+								{t("standaloneText")}
 							</p>
 						</div>
 						<Link href={`/pricing/${standaloneExamPlan.slug}`} className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-200">
-							Sınav ürününü aç
+							{t("standaloneCta")}
 						</Link>
 					</div>
 				</div>
@@ -211,24 +216,23 @@ export default async function PricingPage() {
 				<div className="grid gap-6 md:grid-cols-3">
 					<div>
 						<div className="mb-3 h-0.5 w-8 rounded-full bg-amber-400/60" />
-						<h3 className="text-lg font-bold text-white">Tüm planlarda</h3>
+						<h3 className="text-lg font-bold text-white">{t("allPlansTitle")}</h3>
 						<p className="mt-2 text-sm leading-7 text-slate-400">
-							Sınav odaklı içerik yapısı, panel takibi ve düzenli güncellenen çalışma
-							akışı bulunur.
+							{t("allPlansText")}
 						</p>
 					</div>
 					<div>
 						<div className="mb-3 h-0.5 w-8 rounded-full bg-amber-400/60" />
-						<h3 className="text-lg font-bold text-white">Esnek geçiş</h3>
+						<h3 className="text-lg font-bold text-white">{t("flexibleTitle")}</h3>
 						<p className="mt-2 text-sm leading-7 text-slate-400">
-							İhtiyacın değiştikçe planını daha kapsamlı bir pakete taşıyabilirsin.
+							{t("flexibleText")}
 						</p>
 					</div>
 					<div>
 						<div className="mb-3 h-0.5 w-8 rounded-full bg-amber-400/60" />
-						<h3 className="text-lg font-bold text-white">Bilal Hoca desteği</h3>
+						<h3 className="text-lg font-bold text-white">{t("supportTitle")}</h3>
 						<p className="mt-2 text-sm leading-7 text-slate-400">
-							Özellikle Pro ve Premium paketlerde strateji ve süreç takibi daha güçlü.
+							{t("supportText")}
 						</p>
 					</div>
 				</div>

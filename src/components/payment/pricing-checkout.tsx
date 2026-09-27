@@ -1,5 +1,6 @@
 "use client";
 
+import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { Button } from "@/src/components/common/button";
@@ -29,19 +30,13 @@ type PricingCheckoutProps = {
   plans: PricingPlan[];
 };
 
-function formatPrice(price: number | null) {
-  if (price === null) {
-    return "Teklif al";
-  }
-
-  return new Intl.NumberFormat("tr-TR", {
-    style: "currency",
-    currency: "TRY",
-    maximumFractionDigits: 0,
-  }).format(price);
-}
-
 export default function PricingCheckout({ plans }: PricingCheckoutProps) {
+  const t = useTranslations("pricing.card");
+  const formatter = useFormatter();
+  const formatPrice = (price: number | null) =>
+    price === null
+      ? t("requestQuote")
+      : formatter.number(price, { style: "currency", currency: "TRY", maximumFractionDigits: 0 });
   const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "YEARLY">("MONTHLY");
 
   return (
@@ -57,7 +52,7 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
                 : "text-zinc-400 hover:text-white"
             }`}
           >
-            Aylık
+            {t("monthly")}
           </button>
           <button
             type="button"
@@ -68,7 +63,7 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
                 : "text-zinc-400 hover:text-white"
             }`}
           >
-            Yıllık
+            {t("yearly")}
           </button>
         </div>
       </div>
@@ -76,13 +71,13 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
       <div className="mt-10 grid gap-6 md:grid-cols-3">
         {plans.map((plan) => {
           const features = [
-            plan.includesVocab && "Kelime modülü",
-            plan.includesReading && "Reading modülü",
-            plan.includesGrammar && "Grammar modülü",
-            plan.includesAIPlanner && "AI çalışma planı",
-            plan.includesExam && "Sınav modülü",
-            plan.includedExamCount > 0 && `${plan.includedExamCount} seçili marketplace sınavı`,
-            plan.includesLiveClass && "Haftada 4 saat canlı ders erişimi",
+            plan.includesVocab && t("featureVocab"),
+            plan.includesReading && t("featureReading"),
+            plan.includesGrammar && t("featureGrammar"),
+            plan.includesAIPlanner && t("featureAIPlanner"),
+            plan.includesExam && t("featureExam"),
+            plan.includedExamCount > 0 && t("featureExams", { count: plan.includedExamCount }),
+            plan.includesLiveClass && t("featureLive"),
           ].filter((feature): feature is string => Boolean(feature));
 
           const displayPrice =
@@ -91,7 +86,7 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
           const accentLine = isHighlighted
             ? "from-[#fff2b8] via-[#f2d875] to-[#d4a843]"
             : "from-white/70 via-white/20 to-transparent";
-          const planTone = isHighlighted ? "Premium Plan" : plan.slug === "pro" ? "Yoğun Tempo" : "Başlangıç Ritmi";
+          const planTone = isHighlighted ? t("tonePremium") : plan.slug === "pro" ? t("tonePro") : t("toneStarter");
 
           return (
             <div
@@ -117,12 +112,12 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
                   </p>
                   <h2 className={`mt-3 break-words text-3xl font-black ${isHighlighted ? "text-amber-100" : "text-white"}`}>{plan.name}</h2>
                   <p className="mt-3 max-w-[22rem] text-sm leading-7 text-zinc-400">
-                    {plan.description ?? "Sınav hazırlığını düzenli ve ölçülebilir şekilde yönetmek için tasarlanan çalışma planı."}
+                    {plan.description ?? t("defaultDescription")}
                   </p>
                 </div>
                 {isHighlighted ? (
                   <span className="w-fit rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-amber-300">
-                    ★ Popüler
+                    {t("popular")}
                   </span>
                 ) : null}
               </div>
@@ -130,16 +125,16 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
               <div className="relative mt-8 rounded-[24px] border border-white/8 bg-black/20 p-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                   <div className="min-w-0">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-500">Fiyatlandırma</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-500">{t("pricing")}</p>
                     <p className={`mt-3 break-words text-4xl font-black ${isHighlighted ? "text-amber-300" : "text-white"}`}>{formatPrice(displayPrice)}</p>
                   </div>
                   <div className="w-fit rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-left sm:text-right">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Canlı Ders</p>
-                    <p className="mt-1 text-sm font-semibold text-white">{plan.includesLiveClass ? "Dahil" : "Opsiyonel"}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">{t("liveClass")}</p>
+                    <p className="mt-1 text-sm font-semibold text-white">{plan.includesLiveClass ? t("included") : t("optional")}</p>
                   </div>
                 </div>
                 <p className="mt-2 text-sm text-zinc-500">
-                  {billingCycle === "YEARLY" ? "yıllık ödeme" : "aylık ödeme"}
+                  {billingCycle === "YEARLY" ? t("billedYearly") : t("billedMonthly")}
                 </p>
               </div>
 
@@ -158,7 +153,7 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
 
               {plan.includedExams.length > 0 ? (
                 <div className="mt-6 rounded-[24px] border border-emerald-500/15 bg-emerald-500/8 p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-300">Dahil Sınavlar</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-300">{t("includedExams")}</p>
                   <div className="mt-3 space-y-2">
                     {plan.includedExams.slice(0, 3).map((exam) => (
                       <div key={`${exam.title}-${exam.examType}`} className="flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-400/15 bg-black/20 px-3 py-2 text-xs text-emerald-100">
@@ -175,7 +170,7 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
                     ))}
                     {plan.includedExams.length > 3 ? (
                       <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300">
-                        +{plan.includedExams.length - 3} sınav
+                        {t("moreExams", { count: plan.includedExams.length - 3 })}
                       </span>
                     ) : null}
                   </div>
@@ -184,15 +179,15 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
 
               <div className="mt-8 rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
                 <div className="flex flex-col gap-2 text-xs text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
-                  <span>Çalışma ritmi</span>
+                  <span>{t("rhythm")}</span>
                   <span className={`font-semibold ${isHighlighted ? "text-amber-300" : "text-white"}`}>
-                    {plan.includesAIPlanner ? "Yakından yönlendirmeli" : "Klasik akış"}
+                    {plan.includesAIPlanner ? t("rhythmGuided") : t("rhythmClassic")}
                   </span>
                 </div>
                 <div className="mt-2 flex flex-col gap-2 text-xs text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
-                  <span>Esneklik</span>
+                  <span>{t("flexibility")}</span>
                   <span className={`font-semibold ${isHighlighted ? "text-amber-300" : "text-white"}`}>
-                    Tek ders satış desteği
+                    {t("singleSupport")}
                   </span>
                 </div>
               </div>
@@ -209,10 +204,10 @@ export default function PricingCheckout({ plans }: PricingCheckoutProps) {
                   variant={isHighlighted ? "primary" : "outline"}
                   size="lg"
                 >
-                  {displayPrice && displayPrice > 0 ? "Bu Planla Başla" : "Teklif Al"}
+                  {displayPrice && displayPrice > 0 ? t("startPlan") : t("getQuote")}
                 </Button>
                 <p className="mt-3 text-center text-xs leading-5 text-zinc-500">
-                  Tek tek canlı ders satın alma seçeneği ayrıca açıktır.
+                  {t("singleNote")}
                 </p>
               </div>
             </div>

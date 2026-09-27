@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { ArrowUpRight, KeyRound, MailCheck, ShieldCheck } from "lucide-react";
 
+import { getTranslations } from "next-intl/server";
+
 import { ForgotPasswordForm } from "@/src/components/common/forgot-password-form";
 
-export default function ForgotPasswordPage() {
+export default async function ForgotPasswordPage() {
+  const t = await getTranslations("forgotPassword");
+
   return (
     <div className="relative overflow-hidden">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_top,rgba(212,168,67,0.14),transparent_55%)]" />
@@ -15,11 +19,11 @@ export default function ForgotPasswordPage() {
           <div className="relative">
             <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">
               <span className="h-2 w-2 rounded-full bg-amber-400" />
-              Şifre Yenileme
+              {t("badge")}
             </div>
-            <h1 className="mt-6 max-w-xl text-4xl font-black leading-tight text-white md:text-5xl">Hesabına yeniden erişmek için şifreni yenile</h1>
+            <h1 className="mt-6 max-w-xl text-4xl font-black leading-tight text-white md:text-5xl">{t("title")}</h1>
             <p className="mt-5 max-w-xl text-base leading-8 text-slate-300">
-              Kayıtlı e-posta adresini gir. Hesabın aktifse yeni şifreni belirlemen için sana güvenli bir bağlantı gönderelim.
+              {t("intro")}
             </p>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -29,8 +33,8 @@ export default function ForgotPasswordPage() {
                     <MailCheck size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white">E-posta doğrulaması</p>
-                    <p className="mt-1 text-xs leading-6 text-slate-400">Bağlantı sadece talep edilen hesaba gönderilir.</p>
+                    <p className="text-sm font-semibold text-white">{t("verifyTitle")}</p>
+                    <p className="mt-1 text-xs leading-6 text-slate-400">{t("verifyText")}</p>
                   </div>
                 </div>
               </div>
@@ -40,8 +44,8 @@ export default function ForgotPasswordPage() {
                     <ShieldCheck size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white">Kısa süreli bağlantı</p>
-                    <p className="mt-1 text-xs leading-6 text-slate-400">Sıfırlama bağlantısı 1 saat sonra geçersiz olur.</p>
+                    <p className="text-sm font-semibold text-white">{t("shortLinkTitle")}</p>
+                    <p className="mt-1 text-xs leading-6 text-slate-400">{t("shortLinkText")}</p>
                   </div>
                 </div>
               </div>
@@ -53,18 +57,18 @@ export default function ForgotPasswordPage() {
                   <KeyRound size={18} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300">Ne olacak?</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300">{t("whatNextTitle")}</p>
                   <p className="mt-2 text-sm leading-7 text-amber-100/85">
-                    E-postadaki bağlantıdan yeni şifreni girersin. İşlem tamamlandığında eski şifreyle giriş yapamazsın.
+                    {t("whatNextText")}
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="mt-8 flex items-center gap-3 text-sm text-slate-300">
-              <span>Hesabını hatırladın mı?</span>
+              <span>{t("remembered")}</span>
               <Link href="/login" className="inline-flex items-center gap-1 font-semibold text-white transition hover:text-amber-300">
-                Giriş yap
+                {t("login")}
                 <ArrowUpRight size={14} />
               </Link>
             </div>
@@ -76,10 +80,10 @@ export default function ForgotPasswordPage() {
           <div className="pointer-events-none absolute -left-8 bottom-10 h-40 w-40 rounded-full bg-amber-400/10 blur-3xl" />
 
           <div className="relative">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">Hesap Kurtarma</p>
-            <h2 className="mt-3 text-3xl font-black text-white">Sıfırla ve Devam Et</h2>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">{t("formBadge")}</p>
+            <h2 className="mt-3 text-3xl font-black text-white">{t("formTitle")}</h2>
             <p className="mt-3 text-sm leading-7 text-slate-400">
-              Kayıtlı e-posta adresini yazarak şifre sıfırlama bağlantını iste.
+              {t("formIntro")}
             </p>
             <div className="mt-8">
               <ForgotPasswordForm />

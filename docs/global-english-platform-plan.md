@@ -14,7 +14,7 @@
 | Canlı ders | `LiveClass` modeli yalnızca harici `meetingLink` (Zoom/Meet) tutuyor (`src/lib/meeting-platform.ts`) | Platform içi video sınıf, ders tipi, kapasite, kayıt, yoklama yok |
 | Eğitmen | Tek eğitmen (Bilal Hoca); `TEACHER`/`ADMIN` rolleri mevcut | Bilal Hoca için müsaitlik takvimi, birebir ders rezervasyonu, ders yönetim paneli yok |
 | Dil / bölge | `<html lang="tr">`, tüm UI metinleri Türkçe hard-coded, `date-fns/locale/tr` | i18n altyapısı, çok dilli UI, saat dilimi yönetimi yok |
-| Ödeme | PayTR (TRY), iyzico yardımcıları; `stripe` bağımlılığı var ama kullanılmıyor | Çoklu para birimi, uluslararası kart, abonelik yenileme, vergi (VAT) yok |
+| Ödeme | PayTR (TRY), iyzico yardımcıları; `stripe` bağımlılığı var ama kullanılmıyor | Ödemeler PayTR ile devam edecek (Stripe kullanılmayacak); kredi sistemi, iade akışı yok |
 | İçerik | YDS/YDT sınav modülü, AI reading/grammar/vocab, günlük içerik cron'u | CEFR (A1–C2) müfredatı, IELTS/TOEFL/genel İngilizce/Business yolları yok |
 | AI | Çok sağlayıcılı katman (`src/lib/ai/client.ts`: OpenAI, Anthropic, Gemini) | Konuşma pratiği, telaffuz, yazma değerlendirme, ders özeti gibi özellikler |
 | Altyapı | Render (tek web + cron), `healthCheckPath: /api/health` tanımlı ama route yok | Health endpoint, CDN, çok bölgeli dağıtım, izleme/loglama |
@@ -110,13 +110,12 @@ model ClassMaterial     { liveClassId, type, url }
 - **Grup ders takvimi:** kamp/dönem programları (ör. "8 haftalık IELTS kampı"), kontenjan ve bekleme listesi.
 - **Ders sonrası:** öğrenci geri bildirimi (yalnızca iç kalite takibi için), otomatik ödev ve ders özeti.
 
-### Faz 4 — Global Ödeme ve Faturalama (3–4 hafta, Faz 2–3 ile paralel)
-- **Stripe** (zaten bağımlılıkta) → uluslararası ana sağlayıcı: Checkout, Billing (abonelik yenileme), Stripe Tax (VAT/GST), Apple/Google Pay, yerel yöntemler (iDEAL, Pix, SEPA...).
-- **PayTR/iyzico** → Türkiye'de TRY ödemeleri için korunur. `lib/payment/` altında `PaymentProvider` arayüzü ile soyutla; ülke/para birimine göre yönlendir.
-- Öğretmen ödemesi/komisyon **yok** — tüm gelir tek hesaba; Stripe Connect gerekmez.
-- Çok para birimi: fiyatlar `PlanPrice { planId, currency, amount }` tablosunda (bölgesel fiyatlandırma / satın alma gücü paritesi).
+### Faz 4 — Ödeme ve Faturalama (PayTR ile)
+- **Karar:** Stripe kullanılmayacak. Tüm ödemeler mevcut **PayTR** (ve gerekirse iyzico) altyapısı üzerinden alınır; kullanılmayan `stripe` bağımlılığı kaldırılabilir.
+- Yurt dışı kartlar için PayTR'ın uluslararası kart desteği ve (gerekirse) döviz ile tahsilat seçenekleri değerlendirilir.
+- Öğretmen ödemesi/komisyon **yok** — tüm gelir tek hesaba.
 - **Kredi sistemi:** `CreditWallet` + `CreditTransaction` (birebir ders paketleri, grup ders girişleri, iade, promosyon).
-- Webhook idempotency, fatura PDF, iade akışı, dolandırıcılık kontrolü (Stripe Radar).
+- Callback idempotency, fatura PDF, iade akışı.
 - `Float` fiyat alanları → `Decimal` veya kuruş cinsinden `Int`'e geçiş.
 
 ### Faz 5 — Global Müfredat ve AI Özellikleri (sürekli)
@@ -139,7 +138,7 @@ model ClassMaterial     { liveClassId, type, url }
 
 ## 3. Güvenlik, Uyum ve Güven
 
-- **GDPR / KVKK / CCPA:** çerez onayı, gizlilik politikası (çok dilli), veri dışa aktarma & hesap silme uç noktaları, veri işleme sözleşmeleri (LiveKit, Stripe, AI sağlayıcıları).
+- **GDPR / KVKK / CCPA:** çerez onayı, gizlilik politikası (çok dilli), veri dışa aktarma & hesap silme uç noktaları, veri işleme sözleşmeleri (LiveKit, PayTR, AI sağlayıcıları).
 - **Çocuk güvenliği:** 13/16 yaş altı için ebeveyn onayı (COPPA/GDPR-K), çocuk derslerinin kaydı zorunlu.
 - **Ders kaydı onayı:** kayıt başlamadan tüm katılımcılara bildirim/onay.
 - Auth güçlendirme: e-posta doğrulama, Google/Apple OAuth, 2FA (admin/eğitmen hesabı için zorunlu), oturum yönetimi.
@@ -158,7 +157,7 @@ model ClassMaterial     { liveClassId, type, url }
                  └──────────► API katmanı (Next.js route handlers, /api/v1)
                                    │
    ┌───────────┬──────────────┬────┴─────────┬──────────────┬──────────────┐
- PostgreSQL   Redis         Kuyruk          LiveKit Cloud  Stripe / PayTR  AI katmanı
+ PostgreSQL   Redis         Kuyruk          LiveKit Cloud  PayTR          AI katmanı
  (Prisma,    (cache,        (BullMQ/        (SFU, Egress   (ödeme,         (OpenAI /
   replica)    rate-limit)    Inngest)        kayıt, Agents) abonelik)       Anthropic / Gemini)
                                    │              │
@@ -172,7 +171,7 @@ model ClassMaterial     { liveClassId, type, url }
 | Ay | Teslimat |
 |---|---|
 | 1 | Faz 0 tamam; i18n altyapısı + EN/TR |
-| 2–3 | Platform içi sanal sınıf MVP (LiveKit), grup dersleri, Stripe entegrasyonu |
+| 2–3 | Platform içi sanal sınıf MVP (LiveKit), grup dersleri, çok dilli arayüz |
 | 4–5 | Bilal Hoca takvimi + birebir rezervasyon, webinar modu, kayıt + beyaz tahta, kayıtlı kurs vitrini |
 | 6 | Global beta lansmanı (EN/TR/AR), CEFR yerleştirme testi, IELTS modülü |
 | 7–9 | AI Speaking Partner, mobil uygulama, B2B paneli, ek diller |
@@ -199,8 +198,8 @@ model ClassMaterial     { liveClassId, type, url }
 | Video maliyetlerinin hızlı artması | Dakika bazlı maliyet izleme; ölçek büyüyünce self-hosted LiveKit'e geçiş |
 | Bölgesel bağlantı kalitesi | LiveKit global edge, düşük bant genişliği modu (yalnızca ses), simulcast |
 | Tek eğitmen darboğazı (zaman, hastalık, izin) | Webinar modu, kayıtlı kurslar, AI pratik modülleri, gerekirse moderatör asistan |
-| Ödeme dolandırıcılığı & chargeback | Stripe Radar, 3D Secure, net iade politikası |
-| Yasal uyum (çok ülke) | Stripe Tax, bölgesel hukuk danışmanlığı, ülke bazlı özellik bayrakları |
+| Ödeme dolandırıcılığı & chargeback | PayTR fraud kontrolleri, 3D Secure, net iade politikası |
+| Yasal uyum (çok ülke) | Bölgesel hukuk/vergi danışmanlığı, ülke bazlı özellik bayrakları |
 | Mevcut TR kullanıcılarının etkilenmesi | Özellik bayrakları, `/tr` rotasının korunması, eski `meetingLink` akışının desteği |
 
 ---
@@ -209,7 +208,7 @@ model ClassMaterial     { liveClassId, type, url }
 
 **Durum (Sprint 1):** ✅ 1, 2, 4, 5, 6 tamamlandı — platform içi sınıf (LiveKit), webhook ile yoklama, `/api/health`, CI, `User.locale/timezone/country`. Kurulum: [live-classroom-setup.md](live-classroom-setup.md). ✅ Reading tabloları için eksik migration eklendi.
 
-**Durum (Sprint 2):** 🟡 3 kısmen — `next-intl` altyapısı (TR/EN, çerez + Accept-Language, kullanıcı tercihi, tarayıcı saat dilimi), navbar/footer/giriş/sınıf çevrildi. URL önekli (`/en`) SEO sayfaları ve kalan sayfaların çevirisi sırada. ⏳ 7 (Stripe).
+**Durum (Sprint 2):** 🟡 3 kısmen — `next-intl` altyapısı (TR/EN, çerez + Accept-Language, kullanıcı tercihi, tarayıcı saat dilimi), navbar/footer/giriş/sınıf çevrildi. URL önekli (`/en`) SEO sayfaları ve kalan sayfaların çevirisi sırada. ❌ 7 (Stripe) iptal — ödemeler PayTR ile devam.
 
 
 1. `src/app/api/health/route.ts` ekle.
@@ -218,4 +217,4 @@ model ClassMaterial     { liveClassId, type, url }
 4. `User`'a `locale`, `timezone`, `country` alanları (migration).
 5. LiveKit hesabı + `POST /api/classroom/[id]/token` + `/classroom/[id]` prototip sayfası (Bilal Hoca + 1 öğrenci).
 6. `LiveClass` genişletmesi (`type`, `capacity`, `roomName`, `status`) ve `ClassEnrollment` modeli.
-7. `PaymentProvider` arayüzü; Stripe Checkout ile tek seferlik ders satın alma prototipi.
+7. ~~Stripe Checkout~~ — iptal edildi, PayTR kullanılmaya devam edilecek.

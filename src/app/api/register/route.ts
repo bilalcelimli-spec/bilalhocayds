@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import { getLocale, getTimeZone, getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import { prisma } from "@/src/lib/prisma";
@@ -13,15 +14,16 @@ const registerSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  const [tErrors, t] = await Promise.all([getTranslations("apiErrors"), getTranslations("register.api")]);
   if (isRateLimited(`register:${getClientIp(req)}`, 5, 60_000)) {
-    return Response.json({ error: "Cok fazla istek. Lutfen bir dakika sonra tekrar deneyin." }, { status: 429 });
+    return Response.json({ error: tErrors("tooManyRequests") }, { status: 429 });
   }
   try {
     const body = await req.json();
     const parsed = registerSchema.safeParse(body);
 
     if (!parsed.success) {
-      return Response.json({ error: "Gecersiz veri" }, { status: 400 });
+      return Response.json({ error: tErrors("invalidData") }, { status: 400 });
     }
 
     const { name, email, password, interestTags, priorityTags } = parsed.data;
@@ -34,10 +36,11 @@ export async function POST(req: Request) {
 
     if (existingUser?.password) {
       // Hesap zaten aktif → giriş yap
-      return Response.json({ error: "Bu e-posta adresi zaten kayıtlı. Giriş sayfasını kullan." }, { status: 409 });
+      return Response.json({ error: t("emailTaken") }, { status: 409 });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const [locale, timeZone] = await Promise.all([getLocale(), getTimeZone()]);
 
     const normalizedPriority = (priorityTags ?? []).filter((tag) => (interestTags ?? []).includes(tag));
     const orderedInterestTags = [
@@ -55,6 +58,8 @@ export async function POST(req: Request) {
           name,
           password: hashedPassword,
           role: "STUDENT",
+          locale,
+          timezone: timeZone,
           studentProfile: {
             upsert: {
               update: { interestTags: orderedInterestTags },
@@ -71,6 +76,8 @@ export async function POST(req: Request) {
           email: normalizedEmail,
           password: hashedPassword,
           role: "STUDENT",
+          locale,
+          timezone: timeZone,
           studentProfile: {
             create: { interestTags: orderedInterestTags },
           },
@@ -79,11 +86,11 @@ export async function POST(req: Request) {
     }
 
     return Response.json(
-      { message: "Kayit basarili", userId: user.id },
+      { message: t("created"), userId: user.id },
       { status: 201 }
     );
   } catch {
-    return Response.json({ error: "Sunucu hatasi" }, { status: 500 });
+    return Response.json({ error: tErrors("serverError") }, { status: 500 });
   }
 }
 

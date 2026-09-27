@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import { paytrCheckout, type PaytrCheckoutResult } from "@/lib/payment/paytr-checkout";
@@ -42,11 +43,12 @@ function isRateLimited(key: string) {
 }
 
 export async function POST(request: Request) {
+  const [t, tErrors] = await Promise.all([getTranslations("planDetail.api"), getTranslations("apiErrors")]);
   try {
     const rateKey = getClientKey(request);
     if (isRateLimited(rateKey)) {
       return NextResponse.json(
-        { error: "Cok fazla odeme denemesi. Lutfen bir dakika sonra tekrar deneyin." },
+        { error: tErrors("tooManyRequests") },
         { status: 429 },
       );
     }
@@ -55,7 +57,7 @@ export async function POST(request: Request) {
 
     if (!payload.success) {
       return NextResponse.json(
-        { error: "Gecersiz odeme bilgisi." },
+        { error: t("invalidPayment") },
         { status: 400 },
       );
     }
@@ -64,7 +66,7 @@ export async function POST(request: Request) {
 
     if (!planId && !planSlug) {
       return NextResponse.json(
-        { error: "Plan secimi zorunludur." },
+        { error: t("planRequired") },
         { status: 400 },
       );
     }
@@ -84,14 +86,14 @@ export async function POST(request: Request) {
     });
 
     if (!plan) {
-      return NextResponse.json({ error: "Plan bulunamadi." }, { status: 404 });
+      return NextResponse.json({ error: t("planNotFound") }, { status: 404 });
     }
 
     const amount = billingCycle === "YEARLY" ? plan.yearlyPrice : plan.monthlyPrice;
 
     if (!amount || amount <= 0) {
       return NextResponse.json(
-        { error: "Secilen plan icin odeme tutari tanimli degil." },
+        { error: t("noAmount") },
         { status: 400 },
       );
     }
@@ -99,7 +101,7 @@ export async function POST(request: Request) {
     const normalizedPhone = phone.replace(/\D/g, "");
     if (normalizedPhone.length < 10 || normalizedPhone.length > 15) {
       return NextResponse.json(
-        { error: "Telefon numarasi gecersiz." },
+        { error: t("invalidPhone") },
         { status: 400 },
       );
     }
@@ -275,7 +277,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[api/payment/paytr] Unexpected error", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Satış işlemi başlatılamadı." },
+      { error: error instanceof Error ? error.message : t("startFailed") },
       { status: 500 },
     );
   }
