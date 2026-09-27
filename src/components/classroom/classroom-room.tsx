@@ -4,6 +4,7 @@ import "@livekit/components-styles";
 
 import { LiveKitRoom, PreJoin, VideoConference, type LocalUserChoices } from "@livekit/components-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useCallback, useRef, useState } from "react";
 
 type ConnectionDetails = {
@@ -21,15 +22,14 @@ type ClassroomRoomProps = {
 
 type Phase = "prejoin" | "connecting" | "in-room" | "left";
 
-const CONNECTION_FAILED_MESSAGE =
-  "Canlı sınıf sunucusuna bağlanılamadı. İnternet bağlantını kontrol edip tekrar dene.";
-
 export function ClassroomRoom({ classId, title, displayName, isWebinarViewer }: ClassroomRoomProps) {
   const [phase, setPhase] = useState<Phase>("prejoin");
   const [error, setError] = useState<string | null>(null);
   const [connection, setConnection] = useState<ConnectionDetails | null>(null);
   const [choices, setChoices] = useState<LocalUserChoices | null>(null);
   const hasConnectedRef = useRef(false);
+  const t = useTranslations("classroom");
+  const connectFailedMessage = t("connectFailed");
 
   const join = useCallback(
     async (userChoices: LocalUserChoices | null) => {
@@ -39,24 +39,24 @@ export function ClassroomRoom({ classId, title, displayName, isWebinarViewer }: 
         const response = await fetch(`/api/classroom/${classId}/token`, { method: "POST" });
         const data = (await response.json()) as Partial<ConnectionDetails> & { error?: string };
         if (!response.ok || !data.token || !data.serverUrl || !data.role) {
-          throw new Error(data.error ?? "Sınıfa bağlanılamadı.");
+          throw new Error(data.error ?? connectFailedMessage);
         }
         setChoices(userChoices);
         hasConnectedRef.current = false;
         setConnection({ token: data.token, serverUrl: data.serverUrl, role: data.role });
         setPhase("in-room");
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Sınıfa bağlanılamadı.");
+        setError(err instanceof Error ? err.message : connectFailedMessage);
         setPhase("prejoin");
       }
     },
-    [classId],
+    [classId, connectFailedMessage],
   );
 
   if (phase === "left") {
     return (
       <div className="mx-auto flex max-w-xl flex-col items-center gap-4 rounded-3xl border border-white/10 bg-white/5 p-8 text-center text-white">
-        <h2 className="text-2xl font-black">Dersten ayrıldın</h2>
+        <h2 className="text-2xl font-black">{t("leftTitle")}</h2>
         <p className="text-sm text-slate-300">{title}</p>
         <div className="flex flex-wrap justify-center gap-3">
           <button
@@ -64,13 +64,13 @@ export function ClassroomRoom({ classId, title, displayName, isWebinarViewer }: 
             onClick={() => setPhase("prejoin")}
             className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-amber-300"
           >
-            Tekrar Katıl
+            {t("rejoin")}
           </button>
           <Link
             href="/live-classes"
             className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
           >
-            Canlı Derslere Dön
+            {t("backToLiveClasses")}
           </Link>
         </div>
       </div>
@@ -95,7 +95,7 @@ export function ClassroomRoom({ classId, title, displayName, isWebinarViewer }: 
             if (hasConnectedRef.current) {
               setPhase("left");
             } else {
-              setError(CONNECTION_FAILED_MESSAGE);
+              setError(connectFailedMessage);
               setPhase("prejoin");
             }
           }}
@@ -105,7 +105,7 @@ export function ClassroomRoom({ classId, title, displayName, isWebinarViewer }: 
               return;
             }
             setConnection(null);
-            setError(CONNECTION_FAILED_MESSAGE);
+            setError(connectFailedMessage);
             setPhase("prejoin");
           }}
           className="h-full"
@@ -125,7 +125,7 @@ export function ClassroomRoom({ classId, title, displayName, isWebinarViewer }: 
       {isWebinarViewer ? (
         <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-center text-white">
           <p className="text-sm text-slate-300">
-            Bu ders webinar formatında. Bilal Hoca&apos;yı izleyip sohbetten soru sorabilirsin.
+            {t("webinarInfo")}
           </p>
           <button
             type="button"
@@ -133,21 +133,21 @@ export function ClassroomRoom({ classId, title, displayName, isWebinarViewer }: 
             onClick={() => join(null)}
             className="mt-6 rounded-xl bg-amber-400 px-6 py-3 text-sm font-semibold text-zinc-950 hover:bg-amber-300 disabled:opacity-60"
           >
-            {phase === "connecting" ? "Bağlanıyor..." : "Yayına Katıl"}
+            {phase === "connecting" ? t("connecting") : t("joinWebinar")}
           </button>
         </div>
       ) : (
         <div data-lk-theme="default" className="rounded-3xl border border-white/10 p-4">
           <PreJoin
             defaults={{ username: displayName, videoEnabled: true, audioEnabled: true }}
-            joinLabel={phase === "connecting" ? "Bağlanıyor..." : "Derse Katıl"}
-            micLabel="Mikrofon"
-            camLabel="Kamera"
-            userLabel="Adın"
+            joinLabel={phase === "connecting" ? t("connecting") : t("joinClass")}
+            micLabel={t("microphone")}
+            camLabel={t("camera")}
+            userLabel={t("yourName")}
             onSubmit={(values) => {
               if (phase !== "connecting") void join(values);
             }}
-            onError={(err) => setError(`Kamera/mikrofon hatası: ${err.message}`)}
+            onError={(err) => setError(t("deviceError", { message: err.message }))}
           />
         </div>
       )}

@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { ArrowUpRight, Menu, X } from "lucide-react";
 
 import { Button } from "@/src/components/common/button";
+import { LocaleSwitcher } from "@/src/components/i18n/locale-switcher";
 import { NavSignOutButton } from "@/src/components/layout/nav-sign-out-button";
 
 type MobileNavMenuProps = {
@@ -13,21 +15,22 @@ type MobileNavMenuProps = {
 };
 
 const navItems = [
-  { href: "/#features", label: "Özellikler" },
-  { href: "/#system", label: "Sistem" },
-  { href: "/pricing", label: "Planlar" },
-  { href: "/live-classes", label: "Canlı Dersler" },
-];
+  { href: "/#features", key: "features" },
+  { href: "/#system", key: "system" },
+  { href: "/pricing", key: "plans" },
+  { href: "/live-classes", key: "liveClasses" },
+] as const;
 
 export function MobileNavMenu({ dashboardHref, isAuthenticated }: MobileNavMenuProps) {
   const [open, setOpen] = useState(false);
+  const t = useTranslations("nav");
 
   return (
     <div className="relative lg:hidden">
       <button
         type="button"
         aria-expanded={open}
-        aria-label={open ? "Menüyü kapat" : "Menüyü aç"}
+        aria-label={open ? t("closeMenu") : t("openMenu")}
         onClick={() => setOpen((current) => !current)}
         className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/12 bg-white/[0.04] text-zinc-200 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
       >
@@ -46,14 +49,17 @@ export function MobileNavMenu({ dashboardHref, isAuthenticated }: MobileNavMenuP
                 onClick={() => setOpen(false)}
                 className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-sm font-medium text-zinc-200 transition hover:border-white/12 hover:bg-white/[0.06] hover:text-white"
               >
-                <span>{item.label}</span>
+                <span>{t(item.key)}</span>
                 <ArrowUpRight size={15} className="text-amber-300" />
               </Link>
             ))}
           </div>
 
           <div className="mt-4 rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-300">Hızlı Erişim</p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-300">{t("quickAccess")}</p>
+              <LocaleSwitcher />
+            </div>
 
             {isAuthenticated ? (
               <div className="mt-4 flex flex-col gap-3" onClick={() => setOpen(false)}>
@@ -61,7 +67,7 @@ export function MobileNavMenu({ dashboardHref, isAuthenticated }: MobileNavMenuP
                   href={dashboardHref}
                   className="w-full rounded-2xl bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] text-zinc-950 shadow-[0_12px_30px_rgba(212,168,67,0.28)] hover:brightness-105"
                 >
-                  Dashboard
+                  {t("dashboard")}
                 </Button>
                 <div className="flex justify-end">
                   <NavSignOutButton />
@@ -70,13 +76,13 @@ export function MobileNavMenu({ dashboardHref, isAuthenticated }: MobileNavMenuP
             ) : (
               <div className="mt-4 grid gap-3 sm:grid-cols-2" onClick={() => setOpen(false)}>
                 <Button href="/login" variant="outline" className="w-full rounded-2xl border-white/12 bg-white/[0.03] text-zinc-200 hover:bg-white/[0.08]">
-                  Giriş Yap
+                  {t("login")}
                 </Button>
                 <Button
                   href="/register"
                   className="w-full rounded-2xl bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] text-zinc-950 shadow-[0_12px_30px_rgba(212,168,67,0.28)] hover:brightness-105"
                 >
-                  Başla
+                  {t("start")}
                 </Button>
               </div>
             )}

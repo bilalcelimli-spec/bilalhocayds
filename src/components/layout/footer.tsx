@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 export function Footer() {
+  const t = useTranslations("footer");
+
   return (
     <footer className="border-t border-white/10 bg-[#070b11]">
       <div className="mx-auto max-w-7xl px-6 py-10">
@@ -14,15 +17,15 @@ export function Footer() {
               <span className="h-2 w-2 rounded-full bg-amber-400" />
               BilalHocayds
             </div>
-            <h3 className="mt-4 text-2xl font-black text-white md:text-3xl">AI destekli YDS hazırlığında net, güçlü ve tek merkezli sistem</h3>
+            <h3 className="mt-4 text-2xl font-black text-white md:text-3xl">{t("headline")}</h3>
             <p className="mt-3 max-w-xl text-sm leading-7 text-slate-400">
-              YDS, YÖKDİL ve YDT için günlük çalışma modülleri, AI planlama ve canlı ders akışı tek omurgada ilerler.
+              {t("description")}
             </p>
 
             <div className="mt-5 flex flex-wrap gap-3 text-xs text-slate-300">
-              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">AI Planlama</span>
-              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">Haftada 4 Saat Canlı Ders</span>
-              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">Tek Ders Satışı</span>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">{t("chipPlanning")}</span>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">{t("chipLive")}</span>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">{t("chipSingle")}</span>
             </div>
           </div>
 
@@ -30,22 +33,22 @@ export function Footer() {
             <div className="grid gap-5 md:grid-cols-2">
               <div>
                 <h4 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-300">
-                  Hızlı Erişim
+                  {t("quickAccess")}
                 </h4>
                 <div className="mt-4 space-y-3 text-sm">
                   <div>
                     <Link href="/pricing" className="text-slate-400 transition hover:text-white">
-                      Planlar &amp; Fiyatlar
+                      {t("pricing")}
                     </Link>
                   </div>
                   <div>
                     <Link href="/live-classes" className="text-slate-400 transition hover:text-white">
-                      Canlı Dersler
+                      {t("liveClasses")}
                     </Link>
                   </div>
                   <div>
                     <Link href="/dashboard" className="text-slate-400 transition hover:text-white">
-                      Öğrenci Paneli
+                      {t("studentPanel")}
                     </Link>
                   </div>
                 </div>
@@ -53,17 +56,17 @@ export function Footer() {
 
               <div>
                 <h4 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-300">
-                  Hesap
+                  {t("account")}
                 </h4>
                 <div className="mt-4 space-y-3 text-sm">
                   <div>
                     <Link href="/register" className="text-slate-400 transition hover:text-white">
-                      Kayıt Ol
+                      {t("register")}
                     </Link>
                   </div>
                   <div>
                     <Link href="/login" className="text-slate-400 transition hover:text-white">
-                      Giriş Yap
+                      {t("login")}
                     </Link>
                   </div>
                 </div>
@@ -71,18 +74,18 @@ export function Footer() {
             </div>
 
             <div className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-300">Kısa Not</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-300">{t("noteTitle")}</p>
               <p className="mt-2 text-sm leading-7 text-amber-100/85">
-                Bilal Hoca&apos;nın sınav tecrübesi ile yapay zekânın hızını aynı çalışma omurgasında birleştiriyoruz.
+                {t("note")}
               </p>
             </div>
           </div>
         </div>
 
         <div className="relative mt-8 flex flex-col gap-3 border-t border-white/10 pt-5 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-          <span>© 2026 BilalHocayds. Tüm hakları saklıdır.</span>
+          <span>{t("rights", { year: new Date().getFullYear() })}</span>
           <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-300">
-            Bilal Hoca&apos;nın sınav tecrübesi × yapay zekânın gücü
+            {t("slogan")}
           </span>
         </div>
         </div>

@@ -125,22 +125,3 @@ export async function resolveClassroomAccess(
 
   return { allowed: true, role: liveClass.type === "WEBINAR" ? "viewer" : "speaker" };
 }
-
-export function describeDenialReason(reason: ClassroomAccessDenialReason) {
-  switch (reason) {
-    case "not-platform-class":
-      return "Bu ders platform içi sınıfta değil, harici bağlantı üzerinden yapılıyor.";
-    case "cancelled":
-      return "Bu ders iptal edildi.";
-    case "ended":
-      return "Bu ders sona erdi. Kaydı yayınlandığında kayıtlar bölümünden izleyebilirsin.";
-    case "too-early":
-      return `Sınıf, ders başlangıcından ${STUDENT_EARLY_JOIN_MINUTES} dakika önce açılır.`;
-    case "too-late":
-      return "Bu dersin katılım süresi doldu.";
-    case "no-access":
-      return "Bu derse katılım hakkın yok. Canlı ders planı veya tek ders satın alarak katılabilirsin.";
-    case "full":
-      return "Sınıf kontenjanı dolu.";
-  }
-}

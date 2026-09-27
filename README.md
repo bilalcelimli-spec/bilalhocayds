@@ -33,6 +33,20 @@ LIVEKIT_API_KEY=your-livekit-api-key
 LIVEKIT_API_SECRET=your-livekit-api-secret
 ```
 
+## Coklu Dil (i18n)
+
+Arayuz `next-intl` ile Turkce (`tr`) ve Ingilizce (`en`) destekler. URL oneki kullanilmaz; dil su sirayla secilir:
+
+1. `NEXT_LOCALE` cerezi (menudeki dil secicisi yazar; giris yapmis kullanicida `User.locale` da guncellenir)
+2. Tarayicinin `Accept-Language` basligi
+3. Varsayilan: `tr`
+
+Tarihler `NEXT_TZ` cerezindeki saat dilimine gore gosterilir (tarayici otomatik yazar, varsayilan `Europe/Istanbul`).
+
+- Metinler: `messages/tr.json`, `messages/en.json` (anahtarlar tip kontrolunden gecer; eksik anahtar derleme hatasi verir)
+- Yapilandirma: `src/i18n/`
+- Cevrilen alanlar: navbar, footer, giris sayfasi, canli sinif. Diger sayfalar kademeli olarak tasinacak.
+
 ## Platform Ici Canli Sinif
 
 Canli dersler LiveKit tabanli kendi sanal sinifimizda (`/classroom/[dersId]`) yapilabilir. Kurulum, webhook ve erisim kurallari icin [docs/live-classroom-setup.md](docs/live-classroom-setup.md) dosyasina bak.

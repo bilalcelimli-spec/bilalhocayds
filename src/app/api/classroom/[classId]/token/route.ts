@@ -1,31 +1,32 @@
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 
 import { authOptions } from "@/src/auth";
-import { describeDenialReason, resolveClassroomAccess } from "@/src/lib/live-class-access";
+import { resolveClassroomAccess, STUDENT_EARLY_JOIN_MINUTES } from "@/src/lib/live-class-access";
 import { buildRoomName, createClassroomToken, isLiveKitConfigured } from "@/src/lib/livekit";
 import { prisma } from "@/src/lib/prisma";
 
 export async function POST(_request: Request, context: { params: Promise<{ classId: string }> }) {
-  const session = await getServerSession(authOptions);
+  const [session, t] = await Promise.all([getServerSession(authOptions), getTranslations("classroom")]);
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Giriş yapmalısın." }, { status: 401 });
+    return NextResponse.json({ error: t("api.unauthenticated") }, { status: 401 });
   }
 
   if (!isLiveKitConfigured()) {
-    return NextResponse.json({ error: "Canlı sınıf altyapısı henüz yapılandırılmadı." }, { status: 503 });
+    return NextResponse.json({ error: t("api.notConfigured") }, { status: 503 });
   }
 
   const { classId } = await context.params;
   const liveClass = await prisma.liveClass.findUnique({ where: { id: classId } });
   if (!liveClass) {
-    return NextResponse.json({ error: "Ders bulunamadı." }, { status: 404 });
+    return NextResponse.json({ error: t("api.notFound") }, { status: 404 });
   }
 
   const access = await resolveClassroomAccess({ id: session.user.id, role: session.user.role }, liveClass);
   if (!access.allowed) {
     return NextResponse.json(
-      { error: describeDenialReason(access.reason), reason: access.reason, opensAt: access.opensAt ?? null },
+      { error: t(`denied.${access.reason}`, { minutes: STUDENT_EARLY_JOIN_MINUTES }), reason: access.reason, opensAt: access.opensAt ?? null },
       { status: 403 },
     );
   }
@@ -36,7 +37,7 @@ export async function POST(_request: Request, context: { params: Promise<{ class
     await prisma.liveClass.update({ where: { id: liveClass.id }, data: { roomName } });
   }
 
-  const displayName = session.user.name?.trim() || session.user.email?.split("@")[0] || "Öğrenci";
+  const displayName = session.user.name?.trim() || session.user.email?.split("@")[0] || t("defaultName");
   const { token, serverUrl } = await createClassroomToken({
     roomName,
     identity: session.user.id,

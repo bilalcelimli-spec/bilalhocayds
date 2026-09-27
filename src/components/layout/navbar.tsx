@@ -3,14 +3,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { Sparkles } from "lucide-react";
 
 import { Button } from "@/src/components/common/button";
+import { LocaleSwitcher } from "@/src/components/i18n/locale-switcher";
 import { MobileNavMenu } from "@/src/components/layout/mobile-nav-menu";
 import { NavSignOutButton } from "@/src/components/layout/nav-sign-out-button";
 
 export function Navbar() {
   const { data: session } = useSession();
+  const t = useTranslations("nav");
   const dashboardHref =
     session?.user?.role === "ADMIN"
       ? "/admin"
@@ -39,46 +42,47 @@ export function Navbar() {
                 <div className="truncate text-lg font-black lowercase leading-none tracking-tight text-white md:text-xl">
                   bilalhocayds
                 </div>
-                <div className="mt-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
-                  <span className="hidden sm:inline">AI Powered ENGLISH Platform</span>
-                  <span className="hidden h-1 w-1 rounded-full bg-amber-400 sm:inline-block" />
-                  <span className="hidden sm:inline text-amber-300">PREMIUM Learning Flow</span>
+                <div className="mt-1 flex items-center gap-2 whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
+                  <span className="hidden sm:inline">{t("tagline")}</span>
+                  <span className="hidden h-1 w-1 rounded-full bg-amber-400 sm:inline-block lg:hidden xl:inline-block" />
+                  <span className="hidden sm:inline text-amber-300 lg:hidden xl:inline">{t("taglineAccent")}</span>
                 </div>
               </div>
             </Link>
 
-            <nav className="hidden items-center gap-2 lg:flex">
+            <nav className="hidden items-center gap-1 lg:flex xl:gap-2">
               {[
-                { href: "/#features", label: "Özellikler" },
-                { href: "/#system", label: "Sistem" },
-                { href: "/pricing", label: "Planlar" },
-                { href: "/live-classes", label: "Canlı Dersler" },
+                { href: "/#features", label: t("features") },
+                { href: "/#system", label: t("system") },
+                { href: "/pricing", label: t("plans") },
+                { href: "/live-classes", label: t("liveClasses") },
               ].map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="rounded-full border border-transparent px-4 py-2 text-sm text-zinc-300 transition hover:border-white/10 hover:bg-white/[0.04] hover:text-white"
+                  className="whitespace-nowrap rounded-full border border-transparent px-3 py-2 text-sm text-zinc-300 xl:px-4 transition hover:border-white/10 hover:bg-white/[0.04] hover:text-white"
                 >
                   {item.label}
                 </Link>
               ))}
             </nav>
 
-            <div className="hidden items-center gap-2 md:gap-3 lg:flex">
+            <div className="hidden shrink-0 items-center gap-2 whitespace-nowrap md:gap-3 lg:flex">
+              <LocaleSwitcher />
               {session?.user ? (
                 <>
-                  <Button href={dashboardHref} className="rounded-2xl bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] text-zinc-950 shadow-[0_12px_30px_rgba(212,168,67,0.28)] hover:brightness-105">
-                    Dashboard
+                  <Button href={dashboardHref} className="whitespace-nowrap rounded-2xl bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] text-zinc-950 shadow-[0_12px_30px_rgba(212,168,67,0.28)] hover:brightness-105">
+                    {t("dashboard")}
                   </Button>
                   <NavSignOutButton />
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="text-sm font-medium text-zinc-300 transition hover:text-white">
-                    Giriş Yap
+                  <Link href="/login" className="whitespace-nowrap text-sm font-medium text-zinc-300 transition hover:text-white">
+                    {t("login")}
                   </Link>
-                  <Button href="/register" className="rounded-2xl bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] text-zinc-950 shadow-[0_12px_30px_rgba(212,168,67,0.28)] hover:brightness-105">
-                    Başla
+                  <Button href="/register" className="whitespace-nowrap rounded-2xl bg-gradient-to-r from-[#fff4c2] via-[#f1d56d] to-[#d4a843] text-zinc-950 shadow-[0_12px_30px_rgba(212,168,67,0.28)] hover:brightness-105">
+                    {t("start")}
                   </Button>
                 </>
               )}
@@ -90,12 +94,12 @@ export function Navbar() {
           <div className="relative mt-3 hidden items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-2 text-xs text-zinc-400 md:flex lg:hidden">
             <div className="flex items-center gap-2 uppercase tracking-[0.18em] text-amber-300">
               <Sparkles size={12} />
-              Hızlı Geçiş
+              {t("quickSwitch")}
             </div>
             <div className="flex items-center gap-4">
-              <Link href="/#features" className="hover:text-white transition">Özellikler</Link>
-              <Link href="/pricing" className="hover:text-white transition">Planlar</Link>
-              <Link href="/live-classes" className="hover:text-white transition">Canlı Dersler</Link>
+              <Link href="/#features" className="hover:text-white transition">{t("features")}</Link>
+              <Link href="/pricing" className="hover:text-white transition">{t("plans")}</Link>
+              <Link href="/live-classes" className="hover:text-white transition">{t("liveClasses")}</Link>
             </div>
           </div>
         </div>
