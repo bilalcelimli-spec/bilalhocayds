@@ -25,6 +25,24 @@ enum BillingCycle {
   YEARLY
 }
 
+enum LiveClassType {
+  GROUP
+  ONE_ON_ONE
+  WEBINAR
+}
+
+enum LiveClassRoomProvider {
+  EXTERNAL
+  LIVEKIT
+}
+
+enum LiveClassStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+}
+
 enum LiveClassPurchaseStatus {
   PENDING
   PAID
@@ -227,6 +245,9 @@ model User {
   password       String?
   role           UserRole        @default(STUDENT)
   image          String?
+  locale         String          @default("tr")
+  timezone       String          @default("Europe/Istanbul")
+  country        String?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   studentProfile StudentProfile?
@@ -247,6 +268,7 @@ model User {
   adminAuditLogs AdminAuditLog[]
   readingAssignments StudentReadingAssignment[]
   readingAttempts  StudentReadingAttempt[]
+  liveClassAttendances LiveClassAttendance[]
 }
 
 model StudentProfile {
@@ -714,10 +736,38 @@ model LiveClass {
   durationMinutes Int
   meetingLink     String?
   recordingUrl    String?
+  type            LiveClassType         @default(GROUP)
+  roomProvider    LiveClassRoomProvider @default(EXTERNAL)
+  roomName        String?               @unique
+  status          LiveClassStatus       @default(SCHEDULED)
+  capacity        Int?
+  language        String                @default("en")
+  cefrLevel       String?
+  startedAt       DateTime?
+  endedAt         DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  purchases LiveClassPurchase[]
+  purchases   LiveClassPurchase[]
+  attendances LiveClassAttendance[]
+}
+
+model LiveClassAttendance {
+  id              String    @id @default(cuid())
+  liveClassId     String
+  userId          String
+  joinedAt        DateTime
+  leftAt          DateTime?
+  durationSeconds Int?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  liveClass LiveClass @relation(fields: [liveClassId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([liveClassId])
+  @@index([userId])
+  @@index([liveClassId, userId, leftAt])
 }
 
 model LiveClassPurchase {

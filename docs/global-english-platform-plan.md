@@ -207,6 +207,9 @@ model ClassMaterial     { liveClassId, type, url }
 
 ## 8. İlk Sprint İçin Somut İşler
 
+**Durum (Sprint 1):** ✅ 1, 2, 4, 5, 6 tamamlandı — platform içi sınıf (LiveKit), webhook ile yoklama, `/api/health`, CI, `User.locale/timezone/country`. Kurulum: [live-classroom-setup.md](live-classroom-setup.md). ⏳ Sıradaki: 3 (next-intl) ve 7 (Stripe).
+
+
 1. `src/app/api/health/route.ts` ekle.
 2. CI: GitHub Actions — `npm ci`, `npm run lint`, `npx tsc --noEmit`.
 3. `next-intl` kurulumu, `[locale]` segmenti, ana sayfa + navbar + footer metinlerinin çevrilmesi.

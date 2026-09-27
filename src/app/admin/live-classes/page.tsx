@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 
 import { authOptions } from "@/src/auth";
 import { DashboardShell } from "@/src/components/dashboard/shell";
+import { isLiveKitConfigured } from "@/src/lib/livekit";
 import { buildZoomDesktopLink, getMeetingPlatformLabel } from "@/src/lib/meeting-platform";
 import { prisma } from "@/src/lib/prisma";
 
@@ -54,6 +55,7 @@ async function createClassAction(formData: FormData) {
 
   await prisma.liveClass.create({
     data: {
+      ...readClassroomFields(formData),
       title,
       scheduledAt: new Date(scheduledAtRaw),
       durationMinutes,
@@ -91,6 +93,8 @@ async function updateClassAction(formData: FormData) {
   await prisma.liveClass.update({
     where: { id },
     data: {
+      ...readClassroomFields(formData),
+      status: pickEnum(formData.get("status"), CLASS_STATUSES, "SCHEDULED"),
       title,
       scheduledAt: new Date(scheduledAtRaw),
       durationMinutes,
@@ -118,6 +122,42 @@ async function deleteClassAction(formData: FormData) {
   await prisma.liveClass.delete({ where: { id } });
   revalidatePath("/admin/live-classes");
   revalidatePath("/admin");
+}
+
+const CLASS_TYPES = ["GROUP", "ONE_ON_ONE", "WEBINAR"] as const;
+const ROOM_PROVIDERS = ["LIVEKIT", "EXTERNAL"] as const;
+const CLASS_STATUSES = ["SCHEDULED", "LIVE", "ENDED", "CANCELLED"] as const;
+
+const classTypeLabels: Record<(typeof CLASS_TYPES)[number], string> = {
+  GROUP: "Grup dersi",
+  ONE_ON_ONE: "Birebir ders",
+  WEBINAR: "Webinar (izleyici modu)",
+};
+
+const roomProviderLabels: Record<(typeof ROOM_PROVIDERS)[number], string> = {
+  LIVEKIT: "Platform içi sınıf",
+  EXTERNAL: "Harici link (Zoom/Meet)",
+};
+
+const classStatusLabels: Record<(typeof CLASS_STATUSES)[number], string> = {
+  SCHEDULED: "Planlandı",
+  LIVE: "Canlı",
+  ENDED: "Bitti",
+  CANCELLED: "İptal",
+};
+
+function pickEnum<T extends string>(value: FormDataEntryValue | null, allowed: readonly T[], fallback: T): T {
+  const raw = String(value ?? "");
+  return (allowed as readonly string[]).includes(raw) ? (raw as T) : fallback;
+}
+
+function readClassroomFields(formData: FormData) {
+  const capacityRaw = Number(formData.get("capacity") ?? 0);
+  return {
+    type: pickEnum(formData.get("type"), CLASS_TYPES, "GROUP"),
+    roomProvider: pickEnum(formData.get("roomProvider"), ROOM_PROVIDERS, "EXTERNAL"),
+    capacity: Number.isInteger(capacityRaw) && capacityRaw > 0 ? capacityRaw : null,
+  };
 }
 
 function toLocalDatetimeValue(date: Date) {
@@ -170,7 +210,7 @@ export default async function AdminLiveClassesPage() {
       <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
         <h2 className="text-sm font-bold text-white">Yeni Canlı Ders Ekle</h2>
         <p className="mt-2 text-xs leading-6 text-zinc-400">
-          Toplantı linki alanına Zoom veya Google Meet bağlantısı yapıştır. Sistem Zoom linklerini otomatik algılar ve kullanıcıya uygun katılım butonları gösterir.
+          &quot;Platform içi sınıf&quot; seçilirse ders sitenin kendi canlı sınıfında yapılır ve toplantı linki gerekmez. &quot;Harici link&quot; seçilirse Zoom veya Google Meet bağlantısı yapıştır; sistem Zoom linklerini otomatik algılar.
           Satış sayfalarında canlı ders paketi haftada 4 saat program olarak anlatılıyor.
         </p>
         <form action={createClassAction} className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -180,6 +220,17 @@ export default async function AdminLiveClassesPage() {
           <input name="meetingLink" placeholder="Zoom / Meet toplantı linki" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <input name="recordingUrl" placeholder="Zoom kayıt / video linki" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <input type="number" step="0.01" min={0} name="singlePrice" placeholder="Tek ders satış fiyatı (TRY)" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
+          <select name="roomProvider" defaultValue={isLiveKitConfigured() ? "LIVEKIT" : "EXTERNAL"} className="rounded-xl border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white">
+            {ROOM_PROVIDERS.map((value) => (
+              <option key={value} value={value}>{roomProviderLabels[value]}</option>
+            ))}
+          </select>
+          <select name="type" defaultValue="GROUP" className="rounded-xl border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white">
+            {CLASS_TYPES.map((value) => (
+              <option key={value} value={value}>{classTypeLabels[value]}</option>
+            ))}
+          </select>
+          <input type="number" min={1} name="capacity" placeholder="Kontenjan (boş = sınırsız)" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <textarea name="description" placeholder="Açıklama" rows={2} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <textarea name="topicOutline" placeholder="Konu başlıkları" rows={2} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" />
           <button type="submit" className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200">Ekle</button>
@@ -234,6 +285,24 @@ export default async function AdminLiveClassesPage() {
                       <input name="meetingLink" defaultValue={c.meetingLink ?? ""} placeholder="Zoom / Meet toplantı linki" className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
                       <input name="recordingUrl" defaultValue={c.recordingUrl ?? ""} placeholder="Zoom kayıt / video linki" className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
                       <input type="number" step="0.01" min={0} name="singlePrice" defaultValue={c.singlePrice ?? 0} placeholder="Tek ders fiyatı" className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
+                      <div className="grid gap-2 md:grid-cols-2">
+                        <select name="roomProvider" defaultValue={c.roomProvider} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1 text-xs text-zinc-300">
+                          {ROOM_PROVIDERS.map((value) => (
+                            <option key={value} value={value}>{roomProviderLabels[value]}</option>
+                          ))}
+                        </select>
+                        <select name="type" defaultValue={c.type} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1 text-xs text-zinc-300">
+                          {CLASS_TYPES.map((value) => (
+                            <option key={value} value={value}>{classTypeLabels[value]}</option>
+                          ))}
+                        </select>
+                        <input type="number" min={1} name="capacity" defaultValue={c.capacity ?? ""} placeholder="Kontenjan (boş = sınırsız)" className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
+                        <select name="status" defaultValue={c.status} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1 text-xs text-zinc-300">
+                          {CLASS_STATUSES.map((value) => (
+                            <option key={value} value={value}>{classStatusLabels[value]}</option>
+                          ))}
+                        </select>
+                      </div>
                       <textarea name="description" defaultValue={c.description ?? ""} rows={2} className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
                       <textarea name="topicOutline" defaultValue={c.topicOutline ?? ""} rows={2} className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-300" />
                       <div className="flex items-center gap-2">
@@ -257,7 +326,15 @@ export default async function AdminLiveClassesPage() {
                           Tek ders: {new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(c.singlePrice)}
                         </span>
                       ) : null}
-                      {c.meetingLink ? (
+                      <span className="rounded-md border border-white/15 bg-white/5 px-2 py-0.5 text-zinc-300">
+                        {classTypeLabels[c.type]} · {classStatusLabels[c.status]}
+                        {c.capacity ? ` · ${c.capacity} kişi` : ""}
+                      </span>
+                      {c.roomProvider === "LIVEKIT" ? (
+                        <span className="rounded-md border border-amber-400/35 bg-amber-400/10 px-2 py-0.5 text-amber-300">
+                          Platform içi sınıf
+                        </span>
+                      ) : c.meetingLink ? (
                         <span className="rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-sky-300">
                           {platformLabel}
                         </span>
@@ -277,6 +354,15 @@ export default async function AdminLiveClassesPage() {
                   >
                     {isUpcoming ? "Yaklaşan" : "Geçmiş"}
                   </span>
+                  {c.roomProvider === "LIVEKIT" && c.status !== "CANCELLED" && (
+                    <Link
+                      href={`/classroom/${c.id}`}
+                      className="flex items-center gap-1 rounded-lg bg-amber-400/15 px-2.5 py-1.5 text-xs font-semibold text-amber-300 transition hover:bg-amber-400/25"
+                    >
+                      Sınıfı Aç
+                      <Video size={11} />
+                    </Link>
+                  )}
                   {c.meetingLink && (
                     <Link
                       href={c.meetingLink}

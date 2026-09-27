@@ -28,7 +28,16 @@ PAYTR_MERCHANT_KEY=your-merchant-key
 PAYTR_MERCHANT_SALT=your-merchant-salt
 PAYTR_IFRAME_BASE_URL=https://www.paytr.com/odeme/guvenli/
 CRON_SECRET=change-me
+LIVEKIT_URL=wss://your-project.livekit.cloud
+LIVEKIT_API_KEY=your-livekit-api-key
+LIVEKIT_API_SECRET=your-livekit-api-secret
 ```
+
+## Platform Ici Canli Sinif
+
+Canli dersler LiveKit tabanli kendi sanal sinifimizda (`/classroom/[dersId]`) yapilabilir. Kurulum, webhook ve erisim kurallari icin [docs/live-classroom-setup.md](docs/live-classroom-setup.md) dosyasina bak.
+
+Saglik kontrolu: `GET /api/health` (veritabani baglantisini da dogrular).
 
 ## Gunluk Icerik Cron
 

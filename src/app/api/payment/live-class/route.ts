@@ -58,11 +58,16 @@ export async function POST(request: Request) {
       title: true,
       scheduledAt: true,
       singlePrice: true,
+      status: true,
     },
   });
 
   if (!liveClass) {
     return NextResponse.json({ error: "Canli ders bulunamadi." }, { status: 404 });
+  }
+
+  if (liveClass.status === "CANCELLED") {
+    return NextResponse.json({ error: "Bu ders iptal edildi." }, { status: 400 });
   }
 
   if (!liveClass.singlePrice || liveClass.singlePrice <= 0) {

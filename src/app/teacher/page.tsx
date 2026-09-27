@@ -55,13 +55,15 @@ export default async function TeacherPage() {
     prisma.grammarTopic.count({ where: { isActive: true } }),
     prisma.liveClass.count({ where: { scheduledAt: { gte: now } } }),
     prisma.liveClass.findFirst({
-      where: { scheduledAt: { gte: now } },
+      where: { scheduledAt: { gte: now }, status: { not: "CANCELLED" } },
       orderBy: { scheduledAt: "asc" },
       select: {
+        id: true,
         title: true,
         scheduledAt: true,
         durationMinutes: true,
         meetingLink: true,
+        roomProvider: true,
       },
     }),
     prisma.reading.findMany({
@@ -211,12 +213,23 @@ export default async function TeacherPage() {
                 <p className="mt-1 text-xs text-zinc-400">
                   {nextClass.durationMinutes} dakika
                 </p>
-                {nextClass.meetingLink && (
+                {nextClass.roomProvider === "LIVEKIT" && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Link
+                      href={`/classroom/${nextClass.id}`}
+                      className="flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-zinc-950 transition hover:bg-amber-300"
+                    >
+                      Sınıfı Aç
+                      <ArrowRight size={14} />
+                    </Link>
+                  </div>
+                )}
+                {nextClass.roomProvider !== "LIVEKIT" && nextClass.meetingLink && (
                   <p className="mt-1 text-xs text-zinc-400">
                     Platform: {getMeetingPlatformLabel(nextClass.meetingLink)}
                   </p>
                 )}
-                {nextClass.meetingLink && (
+                {nextClass.roomProvider !== "LIVEKIT" && nextClass.meetingLink && (
                   <div className="mt-4 flex flex-wrap gap-2">
                     {zoomDesktopLink ? (
                       <a

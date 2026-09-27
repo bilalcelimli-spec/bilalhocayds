@@ -4,6 +4,7 @@ import { ArrowUpRight, CalendarDays, Clock3, ShieldCheck, Sparkles } from "lucid
 import { prisma } from "@/src/lib/prisma";
 import { LiveClassSinglePurchase } from "@/src/components/payment/live-class-single-purchase";
 import { buildZoomDesktopLink, getMeetingPlatformLabel } from "@/src/lib/meeting-platform";
+import { getJoinWindow } from "@/src/lib/live-class-access";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { getServerSession } from "next-auth";
@@ -15,6 +16,37 @@ const classBenefits = [
 	"Ders kayıtlarına sonradan erişim",
 	"Tek tek ders satın alma seçeneği",
 ];
+
+function PlatformJoinButton({
+	liveClass,
+	now,
+	size = "md",
+}: {
+	liveClass: { id: string; scheduledAt: Date; durationMinutes: number; status: string };
+	now: Date;
+	size?: "sm" | "md";
+}) {
+	const { opensAt } = getJoinWindow(liveClass);
+	const isOpen = liveClass.status === "LIVE" || now >= opensAt;
+	const sizeClass = size === "sm" ? "px-3 py-2 text-xs" : "px-4 py-2 text-sm";
+
+	if (!isOpen) {
+		return (
+			<span className={`inline-flex items-center rounded-xl border border-white/15 bg-white/5 font-semibold text-slate-300 ${sizeClass}`}>
+				Sınıf {format(opensAt, "d MMM HH:mm", { locale: tr })}&apos;da açılır
+			</span>
+		);
+	}
+
+	return (
+		<Link
+			href={`/classroom/${liveClass.id}`}
+			className={`inline-flex items-center rounded-xl bg-emerald-400 font-semibold text-zinc-950 hover:bg-emerald-300 ${sizeClass}`}
+		>
+			{liveClass.status === "LIVE" ? "● Canlı — Derse Katıl" : "Platformda Derse Katıl"}
+		</Link>
+	);
+}
 
 function formatPrice(price: number | null) {
 	if (price === null || price <= 0) {
@@ -247,23 +279,28 @@ export default async function LiveClassesPage() {
 								) : null}
 							</div>
 							<div className="w-full lg:w-80 shrink-0">
-								{hasLiveClassPlan || purchasedClassIds.has(nextClass.id) ? (
+								{(hasLiveClassPlan && nextClass.type !== "ONE_ON_ONE") || purchasedClassIds.has(nextClass.id) ? (
 									<div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-5">
 										<p className="text-sm font-bold text-emerald-200">
-										{hasLiveClassPlan ? "Bu ders planına dahil" : "Bu dersi satın aldın"}
+										{purchasedClassIds.has(nextClass.id) ? "Bu dersi satın aldın" : "Bu ders planına dahil"}
 										</p>
 										<p className="mt-2 text-xs leading-6 text-emerald-100/80">
-											{nextClass.meetingLink
+											{nextClass.roomProvider === "LIVEKIT"
+											? "Ders sitenin canlı sınıfında yapılır. Sınıf, ders saatinden 15 dakika önce açılır."
+											: nextClass.meetingLink
 											? `${getMeetingPlatformLabel(nextClass.meetingLink)} bağlantın hazır.`
 											: "Ders bağlantısı ders saatine yakın aktif edilir ve e-posta ile de paylaşılır."}
 										</p>
 										<div className="mt-4 flex flex-wrap gap-3">
-											{buildZoomDesktopLink(nextClass.meetingLink) ? (
+											{nextClass.roomProvider === "LIVEKIT" ? (
+												<PlatformJoinButton liveClass={nextClass} now={now} />
+											) : null}
+											{nextClass.roomProvider !== "LIVEKIT" && buildZoomDesktopLink(nextClass.meetingLink) ? (
 												<a href={buildZoomDesktopLink(nextClass.meetingLink) ?? "#"} className="inline-flex items-center rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-emerald-300">
 													Zoom&apos;da Aç
 												</a>
 											) : null}
-											{nextClass.meetingLink ? (
+											{nextClass.roomProvider !== "LIVEKIT" && nextClass.meetingLink ? (
 												<a href={nextClass.meetingLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">
 													Tarayıcıda Katıl
 												</a>
@@ -308,8 +345,10 @@ export default async function LiveClassesPage() {
 
 						{upcomingClasses.map((item, index) => {
 							const alreadyPurchased = purchasedClassIds.has(item.id);
-							const hasAccess = hasLiveClassPlan || alreadyPurchased;
-							const zoomDesktopLink = buildZoomDesktopLink(item.meetingLink);
+							const planCoversClass = hasLiveClassPlan && item.type !== "ONE_ON_ONE";
+							const hasAccess = planCoversClass || alreadyPurchased;
+							const isPlatformClass = item.roomProvider === "LIVEKIT";
+							const zoomDesktopLink = isPlatformClass ? null : buildZoomDesktopLink(item.meetingLink);
 							return (
 							<div
 								key={item.id}
@@ -334,7 +373,7 @@ export default async function LiveClassesPage() {
 										</div>
 									</div>
 									<span className="inline-flex max-w-full break-words rounded-full border border-amber-400/35 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-300">
-										{hasLiveClassPlan
+										{planCoversClass
 											? "ÜYELİKTE DAHİL"
 											: alreadyPurchased
 												? "SATIN ALINDI"
@@ -347,20 +386,23 @@ export default async function LiveClassesPage() {
 									{hasAccess ? (
 										<div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4 text-sm text-emerald-100">
 											<p className="font-semibold text-emerald-200">
-											{hasLiveClassPlan ? "Planın ile bu derse doğrudan katılabilirsin." : "Bu derse tek ders satın alım ile erişim hakkın var."}
+											{planCoversClass ? "Planın ile bu derse doğrudan katılabilirsin." : "Bu derse tek ders satın alım ile erişim hakkın var."}
 										</p>
 										<p className="mt-2 text-xs text-emerald-100/80">
-											{item.meetingLink
+											{isPlatformClass
+												? "Ders sitenin canlı sınıfında yapılır. Sınıf, ders saatinden 15 dakika önce açılır."
+												: item.meetingLink
 												? `${getMeetingPlatformLabel(item.meetingLink)} bağlantısı aktif.`
 												: "Bağlantı ders saatine yakın aktif edilir ve e-posta ile de paylaşılır."}
 											</p>
 											<div className="mt-3 flex flex-wrap gap-2">
+												{isPlatformClass ? <PlatformJoinButton liveClass={item} now={now} size="sm" /> : null}
 												{zoomDesktopLink ? (
 													<a href={zoomDesktopLink} className="inline-flex items-center rounded-xl bg-emerald-400 px-3 py-2 text-xs font-semibold text-zinc-950 hover:bg-emerald-300">
 														Zoom&apos;da Aç
 													</a>
 												) : null}
-												{item.meetingLink ? (
+												{!isPlatformClass && item.meetingLink ? (
 													<a href={item.meetingLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10">
 														Derse Katıl
 													</a>

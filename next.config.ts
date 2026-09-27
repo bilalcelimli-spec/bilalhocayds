@@ -1,5 +1,22 @@
 import type { NextConfig } from "next";
 
+// Platform içi canlı sınıf (LiveKit) için sinyal sunucusu kaynakları.
+function getLiveKitConnectSources() {
+  const sources = new Set(["wss://*.livekit.cloud", "https://*.livekit.cloud"]);
+  const configured = process.env.LIVEKIT_URL?.trim();
+  if (configured) {
+    try {
+      const url = new URL(configured);
+      const host = url.host;
+      sources.add(`wss://${host}`);
+      sources.add(`https://${host}`);
+    } catch {
+      // Geçersiz LIVEKIT_URL: varsayılan LiveKit Cloud kaynaklarıyla devam et.
+    }
+  }
+  return [...sources].join(" ");
+}
+
 const securityHeaders = [
   // Prevents MIME-type sniffing
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -25,7 +42,9 @@ const securityHeaders = [
       // Allow PayTR iframe for payment
       "frame-src https://www.paytr.com",
       "frame-ancestors 'self'",
-      "connect-src 'self' https://www.paytr.com",
+      `connect-src 'self' https://www.paytr.com ${getLiveKitConnectSources()}`,
+      "media-src 'self' blob:",
+      "worker-src 'self' blob:",
       "font-src 'self' data: https://fonts.gstatic.com",
       "object-src 'none'",
       "base-uri 'self'",
@@ -43,6 +62,16 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: securityHeaders,
+      },
+      {
+        // Canlı sınıf sayfası kamera, mikrofon ve ekran paylaşımına ihtiyaç duyar.
+        source: "/classroom/:path*",
+        headers: [
+          {
+            key: "Permissions-Policy",
+            value: "camera=(self), microphone=(self), display-capture=(self), geolocation=(), payment=()",
+          },
+        ],
       },
     ];
   },
